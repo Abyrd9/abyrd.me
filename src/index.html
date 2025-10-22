@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- <link rel="icon" type="image/svg+xml" href="./logo.svg" /> -->
+  <link rel="stylesheet" href="./index.css" />
+  <script type="module" src="./components/NavBar.ts"></script>
+  <script type="module" src="./components/Footer.ts"></script>
+  <script type="module" src="./components/BookmarkCard.ts"></script>
+  <script type="module" src="./components/PostsList.ts"></script>
+  <script>
+    // Convert number to words
+    function numberToWords(n) {
+      if (n === 0) return 'zero';
+      if (n < 0) return 'negative ' + numberToWords(-n);
+
+      const ones = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
+      const teens = ['ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
+      const tens = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
+
+      function convert(n) {
+        if (n < 10) return ones[n];
+        if (n < 20) return teens[n - 10];
+        if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 ? '-' + ones[n % 10] : '');
+        if (n < 1000) return ones[Math.floor(n / 100)] + ' hundred' + (n % 100 ? ' ' + convert(n % 100) : '');
+        if (n < 1000000) return convert(Math.floor(n / 1000)) + ' thousand' + (n % 1000 ? ' ' + convert(n % 1000) : '');
+        if (n < 1000000000) return convert(Math.floor(n / 1000000)) + ' million' + (n % 1000000 ? ' ' + convert(n % 1000000) : '');
+        return convert(Math.floor(n / 1000000000)) + ' billion' + (n % 1000000000 ? ' ' + convert(n % 1000000000) : '');
+      }
+
+      return convert(n).trim();
+    }
+
+    // Calculate years of experience since November 2017
+    const startDate = new Date('2017-11-01');
+    const now = new Date();
+    const years = Math.floor((now - startDate) / (1000 * 60 * 60 * 24 * 365.25));
+
+    // Update DOM with years as words
+    document.addEventListener('DOMContentLoaded', () => {
+      const element = document.getElementById('years-of-experience');
+      if (element) {
+        element.textContent = numberToWords(years);
+      }
+    });
+  </script>
+  <title>abyrd.me</title>
+</head>
+
+<body class="w-full min-h-dvh flex flex-col p-0">
+  <!-- Navigation Bar -->
+  <nav-bar logo-text="abyrd.me" theme="dark"></nav-bar>
+
+  <!-- Main Content -->
+  <main class="mx-auto max-w-2xl pb-16 flex-1">
+    <h1 class="text-3xl sm:text-4xl font-medium tracking-tight mb-8 flex items-center gap-2.5">
+      Hello <span class="text-3xl sm:text-4xl">👋</span>
+    </h1>
+
+    <div class="space-y-4 mb-12">
+      <p>I am Andrew Byrd and this is my website.</p>
+      <p>
+        I'm a self-taught web developer with <span id="years-of-experience"></span> years of experience. I
+        currently work at
+        <a href="https://dotwork.com">Dotwork</a> where I'm one of the
+        founding software engineers.
+      </p>
+      <p>Please checkout some of my personal projects.</p>
+    </div>
+
+    <section class="space-y-4 mb-12">
+      <h2 class="text-xl font-medium tracking-tight">Some Public Projects</h2>
+      <ul class="flex flex-col gap-3">
+        <bookmark-card url="https://github.com/Abyrd9/harbor-cli"></bookmark-card>
+        <bookmark-card url="https://github.com/Abyrd9/zod-form-data"></bookmark-card>
+      </ul>
+    </section>
+
+    <!-- TODO: Add when there's a post -->
+    <!-- <posts-list></posts-list> -->
+
+  </main>
+
+  <!-- Footer -->
+  <footer-bar></footer-bar>
+</body>
+
+</html>

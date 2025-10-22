@@ -1,0 +1,35 @@
+{
+	"window.zoomLevel": 0,
+	"editor.wordWrap": "bounded",
+	"editor.snippetSuggestions": "top",
+	"editor.tabSize": 2,
+
+	"editor.defaultFormatter": "biomejs.biome",
+	"editor.formatOnSave": true,
+	"editor.codeActionsOnSave": {
+		"source.fixAll.biome": "explicit"
+	},
+
+	"editor.quickSuggestions": {
+		"strings": "on"
+	},
+
+	"files.associations": {
+		"*.css": "tailwindcss"
+	},
+	"[typescript]": {
+		"editor.defaultFormatter": "vscode.typescript-language-features"
+	},
+	"[typescriptreact]": {
+		"editor.defaultFormatter": "vscode.typescript-language-features"
+	},
+	"[html]": {
+		"editor.defaultFormatter": "vscode.html-language-features"
+	},
+	"[jsonc]": {
+		"editor.defaultFormatter": "biomejs.biome"
+	},
+	"[snippets]": {
+		"editor.defaultFormatter": "vscode.json-language-features"
+	}
+}

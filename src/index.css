@@ -1,0 +1,89 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-text-size-adjust: 100%;
+    font-display: auto;
+  }
+
+  * {
+    box-sizing: border-box;
+    min-width: 0;
+    @apply selection:bg-slate-200/50;
+  }
+
+  body {
+    font-family: 'DM Sans Variable', sans-serif;
+    @apply flex min-h-dvh flex-col font-sans m-0 bg-white text-slate-900 px-4 sm:px-6;
+  }
+
+  p {
+    @apply text-slate-700 leading-relaxed;
+  }
+
+  a {
+    @apply text-slate-900 underline decoration-slate-300 underline-offset-2 hover:decoration-slate-500 transition-colors;
+  }
+
+  a.no-underline {
+    @apply no-underline decoration-transparent hover:decoration-transparent;
+  }
+
+  h1, h2, h3 {
+    @apply text-slate-900;
+  }
+
+  /* Article/Blog post styles */
+  article h2 {
+    @apply text-2xl font-medium tracking-tight mt-10 mb-4;
+  }
+
+  article h3 {
+    @apply text-xl font-medium tracking-tight mt-8 mb-3;
+  }
+
+  article p {
+    @apply mb-4;
+  }
+
+  article ul,
+  article ol {
+    @apply mb-4 pl-6 text-slate-700;
+  }
+
+  article li {
+    @apply mb-2 leading-relaxed;
+  }
+
+  article ul li {
+    @apply list-disc;
+  }
+
+  article ol li {
+    @apply list-decimal;
+  }
+
+  article code {
+    @apply bg-slate-100 px-1.5 py-0.5 rounded text-sm font-mono text-slate-700;
+  }
+
+  article pre {
+    @apply bg-slate-950 text-slate-200 p-5 rounded-lg overflow-x-auto mb-6 text-sm leading-relaxed;
+  }
+
+  article pre code {
+    @apply bg-transparent p-0 text-inherit text-sm;
+  }
+
+  article blockquote {
+    @apply border-l-4 border-slate-300 pl-5 my-6 text-slate-600 italic;
+  }
+
+  article strong {
+    @apply font-semibold text-slate-900;
+  }
+}
