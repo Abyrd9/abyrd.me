@@ -6,7 +6,7 @@ class NavBar extends HTMLElement {
     const host = window.location.origin;
     this.innerHTML = /* html */`
       <nav
-        class="w-full py-6 flex justify-between items-center border-b border-slate-200 mb-12 mx-auto max-w-3xl"
+        class="w-full py-6 flex justify-between items-center border-b border-slate-200 mb-12 mx-auto max-w-3xl px-6"
       >
         <h3 class="text-sm font-medium tracking-tight">abyrd.me</h3>
 

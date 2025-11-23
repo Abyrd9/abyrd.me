@@ -9,7 +9,7 @@ class FooterBar extends HTMLElement {
     this.innerHTML = /* html */`
       <footer class="w-full mt-16 text-gray-500 py-5 px-8 text-center bg-gray-100/50">
         <div class="footer-content max-w-3xl mx-auto flex justify-between items-center">
-          <span class="text-xs">Built with Bun & Web Components. Which is pretty cool.</span>
+          <span class="text-xs">Built with Bun & Web Components.</span>
           <div class="copyright text-xs opacity-70">
             © ${currentYear}
           </div>
