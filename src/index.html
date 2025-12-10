@@ -8,8 +8,7 @@
   <script>((s, p) => (s = localStorage.getItem("theme"), p = matchMedia("(prefers-color-scheme:dark)").matches, (s === "dark" || (!s && p)) && document.documentElement.classList.add("dark")))()</script>
   <!-- <link rel="icon" type="image/svg+xml" href="./logo.svg" /> -->
   <link rel="stylesheet" href="./index.css" />
-  <script type="module" src="./components/NavBar.ts"></script>
-  <script type="module" src="./components/Footer.ts"></script>
+  <script type="module" src="./shared/theme-toggle.ts"></script>
   <script type="module" src="./components/PostsList.ts"></script>
   <script>
     // Convert number to words
@@ -51,8 +50,8 @@
 </head>
 
 <body class="w-full min-h-dvh flex flex-col p-0">
-  <!-- Navigation Bar -->
-  <nav-bar logo-text="abyrd.me" theme="dark"></nav-bar>
+  <!-- Navigation Bar - injected by plugin -->
+  <div id="nav-bar"></div>
 
   <!-- Main Content -->
   <main class="mx-auto max-w-2xl pb-16 flex-1 px-6">
@@ -108,8 +107,8 @@
     <posts-list></posts-list>
   </main>
 
-  <!-- Footer -->
-  <footer-bar></footer-bar>
+  <!-- Footer - injected by plugin -->
+  <div id="footer"></div>
 </body>
 
 </html>

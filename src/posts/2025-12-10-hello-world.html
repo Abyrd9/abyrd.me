@@ -11,13 +11,13 @@
     content="Let's bring back websites. I miss the StumbleUpon days of the internet circa 2013." />
   <meta property="article:tag" content="personal" />
   <link rel="stylesheet" href="../index.css" />
-  <script type="module" src="../components/NavBar.ts"></script>
-  <script type="module" src="../components/Footer.ts"></script>
+  <script type="module" src="../shared/theme-toggle.ts"></script>
   <title>I Miss the Old Internet Days and Also Hello, This is My First Post - abyrd.me</title>
 </head>
 
 <body class="w-full min-h-dvh flex flex-col p-0">
-  <nav-bar logo-text="abyrd.me" theme="dark"></nav-bar>
+  <!-- Navigation Bar - injected by plugin -->
+  <div id="nav-bar"></div>
 
   <main class="mx-auto max-w-2xl pb-16 flex-1 px-6">
     <article>
@@ -77,7 +77,8 @@
     </article>
   </main>
 
-  <footer-bar></footer-bar>
+  <!-- Footer - injected by plugin -->
+  <div id="footer"></div>
 </body>
 
 </html>

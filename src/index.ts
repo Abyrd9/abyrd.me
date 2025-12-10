@@ -4,7 +4,6 @@ import fourOhFour from "./404.html";
 import index from "./index.html";
 import blog_post_2025_12_10_hello_world from "./posts/2025-12-10-hello-world.html";
 import { getLinkPreview } from "./routes/get-link-preview";
-import { getLogoImage } from "./routes/get-logo-image";
 import { getPostsList } from "./routes/get-posts-list";
 import { robots } from "./routes/robots";
 import { sitemap } from "./routes/sitemap";
@@ -18,16 +17,11 @@ const server = serve({
     "/posts/2025-12-10-hello-world": blog_post_2025_12_10_hello_world,
 
     // ------------------------------------------------------------
-    // OTHER ROUTES
+    // API ROUTES
     // ------------------------------------------------------------
     "/api/posts": {
       async GET(req) {
         return getPostsList(req);
-      },
-    },
-    "/api/images/logos/:logo": {
-      async GET(req) {
-        return getLogoImage(req);
       },
     },
     "/api/link-preview": {
@@ -47,17 +41,14 @@ const server = serve({
     },
 
     // ------------------------------------------------------------
-    // CATCH ALL AND INDEX ROUTES
+    // PAGES
     // ------------------------------------------------------------
     "/": index,
     "/*": fourOhFour,
   },
 
   development: process.env.NODE_ENV !== "production" && {
-    // Enable browser hot reloading in development
     hmr: true,
-
-    // Echo console logs from the browser to the server
     console: true,
   },
 });

@@ -100,3 +100,20 @@
     filter: invert(1);
   }
 }
+
+/* Handdrawn marker highlight effect using SVG brush */
+.tag-highlight {
+  background: url('https://s2.svgbox.net/pen-brushes.svg?ic=brush-1&color=fde047');
+  background-size: 100% 100%;
+  margin: -2px -6px;
+  padding: 2px 8px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: theme(colors.slate.700);
+}
+
+.dark .tag-highlight {
+  background: url('https://s2.svgbox.net/pen-brushes.svg?ic=brush-1&color=854d0e');
+  background-size: 100% 100%;
+  color: theme(colors.amber.200);
+}

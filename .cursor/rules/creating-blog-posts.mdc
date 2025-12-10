@@ -1,6 +1,6 @@
 ---
 description: How to create new blog posts for abyrd.me
-globs: src/posts/*.html, src/index.tsx
+globs: src/posts/*.html, src/index.ts
 alwaysApply: false
 ---
 
@@ -20,7 +20,7 @@ Example: `src/posts/2025-12-03-my-new-post.html`
 
 ## 2. Required HTML Structure
 
-Every blog post must include these elements:
+Every blog post must include these elements. Note: nav and footer are **automatically injected** by the Bun plugin at build time.
 
 ```html
 <!DOCTYPE html>
@@ -34,16 +34,16 @@ Every blog post must include these elements:
   <!-- Required: Open Graph meta tags for post list -->
   <meta property="og:title" content="Your Post Title" />
   <meta property="og:description" content="A brief description of your post." />
-  <!-- Optional: Tag for filtering (e.g., "dev", "theology", etc.) -->
+  <!-- Optional: Tag for filtering (e.g., "dev", "personal", etc.) -->
   <meta property="article:tag" content="dev" />
   <link rel="stylesheet" href="../index.css" />
-  <script type="module" src="../components/NavBar.ts"></script>
-  <script type="module" src="../components/Footer.ts"></script>
+  <script type="module" src="../shared/theme-toggle.ts"></script>
   <title>Your Post Title - abyrd.me</title>
 </head>
 
 <body class="w-full min-h-dvh flex flex-col p-0">
-  <nav-bar logo-text="abyrd.me" theme="dark"></nav-bar>
+  <!-- Nav is injected here by plugin -->
+  <div id="nav-bar"></div>
 
   <main class="mx-auto max-w-2xl pb-16 flex-1 px-6">
     <article>
@@ -69,13 +69,14 @@ Every blog post must include these elements:
     </article>
   </main>
 
-  <footer-bar></footer-bar>
+  <!-- Footer is injected here by plugin -->
+  <div id="footer"></div>
 </body>
 
 </html>
 ```
 
-## 3. Register the Route in `src/index.tsx`
+## 3. Register the Route in `src/index.ts`
 
 After creating the HTML file, add it to the server routes:
 
@@ -89,6 +90,14 @@ import blog_post_YYYY_MM_DD_slug from "./posts/YYYY-MM-DD-post-slug.html";
 "/posts/YYYY-MM-DD-post-slug": blog_post_YYYY_MM_DD_slug,
 ```
 
+## How Nav/Footer Injection Works
+
+The Bun plugin (`src/plugins/playground.ts`) automatically injects the nav and footer HTML from:
+- `src/shared/nav-bar.html`
+- `src/shared/footer.html`
+
+This happens at **bundle time**, so the HTML arrives fully rendered. No client-side fetching.
+
 ## Checklist
 
 - [ ] File named with date prefix: `YYYY-MM-DD-slug.html`
@@ -96,7 +105,10 @@ import blog_post_YYYY_MM_DD_slug from "./posts/YYYY-MM-DD-post-slug.html";
 - [ ] `og:description` meta tag with brief description
 - [ ] `article:tag` meta tag (optional, for filtering)
 - [ ] `<title>` tag: "Post Title - abyrd.me"
+- [ ] `<div id="nav-bar"></div>` placeholder (plugin fills this)
+- [ ] `<div id="footer"></div>` placeholder (plugin fills this)
+- [ ] Theme toggle script: `<script type="module" src="../shared/theme-toggle.ts"></script>`
 - [ ] Mobile back link in header (hidden on desktop with `sm:hidden`)
 - [ ] `<time datetime="YYYY-MM-DD">` with formatted date text
-- [ ] Import added to `src/index.tsx`
-- [ ] Route added to `src/index.tsx` under BLOG ROUTES
+- [ ] Import added to `src/index.ts`
+- [ ] Route added to `src/index.ts` under BLOG ROUTES

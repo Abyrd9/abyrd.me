@@ -124,11 +124,13 @@ class PostsList extends HTMLElement {
                 <article class="rounded-lg transition-colors">
                   <h3 class="text-lg font-medium tracking-tight transition-colors my-0 flex items-center gap-2 group-hover:text-slate-700 dark:group-hover:text-slate-300">
                     - ${post.title}
-                    ${post.tag ? `<span class="text-xs font-normal px-2 py-0.5 bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-slate-400 rounded-full">${post.tag}</span>` : ''}
                   </h3>
-                  <time class="text-sm text-slate-500 dark:text-slate-400 mt-1 block" datetime="${post.date}">
-                    ${post.dateFormatted}
-                  </time>
+                  <div class="flex items-center gap-2 mt-0.5">
+                    <time class="text-sm text-slate-500 dark:text-slate-400 mt-1 block" datetime="${post.date}">
+                      ${post.dateFormatted}
+                    </time>
+                    ${post.tag ? `<span class="tag-highlight">${post.tag}</span>` : ''}
+                  </div>
                 </article>
               </a>
             </li>
