@@ -5,15 +5,24 @@ type PostMetadata = {
   date: string;
   dateFormatted: string;
   path: string;
+  tag?: string;
 }
 
 export async function getPostsList(req: Bun.BunRequest<"/api/posts">) {
   try {
     const posts = await getPosts();
 
+    const url = new URL(req.url);
+    const bustCache = url.searchParams.has("bust");
+    const isDev = process.env.NODE_ENV !== "production";
+
+    const cacheControl = (bustCache || isDev)
+      ? "no-store"
+      : "public, max-age=300"; // Cache for 5 minutes in production
+
     return Response.json(posts, {
       headers: {
-        "Cache-Control": "public, max-age=300", // Cache for 5 minutes
+        "Cache-Control": cacheControl,
       },
     });
   } catch (error) {
@@ -81,6 +90,7 @@ export async function getPosts(): Promise<PostMetadata[]> {
     // Extract metadata
     const title = extractMetaTag(html, "og:title") || fileName.replace(".html", "");
     const description = extractMetaTag(html, "og:description") || "";
+    const tag = extractMetaTag(html, "article:tag") || undefined;
     const timeData = extractTimeTag(html);
 
     posts.push({
@@ -90,6 +100,7 @@ export async function getPosts(): Promise<PostMetadata[]> {
       date: timeData?.date || "",
       dateFormatted: timeData?.formatted || "",
       path: `/posts/${fileName.replace(".html", "")}`,
+      tag,
     });
   }
 

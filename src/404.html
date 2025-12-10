@@ -4,6 +4,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Prevent flash of wrong theme - must run before CSS -->
+  <script>((s, p) => (s = localStorage.getItem("theme"), p = matchMedia("(prefers-color-scheme:dark)").matches, (s === "dark" || (!s && p)) && document.documentElement.classList.add("dark")))()</script>
   <link rel="stylesheet" type="text/css"
     href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css" />
   <link rel="stylesheet" type="text/css"

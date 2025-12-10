@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Prevent flash of wrong theme - must run before CSS -->
+  <script>((s, p) => (s = localStorage.getItem("theme"), p = matchMedia("(prefers-color-scheme:dark)").matches, (s === "dark" || (!s && p)) && document.documentElement.classList.add("dark")))()</script>
+  <meta property="og:title" content="I Miss the Old Internet Days and Also Hello, This is My First Post" />
+  <meta property="og:description"
+    content="Let's bring back websites. I miss the StumbleUpon days of the internet circa 2013." />
+  <meta property="article:tag" content="personal" />
+  <link rel="stylesheet" href="../index.css" />
+  <script type="module" src="../components/NavBar.ts"></script>
+  <script type="module" src="../components/Footer.ts"></script>
+  <title>I Miss the Old Internet Days and Also Hello, This is My First Post - abyrd.me</title>
+</head>
+
+<body class="w-full min-h-dvh flex flex-col p-0">
+  <nav-bar logo-text="abyrd.me" theme="dark"></nav-bar>
+
+  <main class="mx-auto max-w-2xl pb-16 flex-1 px-6">
+    <article>
+      <header class="mb-8">
+        <a href="/"
+          class="sm:hidden inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 no-underline mb-5 transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5M12 19l-7-7 7-7" />
+          </svg>
+          Back
+        </a>
+        <h1 class="text-3xl font-bold tracking-tight mb-4">I Miss the Old Internet Days and Also Hello, This
+          is My First
+          Post</h1>
+        <time datetime="2025-12-10" class="text-slate-500 dark:text-slate-400">December 10, 2025</time>
+      </header>
+
+      <div class="prose prose-slate">
+        <p>
+          Let's bring back websites.
+        </p>
+
+        <p>
+          It's not like they went anywhere actually, but I miss the StumbleUpon days of the internet circa 2013. I loved
+          clicking through, finding interesting pages, interesting blogs. Stumbling upon some random person's "corner of
+          the internet."
+        </p>
+
+        <p>
+          This one is mine. Though I'm a web developer by trade so I must have one. It's like a carpenter not having a
+          wood shop if I didn't. This specific site is super bare bones. Built <em>only</em> with <a
+            href="https://bun.sh/">Bun</a> which I love. No javascript framework or anything. Just Tailwind, HTML, and
+          some TypeScript. <a href="https://bun.sh/docs/api/http">Bun makes this really easy</a>. And then it's hosted
+          on <a href="https://railway.app/">Railway</a>. Another service which I love.
+        </p>
+
+        <p>
+          Even the posts, like this one. No markdown, no text editor, no saved post data. I literally write things in
+          Notion, hand it to Cursor, and tell it to build an HTML page around it. It's incredible.
+        </p>
+
+        <p>
+          It's easier than ever to post.
+        </p>
+
+        <p>
+          So I'm gonna make this space my writing playground. I don't have much time to write. I have a toddler and I'm
+          working at a startup and I'd like to hang out with my wife in between those two time consumers. So we'll see
+          how often things get thrown up here.
+        </p>
+
+        <p>
+          But I'll do my best.
+        </p>
+      </div>
+    </article>
+  </main>
+
+  <footer-bar></footer-bar>
+</body>
+
+</html>

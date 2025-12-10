@@ -2,6 +2,7 @@ import { serve } from "bun";
 import "@fontsource-variable/dm-sans";
 import fourOhFour from "./404.html";
 import index from "./index.html";
+import blog_post_2025_12_10_hello_world from "./posts/2025-12-10-hello-world.html";
 import { getLinkPreview } from "./routes/get-link-preview";
 import { getLogoImage } from "./routes/get-logo-image";
 import { getPostsList } from "./routes/get-posts-list";
@@ -14,6 +15,7 @@ const server = serve({
     // ------------------------------------------------------------
     // BLOG ROUTES
     // ------------------------------------------------------------
+    "/posts/2025-12-10-hello-world": blog_post_2025_12_10_hello_world,
 
     // ------------------------------------------------------------
     // OTHER ROUTES
