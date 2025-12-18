@@ -36,21 +36,40 @@ export async function getPostsList(req: Bun.BunRequest<"/api/posts">) {
 
 // Helper functions for extracting metadata from HTML
 function extractMetaTag(html: string, property: string): string | null {
+  // Separate patterns for double and single quotes to handle apostrophes in content
   const patterns = [
+    // Double-quoted content (can contain single quotes)
     new RegExp(
-      `<meta\\s+property=["']${property}["']\\s+content=["']([^"']+)["']`,
+      `<meta\\s+property="${property}"\\s+content="([^"]+)"`,
       "i"
     ),
     new RegExp(
-      `<meta\\s+content=["']([^"']+)["']\\s+property=["']${property}["']`,
+      `<meta\\s+content="([^"]+)"\\s+property="${property}"`,
       "i"
     ),
     new RegExp(
-      `<meta\\s+name=["']${property}["']\\s+content=["']([^"']+)["']`,
+      `<meta\\s+name="${property}"\\s+content="([^"]+)"`,
       "i"
     ),
     new RegExp(
-      `<meta\\s+content=["']([^"']+)["']\\s+name=["']${property}["']`,
+      `<meta\\s+content="([^"]+)"\\s+name="${property}"`,
+      "i"
+    ),
+    // Single-quoted content (can contain double quotes)
+    new RegExp(
+      `<meta\\s+property='${property}'\\s+content='([^']+)'`,
+      "i"
+    ),
+    new RegExp(
+      `<meta\\s+content='([^']+)'\\s+property='${property}'`,
+      "i"
+    ),
+    new RegExp(
+      `<meta\\s+name='${property}'\\s+content='([^']+)'`,
+      "i"
+    ),
+    new RegExp(
+      `<meta\\s+content='([^']+)'\\s+name='${property}'`,
       "i"
     ),
   ];

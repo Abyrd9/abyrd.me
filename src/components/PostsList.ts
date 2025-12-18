@@ -119,7 +119,7 @@ class PostsList extends HTMLElement {
         -->
         <ul class="flex flex-col">
           ${filteredPosts.map(post => `
-            <li>
+            <li class="mb-4">
               <a href="${post.path}" class="block group">
                 <article class="rounded-lg transition-colors">
                   <h3 class="text-lg font-medium tracking-tight transition-colors my-0 flex items-center gap-2 group-hover:text-slate-700 dark:group-hover:text-slate-300">

@@ -3,6 +3,7 @@ import "@fontsource-variable/dm-sans";
 import fourOhFour from "./404.html";
 import index from "./index.html";
 import blog_post_2025_12_10_hello_world from "./posts/2025-12-10-hello-world.html";
+import blog_post_2025_12_18_on_intellectual_humility from "./posts/2025-12-18-on-intellectual-humility.html";
 import { getLinkPreview } from "./routes/get-link-preview";
 import { getPostsList } from "./routes/get-posts-list";
 import { robots } from "./routes/robots";
@@ -15,6 +16,7 @@ const server = serve({
     // BLOG ROUTES
     // ------------------------------------------------------------
     "/posts/2025-12-10-hello-world": blog_post_2025_12_10_hello_world,
+    "/posts/2025-12-18-on-intellectual-humility": blog_post_2025_12_18_on_intellectual_humility,
 
     // ------------------------------------------------------------
     // API ROUTES
