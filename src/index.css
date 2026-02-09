@@ -117,3 +117,27 @@
   background-size: 100% 100%;
   color: theme(colors.amber.200);
 }
+
+.tag-highlight-ai {
+  background: url('https://s2.svgbox.net/pen-brushes.svg?ic=brush-1&color=7dd3fc');
+  background-size: 100% 100%;
+  color: #0c4a6e;
+}
+
+.dark .tag-highlight-ai {
+  background: url('https://s2.svgbox.net/pen-brushes.svg?ic=brush-1&color=0369a1');
+  background-size: 100% 100%;
+  color: #bae6fd;
+}
+
+.tag-highlight-webdev {
+  background: url('https://s2.svgbox.net/pen-brushes.svg?ic=brush-1&color=86efac');
+  background-size: 100% 100%;
+  color: #064e3b;
+}
+
+.dark .tag-highlight-webdev {
+  background: url('https://s2.svgbox.net/pen-brushes.svg?ic=brush-1&color=166534');
+  background-size: 100% 100%;
+  color: #a7f3d0;
+}

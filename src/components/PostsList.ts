@@ -6,6 +6,7 @@ type Post = {
   dateFormatted: string;
   path: string;
   tag?: string;
+  tags?: string[];
 }
 
 class PostsList extends HTMLElement {
@@ -58,19 +59,41 @@ class PostsList extends HTMLElement {
     }
   }
 
+  private getPostTags(post: Post): string[] {
+    if (Array.isArray(post.tags) && post.tags.length > 0) {
+      return post.tags;
+    }
+
+    return post.tag ? [post.tag] : [];
+  }
+
+  private getTagClass(tag: string): string {
+    const tagKey = tag.trim().toLowerCase();
+
+    if (tagKey === 'ai') {
+      return 'tag-highlight tag-highlight-ai';
+    }
+
+    if (tagKey === 'web development' || tagKey === 'webdev') {
+      return 'tag-highlight tag-highlight-webdev';
+    }
+
+    return 'tag-highlight';
+  }
+
   render() {
     if (this.posts.length === 0) {
       this.innerHTML = '<p class="text-slate-500">No posts yet.</p>';
       return;
     }
 
-    const tags = Array.from(new Set(this.posts.map(p => p.tag).filter(Boolean))) as string[];
+    const tags = Array.from(new Set(this.posts.flatMap((post) => this.getPostTags(post))));
 
     let filteredPosts = this.posts;
 
     // Filter by tag
     if (this.selectedTag) {
-      filteredPosts = filteredPosts.filter(p => p.tag === this.selectedTag);
+      filteredPosts = filteredPosts.filter((post) => this.getPostTags(post).includes(this.selectedTag as string));
     }
 
     // Filter by search query
@@ -129,7 +152,9 @@ class PostsList extends HTMLElement {
                     <time class="text-sm text-slate-500 dark:text-slate-400 mt-1 block" datetime="${post.date}">
                       ${post.dateFormatted}
                     </time>
-                    ${post.tag ? `<span class="tag-highlight">${post.tag}</span>` : ''}
+                    ${this.getPostTags(post).map((tag, index) => `
+                      <span class="${this.getTagClass(tag)}" style="margin-left: ${index === 0 ? '0px' : '2px'};">${tag}</span>
+                    `).join('')}
                   </div>
                 </article>
               </a>
@@ -147,4 +172,3 @@ if (!customElements.get("posts-list")) {
 }
 
 export default PostsList;
-

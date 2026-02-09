@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Prevent flash of wrong theme - must run before CSS -->
+  <script>((s, p) => (s = localStorage.getItem("theme"), p = matchMedia("(prefers-color-scheme:dark)").matches, (s === "dark" || (!s && p)) && document.documentElement.classList.add("dark")))()</script>
+  <meta property="og:title" content="Building for the Old Internet - Announcing AvatarAnimals.com" />
+  <meta property="og:description"
+    content="Why I still want to build fun websites for people who are not living in the AI-agent bubble." />
+  <meta property="article:tag" content="AI" />
+  <meta property="article:tag" content="web development" />
+  <link rel="stylesheet" href="../index.css" />
+  <script type="module" src="../shared/theme-toggle.ts"></script>
+  <title>Building for the Old Internet - Announcing AvatarAnimals.com - abyrd.me</title>
+</head>
+
+<body class="w-full min-h-dvh flex flex-col p-0">
+  <!-- Navigation Bar - injected by plugin -->
+  <div id="nav-bar"></div>
+
+  <main class="mx-auto max-w-3xl pb-16 flex-1 px-6">
+    <article>
+      <header class="mb-8">
+        <a href="/"
+          class="sm:hidden inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 no-underline mb-5 transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5M12 19l-7-7 7-7" />
+          </svg>
+          Back
+        </a>
+        <h1 class="text-3xl font-bold tracking-tight mb-4">Building for the Old Internet - Announcing AvatarAnimals.com</h1>
+        <time datetime="2026-02-08" class="text-slate-500 dark:text-slate-400">February 8, 2026</time>
+      </header>
+
+      <div class="prose prose-slate">
+        <p>The agents can do everything now.</p>
+
+        <p>They can build a game <em>and</em> a game engine from scratch. They can one-shot any enterprise SaaS
+          application. They can even write an email.</p>
+
+        <p>I'm not interested in all of that stuff though. I just want to build cool web things.</p>
+
+        <p>I've got a backlog of domains I own. Fun ideas that got buried under the reality that I'd have to put time in
+          to see them fulfilled. Time that had to be prioritized for other things (wife, toddler, startup I work at,
+          being a person who touches grass, etc.).</p>
+
+        <p>But no longer.</p>
+
+        <p>I have a cheap(ish) team of agents ready to make my dreams a reality. They don't have emotions. I can
+          micromanage them as much as I want. The only <em>taste</em> they have is the vision I give them.</p>
+
+        <p>I haven't seen anyone building cool basic web stuff. I'm talking fun websites and tools, like the old
+          StumbleUpon days. Seems people only want to build things on top of these agents. Which I get, because it's
+          very cool. But there's also a sentiment that no one will be looking at UIs in a year, they'll just be talking
+          to agents. I'm not sure about that yet.</p>
+
+        <p>Yesterday my wife and I went to Ikea. The guy in front of us was checking out and pulled out a wad of cash to
+          pay for his items. What was surprising was how much it surprised me. I haven't seen someone pay with cash in
+          years, it feels like. It felt like an ancient ritual.</p>
+
+        <p>That's obviously absurd. People pay with cash all the time. I just happen to hang around with people who
+          always pay with card or from their phone. I'm in a bubble. With payment methods and with these new
+          technologies. I'm probably in the top 5% of people using these latest AI tools. Maybe even higher than that.</p>
+
+        <p>The <em>reality</em> is that no one uses <a href="https://openclaw.ai/">clawdbot</a>, at least in terms of
+          percentage of the population. It's a very small number of people who are using these things. And adoption into
+          the general population will probably be slower than we imagine. Most people aren't technical and they aren't
+          builders. That's just the reality.</p>
+
+        <p>So my point is: the old internet isn't going away as fast as people realize. People have their routines and
+          the way they like to do things. A lot of them won't change or learn something new. They'll ignore agents and
+          clawdbots and AI, and they'll use their old internet. They'll fill out forms and look at dashboards and
+          whatever else will constitute old internet in the age of agents. You can still build for these people. And as
+          far as things seem in my bubble, nobody is still building for these people.</p>
+
+        <p>This is, at least, what I'm telling myself while I go through my backlog of old internet ideas. So maybe I'm
+          coping. But it doesn't matter, because they're fun to build and I'm not out to make money with them. So:
+          long-winded post to announce the first one:</p>
+
+        <a href="https://avataranimals.com/"
+          class="no-underline my-8 block overflow-hidden rounded-xl border border-slate-200 bg-white transition-colors hover:border-slate-300 dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-neutral-700">
+          <img src="https://images.avataranimals.com/public/1200x630_og.png" alt="AvatarAnimals preview image"
+            class="h-auto w-full border-b border-slate-200 object-cover dark:border-neutral-800" />
+          <div class="p-4">
+            <p class="m-0 text-base font-semibold text-slate-900 dark:text-slate-100">AvatarAnimals.com</p>
+            <p class="mt-1 mb-0 text-sm text-slate-600 dark:text-slate-300">AvatarAnimals gives you fast, stable animal avatar image URLs for product UIs, onboarding, mock users, demos, and seeded test data across your app.</p>
+            <p class="mt-3 mb-0 text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">avataranimals.com</p>
+          </div>
+        </a>
+
+        <p>I bought the <a href="http://avataranimals.com/">avataranimals.com</a> domain three years ago. I couldn't
+          find any good avatar placeholders for apps/websites to use as defaults if people didn't add their own, or at
+          least none that I thought were cool. Inspired by <a href="https://x.com/shadcn">shadcn's</a> Morty avatar,
+          and the bored apes stuff from crypto, I wanted avatar animals that look cool and chill, with a bunch of them
+          you can use as avatar placeholders. So that's what this is, and I'm very happy with how it turned out.</p>
+
+        <p>Agents made this way faster to build, but there was still a ton of manual work. I had an agent write a script
+          that took an animal name and returned 5 images from Gemini with the same prompt. The agent tracked which ones
+          I said I liked so it wouldn't run the script against an animal I had already selected an image for.</p>
+
+        <p>So the process looked like: Hey agent, get me the next animal. Then it would generate 5 images. Typically one
+          would be the style I wanted and I'd move it to a selected folder. If not, I'd have it re-do the 5 images. If
+          I liked it, I'd tell it to move on to the next animal, etc. Then when I got to the point where I was done, I
+          moved them all into Photoshop, cleared out the backgrounds and made them transparent, made sure they were all
+          about the same size, and just generally cleaned them up.</p>
+
+        <p>So AI made it much faster, but it was still a lot of work. I currently have 50 images and plan to have 50
+          more. It's deployed on <a href="https://railway.com">railway.com</a> and the images are sitting in a
+          <a href="https://cloudflare.com/products/r2/">Cloudflare R2 bucket</a> so I don't have to worry about egress
+          fees, which is wonderful. But for now, I can say I'm done with this project. And now
+          <a href="http://avataranimals.com/">avataranimals.com</a> is ready for people to use and my old domain is no
+          longer collecting dust.
+        </p>
+      </div>
+    </article>
+  </main>
+
+  <!-- Footer - injected by plugin -->
+  <div id="footer"></div>
+</body>
+
+</html>

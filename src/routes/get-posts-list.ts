@@ -6,6 +6,7 @@ type PostMetadata = {
   dateFormatted: string;
   path: string;
   tag?: string;
+  tags?: string[];
 }
 
 export async function getPostsList(req: Bun.BunRequest<"/api/posts">) {
@@ -84,6 +85,26 @@ function extractMetaTag(html: string, property: string): string | null {
   return null;
 }
 
+function extractMetaTags(html: string, property: string): string[] {
+  const metaTagMatches = html.match(/<meta\s+[^>]*>/gi) || [];
+  const collectedValues: string[] = [];
+
+  for (const metaTag of metaTagMatches) {
+    const propertyMatch = metaTag.match(/\b(?:property|name)=['"]([^'"]+)['"]/i);
+    const contentMatch = metaTag.match(/\bcontent=['"]([^'"]+)['"]/i);
+
+    if (!propertyMatch?.[1] || !contentMatch?.[1]) {
+      continue;
+    }
+
+    if (propertyMatch[1].toLowerCase() === property.toLowerCase()) {
+      collectedValues.push(contentMatch[1].trim());
+    }
+  }
+
+  return Array.from(new Set(collectedValues));
+}
+
 function extractTimeTag(html: string): { date: string; formatted: string } | null {
   const match = html.match(/<time[^>]*datetime=["']([^"']+)["'][^>]*>([^<]+)<\/time>/i);
   if (match?.[1] && match?.[2]) {
@@ -109,7 +130,7 @@ export async function getPosts(): Promise<PostMetadata[]> {
     // Extract metadata
     const title = extractMetaTag(html, "og:title") || fileName.replace(".html", "");
     const description = extractMetaTag(html, "og:description") || "";
-    const tag = extractMetaTag(html, "article:tag") || undefined;
+    const tags = extractMetaTags(html, "article:tag");
     const timeData = extractTimeTag(html);
 
     posts.push({
@@ -119,7 +140,8 @@ export async function getPosts(): Promise<PostMetadata[]> {
       date: timeData?.date || "",
       dateFormatted: timeData?.formatted || "",
       path: `/posts/${fileName.replace(".html", "")}`,
-      tag,
+      tag: tags[0],
+      tags: tags.length ? tags : undefined,
     });
   }
 
@@ -131,4 +153,3 @@ export async function getPosts(): Promise<PostMetadata[]> {
 
   return posts;
 }
-
