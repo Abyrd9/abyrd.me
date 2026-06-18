@@ -1,0 +1,19 @@
+{
+	"$schema": "https://raw.githubusercontent.com/Abyrd9/harbor-cli/main/harbor.schema.json",
+	"sessionName": "abyrd",
+	"services": [
+		{
+			"name": "web",
+			"path": ".",
+			"command": "bun run dev"
+		},
+		{
+			"name": "opencode",
+			"path": ".",
+			"command": "opencode . --continue",
+			"canAccess": ["web"]
+		}
+	],
+	"before": [],
+	"after": []
+}
