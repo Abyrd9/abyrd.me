@@ -1,11 +1,11 @@
-import { getPosts, type PostMetadata } from "@/utils/get-posts";
-import { getDomainUrl } from "@/utils/helpers/get-domain-url";
+import { getPosts } from "../utils/get-posts";
+import { getDomainUrl } from "../utils/helpers/get-domain-url";
 
 export async function sitemap(req: Bun.BunRequest<"/sitemap.xml">) {
 	const url = getDomainUrl(req);
 	const posts = await getPosts();
 
-	return new Response(getSitemapXml(url, posts), {
+	return new Response(_getSitemapXml(url, posts), {
 		status: 200,
 		headers: {
 			"Content-Type": "application/xml",
@@ -15,35 +15,32 @@ export async function sitemap(req: Bun.BunRequest<"/sitemap.xml">) {
 	});
 }
 
-function getSitemapXml(url: string, posts: PostMetadata[]) {
-	let content = `<?xml version="1.0" encoding="UTF-8"?>
-  <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`;
+function _getSitemapXml(
+	url: string,
+	posts: Awaited<ReturnType<typeof getPosts>>,
+) {
+	const home = _getSitemapEntry(url, "1.0");
+	const postEntries = posts.map((post) =>
+		_getSitemapEntry(`${url}${post.path}`, "0.8", post.date),
+	);
 
-	content += `
-    <url>
-      <loc>${url}/</loc>
-      <priority>1.0</priority>
+	return `<?xml version="1.0" encoding="UTF-8"?>
+  <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${[home, ...postEntries].join("\n")}
+  </urlset>`;
+}
+
+function _getSitemapEntry(
+	url: string,
+	priority: string,
+	lastModified?: string,
+) {
+	const lastModifiedXml = lastModified
+		? `\n      <lastmod>${lastModified}</lastmod>`
+		: "";
+
+	return `    <url>
+      <loc>${url}</loc>${lastModifiedXml}
+      <priority>${priority}</priority>
     </url>`;
-
-	for (const post of posts) {
-		if (!post.path) {
-			continue;
-		}
-
-		content += `
-      <url>
-        <loc>${url}${post.path}</loc>`;
-
-		if (post.date) {
-			content += `
-        <lastmod>${new Date(post.date).toISOString().split("T")[0]}</lastmod>`;
-		}
-
-		content += `
-        <priority>0.8</priority>
-      </url>`;
-	}
-
-	content += "</urlset>";
-	return content;
 }

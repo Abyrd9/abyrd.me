@@ -9,7 +9,7 @@ export interface PostMetadata {
 	tags?: string[];
 }
 
-function extractMetaTag(html: string, property: string): string | null {
+function _extractMetaTag(html: string, property: string): string | null {
 	const patterns = [
 		new RegExp(`<meta\\s+property="${property}"\\s+content="([^"]+)"`, "i"),
 		new RegExp(`<meta\\s+content="([^"]+)"\\s+property="${property}"`, "i"),
@@ -31,40 +31,39 @@ function extractMetaTag(html: string, property: string): string | null {
 	return null;
 }
 
-function extractMetaTags(html: string, property: string) {
-	const metaTagMatches = html.match(/<meta\s+[^>]*>/gi) || [];
-	const collectedValues: string[] = [];
+function _extractMetaTags(html: string, property: string) {
+	const metaTags = html.match(/<meta\s+[^>]*>/gi) || [];
+	const values: string[] = [];
 
-	for (const metaTag of metaTagMatches) {
+	for (const metaTag of metaTags) {
 		const propertyMatch = metaTag.match(
 			/\b(?:property|name)=['"]([^'"]+)['"]/i,
 		);
 		const contentMatch = metaTag.match(/\bcontent=['"]([^'"]+)['"]/i);
 
-		if (!propertyMatch?.[1] || !contentMatch?.[1]) {
-			continue;
-		}
+		if (!propertyMatch?.[1] || !contentMatch?.[1]) continue;
+		if (propertyMatch[1].toLowerCase() !== property.toLowerCase()) continue;
 
-		if (propertyMatch[1].toLowerCase() === property.toLowerCase()) {
-			collectedValues.push(contentMatch[1].trim());
-		}
+		values.push(contentMatch[1].trim());
 	}
 
-	return Array.from(new Set(collectedValues));
+	return Array.from(new Set(values));
 }
 
-function extractTimeTag(
+function _extractTimeTag(
 	html: string,
 ): { date: string; formatted: string } | null {
 	const match = html.match(
 		/<time[^>]*datetime=["']([^"']+)["'][^>]*>([^<]+)<\/time>/i,
 	);
+
 	if (match?.[1] && match?.[2]) {
 		return {
 			date: match[1].trim(),
 			formatted: match[2].trim(),
 		};
 	}
+
 	return null;
 }
 
@@ -79,12 +78,11 @@ export async function getPosts(): Promise<PostMetadata[]> {
 		const file = Bun.file(filePath);
 		const html = await file.text();
 
-		// Extract metadata
 		const title =
-			extractMetaTag(html, "og:title") || fileName.replace(".html", "");
-		const description = extractMetaTag(html, "og:description") || "";
-		const tags = extractMetaTags(html, "article:tag");
-		const timeData = extractTimeTag(html);
+			_extractMetaTag(html, "og:title") || fileName.replace(".html", "");
+		const description = _extractMetaTag(html, "og:description") || "";
+		const tags = _extractMetaTags(html, "article:tag");
+		const timeData = _extractTimeTag(html);
 
 		posts.push({
 			slug: fileName.replace(".html", ""),
