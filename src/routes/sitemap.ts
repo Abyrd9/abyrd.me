@@ -1,34 +1,49 @@
+import { getPosts, type PostMetadata } from "@/utils/get-posts";
 import { getDomainUrl } from "@/utils/helpers/get-domain-url";
 
 export async function sitemap(req: Bun.BunRequest<"/sitemap.xml">) {
-  const url = getDomainUrl(req);
-  return new Response(getSitemapXml(url), {
-    status: 200,
-    headers: {
-      "Content-Type": "application/xml",
-      "X-Content-Type-Options": "nosniff",
-    },
-  });
+	const url = getDomainUrl(req);
+	const posts = await getPosts();
+
+	return new Response(getSitemapXml(url, posts), {
+		status: 200,
+		headers: {
+			"Content-Type": "application/xml",
+			"Cache-Control": "public, max-age=3600",
+			"X-Content-Type-Options": "nosniff",
+		},
+	});
 }
 
-function getSitemapXml(url: string) {
-  let content = `<?xml version="1.0" encoding="UTF-8"?>
+function getSitemapXml(url: string, posts: PostMetadata[]) {
+	let content = `<?xml version="1.0" encoding="UTF-8"?>
   <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`;
 
-  // TODO: get posts from database
-  const posts: { slug: string; updated_at: string }[] = [];
+	content += `
+    <url>
+      <loc>${url}/</loc>
+      <priority>1.0</priority>
+    </url>`;
 
-  for (const post of posts) {
-    if (!post.slug || !post.updated_at) continue;
+	for (const post of posts) {
+		if (!post.path) {
+			continue;
+		}
 
-    content += `
+		content += `
       <url>
-        <loc>${url}/${post.slug}</loc>
-        <lastmod>${new Date(post.updated_at).toISOString().split("T")[0]}</lastmod>
-        <priority>1.0</priority>
-      </url>`;
-  }
+        <loc>${url}${post.path}</loc>`;
 
-  content += "</urlset>";
-  return content;
+		if (post.date) {
+			content += `
+        <lastmod>${new Date(post.date).toISOString().split("T")[0]}</lastmod>`;
+		}
+
+		content += `
+        <priority>0.8</priority>
+      </url>`;
+	}
+
+	content += "</urlset>";
+	return content;
 }
