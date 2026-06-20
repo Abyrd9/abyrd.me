@@ -1,4 +1,0 @@
-interface:
-  display_name: "Deploy"
-  short_description: "Deploy abyrd.me to Railway production"
-  default_prompt: "Use $deploy to land the current abyrd.me work on main and deploy it to Railway production."

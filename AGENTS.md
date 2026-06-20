@@ -86,7 +86,7 @@ import blog_post_YYYY_MM_DD_slug from "./posts/YYYY-MM-DD-post-slug.html";
 
 ## How Nav/Footer Injection Works
 
-The Bun plugin (`src/plugins/html-injector.ts`) automatically injects the nav and footer HTML from:
+The Bun plugin (`src/plugins/playground.ts`) automatically injects the nav and footer HTML from:
 - `src/shared/nav-bar.html`
 - `src/shared/footer.html`
 
