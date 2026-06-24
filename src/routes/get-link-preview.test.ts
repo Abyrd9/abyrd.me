@@ -21,6 +21,26 @@ describe("getLinkPreview", () => {
 		});
 	});
 
+	test("rejects localhost and private network urls", async () => {
+		for (const url of [
+			"http://localhost:3000/private",
+			"http://127.0.0.1/private",
+			"http://192.168.1.10/private",
+			"http://[::1]/private",
+		]) {
+			const response = await getLinkPreview(
+				new Request(
+					`http://localhost/api/link-preview?url=${encodeURIComponent(url)}`,
+				),
+			);
+
+			expect(response.status).toBe(400);
+			expect(await response.json()).toEqual({
+				error: "URL must not target localhost or a private network",
+			});
+		}
+	});
+
 	test("returns preview metadata for valid urls", async () => {
 		const fetchMock: typeof fetch = Object.assign(
 			async (

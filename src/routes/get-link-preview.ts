@@ -1,3 +1,5 @@
+import { isIP } from "node:net";
+
 export async function getLinkPreview(req: Request) {
 	try {
 		const url = new URL(req.url).searchParams.get("url");
@@ -18,6 +20,12 @@ export async function getLinkPreview(req: Request) {
 		if (targetUrl.protocol !== "http:" && targetUrl.protocol !== "https:") {
 			return Response.json(
 				{ error: "URL must use http or https" },
+				{ status: 400 },
+			);
+		}
+		if (_isPrivateHostname(targetUrl.hostname)) {
+			return Response.json(
+				{ error: "URL must not target localhost or a private network" },
 				{ status: 400 },
 			);
 		}
@@ -104,4 +112,47 @@ function _extractMetaTag(html: string, property: string): string | null {
 function _extractTitleTag(html: string): string | null {
 	const match = html.match(/<title[^>]*>([^<]+)<\/title>/i);
 	return match?.[1] ? match[1].trim() : null;
+}
+
+function _isPrivateHostname(hostname: string) {
+	const normalizedHostname = hostname
+		.trim()
+		.toLowerCase()
+		.replace(/^\[(.*)\]$/, "$1");
+
+	if (
+		normalizedHostname === "localhost" ||
+		normalizedHostname.endsWith(".localhost") ||
+		normalizedHostname === "0.0.0.0"
+	) {
+		return true;
+	}
+
+	const ipType = isIP(normalizedHostname);
+	if (ipType === 4) return _isPrivateIpv4(normalizedHostname);
+	if (ipType === 6) return _isPrivateIpv6(normalizedHostname);
+
+	return false;
+}
+
+function _isPrivateIpv4(hostname: string) {
+	const [firstOctet, secondOctet] = hostname.split(".").map(Number);
+
+	return (
+		firstOctet === 10 ||
+		firstOctet === 127 ||
+		(firstOctet === 169 && secondOctet === 254) ||
+		(firstOctet === 172 && secondOctet >= 16 && secondOctet <= 31) ||
+		(firstOctet === 192 && secondOctet === 168)
+	);
+}
+
+function _isPrivateIpv6(hostname: string) {
+	return (
+		hostname === "::1" ||
+		hostname === "::" ||
+		hostname.startsWith("fc") ||
+		hostname.startsWith("fd") ||
+		hostname.startsWith("fe80:")
+	);
 }
