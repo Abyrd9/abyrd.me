@@ -1,132 +1,145 @@
 type Post = {
-  slug: string;
-  title: string;
-  description: string;
-  date: string;
-  dateFormatted: string;
-  path: string;
-  tag?: string;
-  tags?: string[];
-}
+	slug: string;
+	title: string;
+	description: string;
+	date: string;
+	dateFormatted: string;
+	path: string;
+	tag?: string;
+	tags?: string[];
+};
 
 class PostsList extends HTMLElement {
-  private posts: Post[] = [];
-  private selectedTag: string | null = null;
-  private searchQuery: string = '';
+	private posts: Post[] = [];
+	private selectedTag: string | null = null;
+	private searchQuery: string = "";
 
-  async connectedCallback() {
-    await this.loadPosts();
-    this.addEventListener('click', this.handleClick.bind(this));
-    this.addEventListener('input', this.handleInput.bind(this));
-  }
+	async connectedCallback() {
+		await this.loadPosts();
+		this.addEventListener("click", this.handleClick.bind(this));
+		this.addEventListener("input", this.handleInput.bind(this));
+	}
 
-  handleClick(e: Event) {
-    const target = e.target as HTMLElement;
-    const button = target.closest('button[data-tag]');
-    if (button) {
-      const tag = button.getAttribute('data-tag');
-      this.selectedTag = tag === 'all' ? null : tag;
-      this.render();
-    }
-  }
+	handleClick(e: Event) {
+		const target = e.target as HTMLElement;
+		const button = target.closest("button[data-tag]");
+		if (button) {
+			const tag = button.getAttribute("data-tag");
+			this.selectedTag = tag === "all" ? null : tag;
+			this.render();
+		}
+	}
 
-  handleInput(e: Event) {
-    const target = e.target as HTMLInputElement;
-    if (target.id === 'post-search') {
-      this.searchQuery = target.value.toLowerCase();
-      this.render();
-      // Restore focus and cursor position after re-render
-      const input = this.querySelector('#post-search') as HTMLInputElement;
-      if (input) {
-        input.focus();
-        input.setSelectionRange(input.value.length, input.value.length);
-      }
-    }
-  }
+	handleInput(e: Event) {
+		const target = e.target as HTMLInputElement;
+		if (target.id === "post-search") {
+			this.searchQuery = target.value.toLowerCase();
+			this.render();
+			// Restore focus and cursor position after re-render
+			const input = this.querySelector("#post-search") as HTMLInputElement;
+			if (input) {
+				input.focus();
+				input.setSelectionRange(input.value.length, input.value.length);
+			}
+		}
+	}
 
-  async loadPosts() {
-    try {
-      const response = await fetch('/api/posts');
-      if (!response.ok) {
-        throw new Error('Failed to fetch posts');
-      }
+	async loadPosts() {
+		try {
+			const response = await fetch("/api/posts");
+			if (!response.ok) {
+				throw new Error("Failed to fetch posts");
+			}
 
-      this.posts = await response.json();
-      this.render();
-    } catch (error) {
-      console.error('Error loading posts:', error);
-      this.innerHTML = '<p class="text-slate-500">Failed to load posts.</p>';
-    }
-  }
+			this.posts = await response.json();
+			this.render();
+		} catch (error) {
+			console.error("Error loading posts:", error);
+			this.innerHTML = '<p class="text-slate-500">Failed to load posts.</p>';
+		}
+	}
 
-  private getPostTags(post: Post): string[] {
-    if (Array.isArray(post.tags) && post.tags.length > 0) {
-      return post.tags;
-    }
+	private getPostTags(post: Post): string[] {
+		if (Array.isArray(post.tags) && post.tags.length > 0) {
+			return post.tags;
+		}
 
-    return post.tag ? [post.tag] : [];
-  }
+		return post.tag ? [post.tag] : [];
+	}
 
-  private getTagClass(tag: string): string {
-    const tagKey = tag.trim().toLowerCase();
+	private getTagClass(tag: string): string {
+		const tagKey = tag.trim().toLowerCase();
 
-    if (tagKey === 'ai') {
-      return 'tag-highlight tag-highlight-ai';
-    }
+		if (tagKey === "ai") {
+			return "tag-highlight tag-highlight-ai";
+		}
 
-    if (tagKey === 'web development' || tagKey === 'webdev') {
-      return 'tag-highlight tag-highlight-webdev';
-    }
+		if (tagKey === "web development" || tagKey === "webdev") {
+			return "tag-highlight tag-highlight-webdev";
+		}
 
-    return 'tag-highlight';
-  }
+		return "tag-highlight";
+	}
 
-  render() {
-    if (this.posts.length === 0) {
-      this.innerHTML = '<p class="text-slate-500">No posts yet.</p>';
-      return;
-    }
+	render() {
+		if (this.posts.length === 0) {
+			this.innerHTML = '<p class="text-slate-500">No posts yet.</p>';
+			return;
+		}
 
-    const tags = Array.from(new Set(this.posts.flatMap((post) => this.getPostTags(post))));
+		const tags = Array.from(
+			new Set(this.posts.flatMap((post) => this.getPostTags(post))),
+		);
 
-    let filteredPosts = this.posts;
+		let filteredPosts = this.posts;
 
-    // Filter by tag
-    if (this.selectedTag) {
-      filteredPosts = filteredPosts.filter((post) => this.getPostTags(post).includes(this.selectedTag as string));
-    }
+		// Filter by tag
+		if (this.selectedTag) {
+			filteredPosts = filteredPosts.filter((post) =>
+				this.getPostTags(post).includes(this.selectedTag as string),
+			);
+		}
 
-    // Filter by search query
-    if (this.searchQuery) {
-      filteredPosts = filteredPosts.filter(p =>
-        p.title.toLowerCase().includes(this.searchQuery) ||
-        p.description.toLowerCase().includes(this.searchQuery)
-      );
-    }
+		// Filter by search query
+		if (this.searchQuery) {
+			filteredPosts = filteredPosts.filter(
+				(p) =>
+					p.title.toLowerCase().includes(this.searchQuery) ||
+					p.description.toLowerCase().includes(this.searchQuery),
+			);
+		}
 
-    this.innerHTML = /* html */`
+		this.innerHTML = /* html */ `
       <section>
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-xl font-medium tracking-tight">Recent Posts</h2>
           <!-- TODO: Uncomment tag filters when you have more posts
-          ${tags.length > 0 ? `
+          ${
+						tags.length > 0
+							? `
             <div class="flex gap-2">
               <button 
                 data-tag="all"
-                class="text-xs px-2.5 py-1 rounded-full transition-colors cursor-pointer border ${!this.selectedTag ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'}"
+                class="text-xs px-2.5 py-1 rounded-full transition-colors cursor-pointer border ${!this.selectedTag ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"}"
               >
                 All
               </button>
-              ${tags.map(tag => `
+              ${tags
+								.map(
+									(tag) => `
                 <button 
                   data-tag="${tag}"
-                  class="text-xs px-2.5 py-1 rounded-full transition-colors cursor-pointer border ${this.selectedTag === tag ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'}"
+                  class="text-xs px-2.5 py-1 rounded-full transition-colors cursor-pointer border ${this.selectedTag === tag ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"}"
                 >
                   ${tag}
                 </button>
-              `).join('')}
+              `,
+								)
+								.join("")}
             </div>
-          ` : ''}
+          `
+							: ""
+					}
           -->
         </div>
         <!-- TODO: Uncomment search when you have more posts
@@ -141,7 +154,9 @@ class PostsList extends HTMLElement {
         </div>
         -->
         <ul class="flex flex-col">
-          ${filteredPosts.map(post => `
+          ${filteredPosts
+						.map(
+							(post) => `
             <li class="mb-4">
               <a href="${post.path}" class="block group">
                 <article class="rounded-lg transition-colors">
@@ -152,23 +167,29 @@ class PostsList extends HTMLElement {
                     <time class="text-sm text-slate-500 dark:text-slate-400 mt-1 block" datetime="${post.date}">
                       ${post.dateFormatted}
                     </time>
-                    ${this.getPostTags(post).map((tag, index) => `
-                      <span class="${this.getTagClass(tag)}" style="margin-left: ${index === 0 ? '0px' : '2px'};">${tag}</span>
-                    `).join('')}
+                    ${this.getPostTags(post)
+											.map(
+												(tag, index) => `
+                      <span class="${this.getTagClass(tag)}" style="margin-left: ${index === 0 ? "0px" : "2px"};">${tag}</span>
+                    `,
+											)
+											.join("")}
                   </div>
                 </article>
               </a>
             </li>
-          `).join('')}
+          `,
+						)
+						.join("")}
         </ul>
-        ${filteredPosts.length === 0 ? '<p class="text-slate-500 italic mt-4">No posts found.</p>' : ''}
+        ${filteredPosts.length === 0 ? '<p class="text-slate-500 italic mt-4">No posts found.</p>' : ""}
       </section>
     `;
-  }
+	}
 }
 
 if (!customElements.get("posts-list")) {
-  customElements.define("posts-list", PostsList);
+	customElements.define("posts-list", PostsList);
 }
 
 export default PostsList;

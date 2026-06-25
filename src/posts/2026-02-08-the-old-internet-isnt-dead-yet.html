@@ -5,7 +5,16 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <!-- Prevent flash of wrong theme - must run before CSS -->
-  <script>((s, p) => (s = localStorage.getItem("theme"), p = matchMedia("(prefers-color-scheme:dark)").matches, (s === "dark" || (!s && p)) && document.documentElement.classList.add("dark")))()</script>
+  <script>
+    (() => {
+      const theme = localStorage.getItem("theme");
+      const prefersDark = matchMedia("(prefers-color-scheme: dark)").matches;
+
+      if (theme === "dark" || (!theme && prefersDark)) {
+        document.documentElement.classList.add("dark");
+      }
+    })();
+  </script>
   <meta property="og:title" content="Building for the Old Internet - Announcing AvatarAnimals.com" />
   <meta property="og:description"
     content="Why I still want to build fun websites for people who are not living in the AI-agent bubble." />
@@ -25,7 +34,7 @@
       <header class="mb-8">
         <a href="/"
           class="sm:hidden inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 no-underline mb-5 transition-colors">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+          <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M19 12H5M12 19l-7-7 7-7" />
           </svg>
@@ -82,7 +91,7 @@
 
         <a href="https://avataranimals.com/"
           class="no-underline my-8 block overflow-hidden rounded-xl border border-slate-200 bg-white transition-colors hover:border-slate-300 dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-neutral-700">
-          <img src="https://images.avataranimals.com/public/1200x630_og.png" alt="AvatarAnimals preview image"
+          <img src="https://images.avataranimals.com/public/1200x630_og.png" alt="AvatarAnimals preview"
             class="h-auto w-full border-b border-slate-200 object-cover dark:border-neutral-800" />
           <div class="p-4">
             <p class="m-0 text-base font-semibold text-slate-900 dark:text-slate-100">AvatarAnimals.com</p>

@@ -5,7 +5,16 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <!-- Prevent flash of wrong theme - must run before CSS -->
-  <script>((s, p) => (s = localStorage.getItem("theme"), p = matchMedia("(prefers-color-scheme:dark)").matches, (s === "dark" || (!s && p)) && document.documentElement.classList.add("dark")))()</script>
+  <script>
+    (() => {
+      const theme = localStorage.getItem("theme");
+      const prefersDark = matchMedia("(prefers-color-scheme: dark)").matches;
+
+      if (theme === "dark" || (!theme && prefersDark)) {
+        document.documentElement.classList.add("dark");
+      }
+    })();
+  </script>
   <!-- <link rel="icon" type="image/svg+xml" href="./logo.svg" /> -->
   <link rel="stylesheet" href="./index.css" />
   <script type="module" src="./shared/theme-toggle.ts"></script>
@@ -14,7 +23,7 @@
     // Convert number to words
     function numberToWords(n) {
       if (n === 0) return 'zero';
-      if (n < 0) return 'negative ' + numberToWords(-n);
+      if (n < 0) return `negative ${numberToWords(-n)}`;
 
       const ones = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
       const teens = ['ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
@@ -23,11 +32,11 @@
       function convert(n) {
         if (n < 10) return ones[n];
         if (n < 20) return teens[n - 10];
-        if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 ? '-' + ones[n % 10] : '');
-        if (n < 1000) return ones[Math.floor(n / 100)] + ' hundred' + (n % 100 ? ' ' + convert(n % 100) : '');
-        if (n < 1000000) return convert(Math.floor(n / 1000)) + ' thousand' + (n % 1000 ? ' ' + convert(n % 1000) : '');
-        if (n < 1000000000) return convert(Math.floor(n / 1000000)) + ' million' + (n % 1000000 ? ' ' + convert(n % 1000000) : '');
-        return convert(Math.floor(n / 1000000000)) + ' billion' + (n % 1000000000 ? ' ' + convert(n % 1000000000) : '');
+        if (n < 100) return `${tens[Math.floor(n / 10)]}${n % 10 ? `-${ones[n % 10]}` : ''}`;
+        if (n < 1000) return `${ones[Math.floor(n / 100)]} hundred${n % 100 ? ` ${convert(n % 100)}` : ''}`;
+        if (n < 1000000) return `${convert(Math.floor(n / 1000))} thousand${n % 1000 ? ` ${convert(n % 1000)}` : ''}`;
+        if (n < 1000000000) return `${convert(Math.floor(n / 1000000))} million${n % 1000000 ? ` ${convert(n % 1000000)}` : ''}`;
+        return `${convert(Math.floor(n / 1000000000))} billion${n % 1000000000 ? ` ${convert(n % 1000000000)}` : ''}`;
       }
 
       return convert(n).trim();
