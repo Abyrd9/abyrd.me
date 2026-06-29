@@ -1,5 +1,9 @@
 import { isIP } from "node:net";
 
+const linkPreviewUserAgent = "Mozilla/5.0 (compatible; LinkPreviewBot/1.0)";
+const privateHostnameError =
+	"URL must not target localhost or a private network";
+
 export async function getLinkPreview(req: Request) {
 	try {
 		const url = new URL(req.url).searchParams.get("url");
@@ -23,18 +27,12 @@ export async function getLinkPreview(req: Request) {
 				{ status: 400 },
 			);
 		}
+
 		if (_isPrivateHostname(targetUrl.hostname)) {
-			return Response.json(
-				{ error: "URL must not target localhost or a private network" },
-				{ status: 400 },
-			);
+			return Response.json({ error: privateHostnameError }, { status: 400 });
 		}
 
-		const response = await fetch(targetUrl.toString(), {
-			headers: {
-				"User-Agent": "Mozilla/5.0 (compatible; LinkPreviewBot/1.0)",
-			},
-		});
+		const { response, url: finalUrl } = await _fetchPublicUrl(targetUrl);
 		if (!response.ok) {
 			throw new Error(`Failed to fetch: ${response.status}`);
 		}
@@ -45,7 +43,7 @@ export async function getLinkPreview(req: Request) {
 				_extractMetaTag(html, "og:title") ||
 				_extractMetaTag(html, "twitter:title") ||
 				_extractTitleTag(html) ||
-				targetUrl.hostname,
+				finalUrl.hostname,
 			description:
 				_extractMetaTag(html, "og:description") ||
 				_extractMetaTag(html, "twitter:description") ||
@@ -57,8 +55,8 @@ export async function getLinkPreview(req: Request) {
 				_extractMetaTag(html, "twitter:image:src") ||
 				_extractMetaTag(html, "twitter:image") ||
 				null,
-			domain: targetUrl.hostname,
-			url: targetUrl.toString(),
+			domain: finalUrl.hostname,
+			url: finalUrl.toString(),
 		};
 
 		return Response.json(metadata, {
@@ -69,6 +67,10 @@ export async function getLinkPreview(req: Request) {
 			},
 		});
 	} catch (error) {
+		if (error instanceof Error && error.message === privateHostnameError) {
+			return Response.json({ error: privateHostnameError }, { status: 400 });
+		}
+
 		return Response.json(
 			{
 				error:
@@ -77,6 +79,40 @@ export async function getLinkPreview(req: Request) {
 			{ status: 500 },
 		);
 	}
+}
+
+async function _fetchPublicUrl(targetUrl: URL) {
+	let nextUrl = targetUrl;
+
+	for (let redirectCount = 0; redirectCount < 5; redirectCount += 1) {
+		if (nextUrl.protocol !== "http:" && nextUrl.protocol !== "https:") {
+			throw new Error("URL must use http or https");
+		}
+
+		if (_isPrivateHostname(nextUrl.hostname)) {
+			throw new Error(privateHostnameError);
+		}
+
+		const response = await fetch(nextUrl.toString(), {
+			headers: {
+				"User-Agent": linkPreviewUserAgent,
+			},
+			redirect: "manual",
+		});
+
+		if (!_isRedirect(response.status)) {
+			return { response, url: nextUrl };
+		}
+
+		const location = response.headers.get("location");
+		if (!location) {
+			throw new Error(`Redirect missing location: ${response.status}`);
+		}
+
+		nextUrl = new URL(location, nextUrl);
+	}
+
+	throw new Error("Too many redirects");
 }
 
 function _extractMetaTag(html: string, property: string): string | null {
@@ -112,6 +148,10 @@ function _extractMetaTag(html: string, property: string): string | null {
 function _extractTitleTag(html: string): string | null {
 	const match = html.match(/<title[^>]*>([^<]+)<\/title>/i);
 	return match?.[1] ? match[1].trim() : null;
+}
+
+function _isRedirect(status: number) {
+	return status >= 300 && status < 400;
 }
 
 function _isPrivateHostname(hostname: string) {

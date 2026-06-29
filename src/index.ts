@@ -10,7 +10,7 @@ import { getPostsList } from "./routes/get-posts-list";
 import { robots } from "./routes/robots";
 import { sitemap } from "./routes/sitemap";
 
-const port = Number(process.env.PORT) || 3000;
+const port = process.env.PORT ? Number(process.env.PORT) : 3000;
 
 const server = serve({
 	port,
