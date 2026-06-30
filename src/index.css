@@ -3,141 +3,143 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @layer base {
-  :root {
-    font-synthesis: none;
-    text-rendering: optimizeLegibility;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    -webkit-text-size-adjust: 100%;
-    font-display: auto;
-  }
+	:root {
+		font-synthesis: none;
+		text-rendering: optimizeLegibility;
+		-webkit-font-smoothing: antialiased;
+		-moz-osx-font-smoothing: grayscale;
+		-webkit-text-size-adjust: 100%;
+		font-display: auto;
+	}
 
-  * {
-    box-sizing: border-box;
-    min-width: 0;
-    @apply selection:bg-slate-200/50 dark:selection:bg-slate-700/50;
-  }
+	* {
+		box-sizing: border-box;
+		min-width: 0;
+		@apply selection:bg-slate-200/50 dark:selection:bg-slate-700/50;
+	}
 
-  body {
-    font-family: 'DM Sans Variable', sans-serif;
-    @apply flex min-h-dvh flex-col font-sans m-0 bg-white text-slate-900 px-4 sm:px-6;
-    @apply dark:bg-neutral-950 dark:text-slate-100;
-    @apply transition-colors duration-200;
-  }
+	body {
+		font-family: "DM Sans Variable", sans-serif;
+		@apply flex min-h-dvh flex-col font-sans m-0 bg-white text-slate-900 px-4 sm:px-6;
+		@apply dark:bg-neutral-950 dark:text-slate-100;
+		@apply transition-colors duration-200;
+	}
 
-  p {
-    @apply text-slate-700 leading-relaxed dark:text-slate-300;
-  }
+	p {
+		@apply text-slate-700 leading-relaxed dark:text-slate-300;
+	}
 
-  a {
-    @apply text-slate-900 underline decoration-slate-300 underline-offset-2 hover:decoration-slate-500 transition-colors;
-    @apply dark:text-slate-100 dark:decoration-slate-600 dark:hover:decoration-slate-400;
-  }
+	a {
+		@apply text-slate-900 underline decoration-slate-300 underline-offset-2 hover:decoration-slate-500 transition-colors;
+		@apply dark:text-slate-100 dark:decoration-slate-600 dark:hover:decoration-slate-400;
+	}
 
-  a.no-underline {
-    @apply no-underline decoration-transparent hover:decoration-transparent;
-  }
+	a.no-underline {
+		@apply no-underline decoration-transparent hover:decoration-transparent;
+	}
 
-  h1, h2, h3 {
-    @apply text-slate-900 dark:text-slate-100;
-  }
+	h1,
+	h2,
+	h3 {
+		@apply text-slate-900 dark:text-slate-100;
+	}
 
-  /* Article/Blog post styles */
-  article h2 {
-    @apply text-2xl font-medium tracking-tight mt-10 mb-4;
-  }
+	/* Article/Blog post styles */
+	article h2 {
+		@apply text-2xl font-medium tracking-tight mt-10 mb-4;
+	}
 
-  article h3 {
-    @apply text-xl font-medium tracking-tight mt-8 mb-3;
-  }
+	article h3 {
+		@apply text-xl font-medium tracking-tight mt-8 mb-3;
+	}
 
-  article p {
-    @apply mb-4;
-  }
+	article p {
+		@apply mb-4;
+	}
 
-  article ul,
-  article ol {
-    @apply mb-4 pl-6 text-slate-700 dark:text-slate-300;
-  }
+	article ul,
+	article ol {
+		@apply mb-4 pl-6 text-slate-700 dark:text-slate-300;
+	}
 
-  article li {
-    @apply mb-2 leading-relaxed;
-  }
+	article li {
+		@apply mb-2 leading-relaxed;
+	}
 
-  article ul li {
-    @apply list-disc;
-  }
+	article ul li {
+		@apply list-disc;
+	}
 
-  article ol li {
-    @apply list-decimal;
-  }
+	article ol li {
+		@apply list-decimal;
+	}
 
-  article code {
-    @apply bg-slate-100 px-1.5 py-0.5 rounded text-sm font-mono text-slate-700;
-    @apply dark:bg-neutral-800 dark:text-slate-300;
-  }
+	article code {
+		@apply bg-slate-100 px-1.5 py-0.5 rounded text-sm font-mono text-slate-700;
+		@apply dark:bg-neutral-800 dark:text-slate-300;
+	}
 
-  article pre {
-    @apply bg-neutral-950 text-slate-200 p-5 rounded-lg overflow-x-auto mb-6 text-sm leading-relaxed;
-    @apply dark:bg-neutral-900 dark:border dark:border-neutral-800;
-  }
+	article pre {
+		@apply bg-neutral-950 text-slate-200 p-5 rounded-lg overflow-x-auto mb-6 text-sm leading-relaxed;
+		@apply dark:bg-neutral-900 dark:border dark:border-neutral-800;
+	}
 
-  article pre code {
-    @apply bg-transparent p-0 text-inherit text-sm;
-  }
+	article pre code {
+		@apply bg-transparent p-0 text-inherit text-sm;
+	}
 
-  article blockquote {
-    @apply border-l-4 border-slate-300 pl-5 my-6 text-slate-600 italic;
-    @apply dark:border-slate-600 dark:text-slate-400;
-  }
+	article blockquote {
+		@apply border-l-4 border-slate-300 pl-5 my-6 text-slate-600 italic;
+		@apply dark:border-slate-600 dark:text-slate-400;
+	}
 
-  article strong {
-    @apply font-semibold text-slate-900 dark:text-slate-100;
-  }
+	article strong {
+		@apply font-semibold text-slate-900 dark:text-slate-100;
+	}
 
-  /* Dark mode logo inversion */
-  .dark .invert-on-dark {
-    filter: invert(1);
-  }
+	/* Dark mode logo inversion */
+	.dark .invert-on-dark {
+		filter: invert(1);
+	}
 }
 
 /* Handdrawn marker highlight effect using SVG brush */
 .tag-highlight {
-  background: url('https://s2.svgbox.net/pen-brushes.svg?ic=brush-1&color=fde047');
-  background-size: 100% 100%;
-  margin: -2px -6px;
-  padding: 2px 8px;
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: theme(colors.slate.700);
+	background: url("https://s2.svgbox.net/pen-brushes.svg?ic=brush-1&color=fde047");
+	background-size: 100% 100%;
+	margin: -2px -6px;
+	padding: 2px 8px;
+	font-size: 0.75rem;
+	font-weight: 500;
+	color: #334155;
 }
 
 .dark .tag-highlight {
-  background: url('https://s2.svgbox.net/pen-brushes.svg?ic=brush-1&color=854d0e');
-  background-size: 100% 100%;
-  color: theme(colors.amber.200);
+	background: url("https://s2.svgbox.net/pen-brushes.svg?ic=brush-1&color=854d0e");
+	background-size: 100% 100%;
+	color: #fde68a;
 }
 
 .tag-highlight-ai {
-  background: url('https://s2.svgbox.net/pen-brushes.svg?ic=brush-1&color=7dd3fc');
-  background-size: 100% 100%;
-  color: #0c4a6e;
+	background: url("https://s2.svgbox.net/pen-brushes.svg?ic=brush-1&color=7dd3fc");
+	background-size: 100% 100%;
+	color: #0c4a6e;
 }
 
 .dark .tag-highlight-ai {
-  background: url('https://s2.svgbox.net/pen-brushes.svg?ic=brush-1&color=0369a1');
-  background-size: 100% 100%;
-  color: #bae6fd;
+	background: url("https://s2.svgbox.net/pen-brushes.svg?ic=brush-1&color=0369a1");
+	background-size: 100% 100%;
+	color: #bae6fd;
 }
 
 .tag-highlight-webdev {
-  background: url('https://s2.svgbox.net/pen-brushes.svg?ic=brush-1&color=86efac');
-  background-size: 100% 100%;
-  color: #064e3b;
+	background: url("https://s2.svgbox.net/pen-brushes.svg?ic=brush-1&color=86efac");
+	background-size: 100% 100%;
+	color: #064e3b;
 }
 
 .dark .tag-highlight-webdev {
-  background: url('https://s2.svgbox.net/pen-brushes.svg?ic=brush-1&color=166534');
-  background-size: 100% 100%;
-  color: #a7f3d0;
+	background: url("https://s2.svgbox.net/pen-brushes.svg?ic=brush-1&color=166534");
+	background-size: 100% 100%;
+	color: #a7f3d0;
 }
