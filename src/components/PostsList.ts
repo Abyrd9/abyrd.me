@@ -11,37 +11,9 @@ type Post = {
 
 class PostsList extends HTMLElement {
 	private posts: Post[] = [];
-	private selectedTag: string | null = null;
-	private searchQuery: string = "";
 
 	async connectedCallback() {
 		await this.loadPosts();
-		this.addEventListener("click", this.handleClick.bind(this));
-		this.addEventListener("input", this.handleInput.bind(this));
-	}
-
-	handleClick(e: Event) {
-		const target = e.target as HTMLElement;
-		const button = target.closest("button[data-tag]");
-		if (button) {
-			const tag = button.getAttribute("data-tag");
-			this.selectedTag = tag === "all" ? null : tag;
-			this.render();
-		}
-	}
-
-	handleInput(e: Event) {
-		const target = e.target as HTMLInputElement;
-		if (target.id === "post-search") {
-			this.searchQuery = target.value.toLowerCase();
-			this.render();
-			// Restore focus and cursor position after re-render
-			const input = this.querySelector("#post-search") as HTMLInputElement;
-			if (input) {
-				input.focus();
-				input.setSelectionRange(input.value.length, input.value.length);
-			}
-		}
 	}
 
 	async loadPosts() {
@@ -87,74 +59,13 @@ class PostsList extends HTMLElement {
 			return;
 		}
 
-		const tags = Array.from(
-			new Set(this.posts.flatMap((post) => this.getPostTags(post))),
-		);
-
-		let filteredPosts = this.posts;
-
-		// Filter by tag
-		if (this.selectedTag) {
-			filteredPosts = filteredPosts.filter((post) =>
-				this.getPostTags(post).includes(this.selectedTag as string),
-			);
-		}
-
-		// Filter by search query
-		if (this.searchQuery) {
-			filteredPosts = filteredPosts.filter(
-				(p) =>
-					p.title.toLowerCase().includes(this.searchQuery) ||
-					p.description.toLowerCase().includes(this.searchQuery),
-			);
-		}
-
 		this.innerHTML = /* html */ `
       <section>
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-xl font-medium tracking-tight">Recent Posts</h2>
-          <!-- TODO: Uncomment tag filters when you have more posts
-          ${
-						tags.length > 0
-							? `
-            <div class="flex gap-2">
-              <button 
-                data-tag="all"
-                class="text-xs px-2.5 py-1 rounded-full transition-colors cursor-pointer border ${!this.selectedTag ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"}"
-              >
-                All
-              </button>
-              ${tags
-								.map(
-									(tag) => `
-                <button 
-                  data-tag="${tag}"
-                  class="text-xs px-2.5 py-1 rounded-full transition-colors cursor-pointer border ${this.selectedTag === tag ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"}"
-                >
-                  ${tag}
-                </button>
-              `,
-								)
-								.join("")}
-            </div>
-          `
-							: ""
-					}
-          -->
         </div>
-        <!-- TODO: Uncomment search when you have more posts
-        <div class="mb-4">
-          <input 
-            type="text" 
-            id="post-search"
-            placeholder="Search posts..."
-            value="${this.searchQuery}"
-            class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-slate-400 transition-colors"
-          />
-        </div>
-        -->
         <ul class="flex flex-col">
-          ${filteredPosts
+          ${this.posts
 						.map(
 							(post) => `
             <li class="mb-4">
@@ -182,7 +93,6 @@ class PostsList extends HTMLElement {
 						)
 						.join("")}
         </ul>
-        ${filteredPosts.length === 0 ? '<p class="text-slate-500 italic mt-4">No posts found.</p>' : ""}
       </section>
     `;
 	}
