@@ -20,13 +20,14 @@ function _getSitemapXml(
 	posts: Awaited<ReturnType<typeof getPosts>>,
 ) {
 	const home = _getSitemapEntry(url, "1.0");
+	const resume = _getSitemapEntry(`${url}/resume`, "0.8");
 	const postEntries = posts.map((post) =>
 		_getSitemapEntry(`${url}${post.path}`, "0.8", post.date),
 	);
 
 	return `<?xml version="1.0" encoding="UTF-8"?>
   <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${[home, ...postEntries].join("\n")}
+	${[home, resume, ...postEntries].join("\n")}
   </urlset>`;
 }
 

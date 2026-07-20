@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Prevent flash of wrong theme - must run before CSS -->
+  <script>
+    (() => {
+      const theme = localStorage.getItem("theme");
+      const prefersDark = matchMedia("(prefers-color-scheme: dark)").matches;
+
+      if (theme === "dark" || (!theme && prefersDark)) {
+        document.documentElement.classList.add("dark");
+      }
+    })();
+  </script>
+  <meta property="og:title" content="Resume - Andrew Byrd" />
+  <meta property="og:description" content="Andrew Byrd's software engineering experience, skills, and education." />
+  <link rel="stylesheet" href="./index.css" />
+  <script type="module" src="./shared/theme-toggle.ts"></script>
+  <style>
+    @media print {
+      @page {
+        size: A4;
+        margin: 8mm;
+      }
+
+      html {
+        color-scheme: light;
+      }
+
+      body,
+      html.dark.dark body {
+        background: white;
+        color: #0f172a;
+        font-size: 9pt;
+      }
+
+      #nav-bar,
+      #footer,
+      .resume-back-link,
+      .resume-print-button {
+        display: none;
+      }
+
+      main.mx-auto.px-6 {
+        max-width: none;
+        padding: 0;
+      }
+
+      main header.mb-12,
+      main>section.mb-12 {
+        margin-bottom: 1rem;
+      }
+
+      main .grid {
+        grid-template-columns: 1fr 2fr;
+        gap: 1.5rem;
+      }
+
+      main .grid>section {
+        order: 2;
+        grid-column: auto;
+      }
+
+      main .grid>div {
+        order: 1;
+      }
+
+      main .space-y-8>:not([hidden])~:not([hidden]),
+      main .space-y-10>:not([hidden])~:not([hidden]) {
+        margin-top: 0.75rem;
+      }
+
+      main .space-y-2>:not([hidden])~:not([hidden]) {
+        margin-top: 0.35rem;
+      }
+
+      body main h1.text-3xl {
+        font-size: 24pt;
+      }
+
+      body main h2.text-xl {
+        font-size: 13pt;
+      }
+
+      body main .text-lg {
+        font-size: 11pt;
+      }
+
+      body main .text-sm {
+        font-size: 8pt;
+      }
+
+      body main p,
+      body main .leading-relaxed {
+        line-height: 1.4;
+      }
+
+      body main,
+      body main [class],
+      html.dark.dark body main,
+      html.dark.dark body main [class] {
+        color: #0f172a;
+      }
+    }
+  </style>
+  <title>Resume - Andrew Byrd</title>
+</head>
+
+<body class="w-full min-h-dvh flex flex-col p-0">
+  <!-- Navigation Bar - injected by plugin -->
+  <div id="nav-bar"></div>
+
+  <main class="mx-auto max-w-3xl pb-16 flex-1 px-6">
+    <header class="mb-12">
+      <a href="/"
+        class="resume-back-link sm:hidden inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 no-underline mb-5 transition-colors">
+        <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+          viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round">
+          <path d="M19 12H5M12 19l-7-7 7-7" />
+        </svg>
+        Back
+      </a>
+      <div class="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 class="text-3xl sm:text-4xl font-bold tracking-tight mb-2">Andrew Byrd</h1>
+          <p class="text-lg mb-3">Full-Stack Software Engineer</p>
+          <div class="flex flex-wrap gap-x-4 gap-y-2">
+            <a href="https://github.com/Abyrd9">GitHub</a>
+            <a href="https://www.linkedin.com/in/andrew-byrd-b5142a96/">LinkedIn</a>
+          </div>
+        </div>
+
+        <button type="button" onclick="window.print()"
+          class="resume-print-button inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 cursor-pointer dark:border-neutral-700 dark:text-slate-200 dark:hover:bg-neutral-900"
+          title="Open the print dialog to save this resume as a PDF">
+          <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M12 3v12m0 0 4-4m-4 4-4-4" />
+            <path d="M5 21h14" />
+          </svg>
+          Save as PDF
+        </button>
+      </div>
+    </header>
+
+    <section class="mb-12">
+      <h2 class="text-xl font-medium tracking-tight mb-4">Summary</h2>
+      <p>
+        Full-stack TypeScript software engineer with more than eight years of experience building web applications at
+        startups and large companies. I work across frontend architecture, APIs, data, and product delivery, turning
+        ambiguous requirements into shipped features alongside design, product, engineering, and external partners. At
+        Dotwork, I helped build the application from the ground up and coordinated delivery of AI features built on the
+        company's data model.
+      </p>
+    </section>
+
+    <div class="grid gap-12 md:grid-cols-3">
+      <section class="md:order-2 md:col-span-2">
+        <h2 class="text-xl font-medium tracking-tight mb-6">Professional Experience</h2>
+
+        <div class="space-y-8">
+          <section>
+            <h3 class="text-lg font-semibold">Dotwork</h3>
+            <p class="text-sm font-medium text-slate-500 dark:text-slate-400 mb-3">Founding Software Engineer · October
+              2022 - Present</p>
+            <ul class="space-y-2 pl-5 text-slate-700 dark:text-slate-300">
+              <li class="list-disc leading-relaxed">Built Dotwork's web application from scratch as one of two frontend
+                engineers, selecting its core technologies and establishing the application's frontend architecture.
+              </li>
+              <li class="list-disc leading-relaxed">Owned product features end to end across the TypeScript stack, from
+                user-facing workflows through APIs and data integrations, while collaborating directly with design and
+                product.</li>
+              <li class="list-disc leading-relaxed">Coordinated development of Dotwork's AI features on top of the
+                company's data model, breaking a broad initiative into incremental milestones and moving it through
+                completion.</li>
+            </ul>
+          </section>
+
+          <section>
+            <h3 class="text-lg font-semibold">Credit Karma</h3>
+            <p class="text-sm font-medium text-slate-500 dark:text-slate-400 mb-3">Software Engineer IV · May 2021 -
+              October 2022</p>
+            <ul class="space-y-2 pl-5 text-slate-700 dark:text-slate-300">
+              <li class="list-disc leading-relaxed">Partnered with backend engineers to build a dashboard and guided
+                form flow that helped members complete a complex process with a Credit Karma Home partner.</li>
+              <li class="list-disc leading-relaxed">Worked across frontend, backend, internal product teams, and the
+                external partner to resolve integration constraints and ship the complete member experience.</li>
+            </ul>
+          </section>
+
+          <section>
+            <h3 class="text-lg font-semibold">Red Ventures</h3>
+            <p class="text-sm font-medium text-slate-500 dark:text-slate-400 mb-3">Senior Front End Developer / Front
+              End Developer · November 2017 - May 2021</p>
+            <ul class="space-y-2 pl-5 text-slate-700 dark:text-slate-300">
+              <li class="list-disc leading-relaxed">Built a reusable React component library used by multiple frontend
+                development teams.</li>
+              <li class="list-disc leading-relaxed">Built a white-label React cart template that reduced development
+                time by approximately 50% across multiple business teams.</li>
+              <li class="list-disc leading-relaxed">Modernized legacy React applications by migrating them to the Hooks
+                API and current engineering practices.</li>
+            </ul>
+          </section>
+        </div>
+      </section>
+
+      <div class="space-y-10 md:order-1">
+        <section>
+          <h2 class="text-xl font-medium tracking-tight mb-4">Skills</h2>
+          <ul class="space-y-2 text-slate-700 dark:text-slate-300">
+            <li>React</li>
+            <li>TypeScript</li>
+            <li>JavaScript</li>
+            <li>Node.js</li>
+            <li>Bun</li>
+            <li>Drizzle ORM</li>
+            <li>NATS / JetStream</li>
+            <li>Frontend Architecture</li>
+            <li>Product Engineering</li>
+            <li>Partner Integrations</li>
+            <li>AI Feature Development</li>
+            <li>Go</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2 class="text-xl font-medium tracking-tight mb-4">Education</h2>
+          <p class="font-medium text-slate-900 dark:text-slate-100">Bachelor of Arts, Ministry and Leadership</p>
+          <p class="text-sm">Oral Roberts University, Tulsa, OK</p>
+        </section>
+
+        <section>
+          <h2 class="text-xl font-medium tracking-tight mb-4">Contact</h2>
+          <address class="not-italic space-y-1 text-sm text-slate-700 dark:text-slate-300">
+            <p>Charlotte, NC</p>
+            <p><a href="mailto:andrew.byrd99@gmail.com">andrew.byrd99@gmail.com</a></p>
+            <p><a href="tel:+18048151503">(804) 815-1503</a></p>
+            <p><a href="https://www.linkedin.com/in/andrew-byrd-b5142a96/">LinkedIn</a></p>
+          </address>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer - injected by plugin -->
+  <div id="footer"></div>
+</body>
+
+</html>

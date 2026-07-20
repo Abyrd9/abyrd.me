@@ -68,7 +68,7 @@ function _extractTimeTag(
 }
 
 export async function getPosts(): Promise<PostMetadata[]> {
-	const postsDir = `${import.meta.dir}/../posts`;
+	const postsDir = `${import.meta.dir}/${process.env.NODE_ENV === "production" ? "" : "../"}posts`;
 	const glob = new Bun.Glob("*.html");
 	const posts: PostMetadata[] = [];
 

@@ -2,26 +2,22 @@ import { describe, expect, test } from "bun:test";
 import { getDomainUrl } from "./get-domain-url";
 
 describe("getDomainUrl", () => {
-	test("uses forwarded host and proto when present", () => {
+	test("uses the canonical production origin", () => {
+		const nodeEnv = process.env.NODE_ENV;
+		process.env.NODE_ENV = "production";
 		const request = new Request("http://127.0.0.1/sitemap.xml", {
 			headers: {
-				"X-Forwarded-Host": "abyrd.me",
+				"X-Forwarded-Host": "attacker.example",
 				"X-Forwarded-Proto": "https",
 			},
 		});
 
-		expect(getDomainUrl(request)).toBe("https://abyrd.me");
-	});
-
-	test("uses the first forwarded host when proxies append more than one", () => {
-		const request = new Request("http://127.0.0.1/sitemap.xml", {
-			headers: {
-				"X-Forwarded-Host": "abyrd.me, proxy.internal",
-				"X-Forwarded-Proto": "https, http",
-			},
-		});
-
-		expect(getDomainUrl(request)).toBe("https://abyrd.me");
+		try {
+			expect(getDomainUrl(request)).toBe("https://abyrd.me");
+		} finally {
+			if (nodeEnv === undefined) delete process.env.NODE_ENV;
+			else process.env.NODE_ENV = nodeEnv;
+		}
 	});
 
 	test("keeps localhost requests on http", () => {

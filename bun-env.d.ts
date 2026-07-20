@@ -17,3 +17,8 @@ declare module "*.module.css" {
 }
 
 declare module "@fontsource-variable/dm-sans";
+
+declare module "*.html?raw" {
+	const contents: string;
+	export default contents;
+}

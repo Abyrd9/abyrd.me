@@ -1,21 +1,48 @@
-# bun-react-tailwind-template
+# abyrd.me
 
-To install dependencies:
+Personal site for [abyrd.me](https://abyrd.me), built with Bun, HTML, TypeScript, and Tailwind CSS.
+
+## Commands
+
+Install dependencies:
 
 ```bash
 bun install
 ```
 
-To start a development server:
+Start the local dev server:
 
 ```bash
-bun dev
+bun run dev
 ```
 
-To run for production:
+Build and start the production server locally:
 
 ```bash
-bun start
+bun run build
+bun run start
 ```
 
-This project was created using `bun init` in bun v1.3.0. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
+Run tests:
+
+```bash
+bun test
+```
+
+Run the full local verification pass:
+
+```bash
+bun run check
+```
+
+Check dependency freshness:
+
+```bash
+bun run deps:outdated
+```
+
+Run the formatter/linter checks directly:
+
+```bash
+bunx @biomejs/biome check .
+```

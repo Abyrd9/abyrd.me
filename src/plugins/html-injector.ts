@@ -1,4 +1,6 @@
 import type { BunPlugin } from "bun";
+import "../shared/footer.html?raw";
+import "../shared/nav-bar.html?raw";
 
 /**
  * Plugin that injects shared nav/footer into HTML files at bundle time
@@ -8,14 +10,6 @@ const playgroundPlugin: BunPlugin = {
 
 	setup(build) {
 		console.log("\n🔌 [PLUGIN] HTML Injector loaded");
-
-		// Load shared fragments once
-		const navHtml = Bun.file(
-			`${import.meta.dir}/../shared/nav-bar.html`,
-		).text();
-		const footerHtml = Bun.file(
-			`${import.meta.dir}/../shared/footer.html`,
-		).text();
 
 		// ─────────────────────────────────────────────────────────
 		// onLoad - Inject nav/footer into HTML files
@@ -43,12 +37,16 @@ const playgroundPlugin: BunPlugin = {
 
 			// Read the original HTML
 			const contents = await Bun.file(args.path).text();
+			const [navHtml, footerHtml] = await Promise.all([
+				Bun.file(`${import.meta.dir}/../shared/nav-bar.html`).text(),
+				Bun.file(`${import.meta.dir}/../shared/footer.html`).text(),
+			]);
 
 			// Get the shared fragments and adjust paths
-			let nav = await navHtml;
+			let nav = navHtml;
 			nav = nav.replace(/\.\/assets\//g, `${prefix}assets/`);
 
-			const footer = (await footerHtml).replace(
+			const footer = footerHtml.replace(
 				'id="copyright-year"></div>',
 				`id="copyright-year">© ${new Date().getFullYear()}</div>`,
 			);

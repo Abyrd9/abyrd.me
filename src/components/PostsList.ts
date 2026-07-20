@@ -78,13 +78,15 @@ class PostsList extends HTMLElement {
                     <time class="text-sm text-slate-500 dark:text-slate-400 mt-1 block" datetime="${post.date}">
                       ${post.dateFormatted}
                     </time>
-                    ${this.getPostTags(post)
-											.map(
-												(tag, index) => `
-                      <span class="${this.getTagClass(tag)}" style="margin-left: ${index === 0 ? "0px" : "2px"};">${tag}</span>
-                    `,
-											)
-											.join("")}
+                    <div class="flex flex-wrap items-center gap-0.5">
+                      ${this.getPostTags(post)
+												.map(
+													(tag) => `
+                        <span class="${this.getTagClass(tag)}">${tag}</span>
+                      `,
+												)
+												.join("")}
+                    </div>
                   </div>
                 </article>
               </a>
