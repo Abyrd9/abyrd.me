@@ -3,7 +3,6 @@ builder = "DOCKERFILE"
 dockerfilePath = "packages/app/Dockerfile"
 
 [deploy]
-startCommand = "bun --cwd packages/app run start"
 healthcheckPath = "/health"
 healthcheckTimeout = 60
 restartPolicyType = "ON_FAILURE"
