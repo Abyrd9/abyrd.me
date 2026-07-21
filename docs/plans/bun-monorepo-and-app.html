@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>abyrd.me: Bun monorepo and app plan</title>
+    <style>
+      :root { color-scheme: light dark; --bg: #f7f7f5; --panel: #fff; --ink: #1d2528; --muted: #5d696d; --line: #d9dfdc; --accent: #246b62; --code: #eef3f1; }
+      @media (prefers-color-scheme: dark) { :root { --bg: #151918; --panel: #1d2220; --ink: #e9f0ec; --muted: #b5c0bb; --line: #3a4540; --accent: #7ed0bb; --code: #252e2a; } }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      main { max-width: 960px; margin: 0 auto; padding: 48px 24px 80px; }
+      h1, h2, h3 { line-height: 1.2; }
+      h1 { margin: 0 0 8px; font-size: clamp(2rem, 5vw, 3rem); }
+      h2 { margin-top: 42px; padding-top: 10px; border-top: 1px solid var(--line); }
+      h3 { margin-bottom: 6px; }
+      p, li { max-width: 78ch; }
+      .lede { color: var(--muted); font-size: 1.1rem; }
+      .note { padding: 16px 18px; border-left: 4px solid var(--accent); background: var(--panel); }
+      .tag { display: inline-block; padding: 1px 8px; border-radius: 99px; background: var(--code); color: var(--accent); font: 700 0.76rem/1.8 ui-monospace, SFMono-Regular, Menlo, monospace; }
+      table { width: 100%; border-collapse: collapse; margin: 18px 0; background: var(--panel); }
+      th, td { padding: 11px 12px; border: 1px solid var(--line); vertical-align: top; text-align: left; }
+      th { color: var(--muted); font-size: 0.84rem; }
+      code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+      code { padding: 0.1em 0.28em; border-radius: 4px; background: var(--code); }
+      pre { overflow-x: auto; padding: 18px; background: var(--code); border-radius: 8px; line-height: 1.45; }
+      a { color: var(--accent); }
+      .existing { color: #557eae; } .modified { color: #b87319; } .proposed { color: #247558; } .delete { color: #a64d52; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>abyrd.me: Bun monorepo and personal app</h1>
+      <p class="lede">Planning note · July 19, 2026 · no application code or infrastructure has been changed.</p>
+
+      <section id="overview">
+        <h2>What I found</h2>
+        <p><code>abyrd.me</code> is a single Bun service today: its site, server entry point, Dockerfile, Railway config, and development command all live at the repository root. It already honors Railway’s <code>PORT</code> variable and has a clean route-level test seam.</p>
+        <p><a href="https://github.com/Abyrd9/abyrd-template">abyrd-template</a> uses the pattern worth carrying over: one root Bun workspace, deployable packages under <code>packages/</code>, and a Harbor service per long-running package. We should take that shape—not its product packages, database setup, or framework choices.</p>
+        <div class="note"><strong>Recommendation:</strong> make the current public site <code>@abyrd/website</code>, add one intentionally small <code>@abyrd/app</code>, and keep both deployable without depending on each other. This gives you a clean home for future personal products without inventing shared packages before there is shared code.</div>
+      </section>
+
+      <section id="decisions">
+        <h2>What I would change</h2>
+        <table>
+          <thead><tr><th>Choice</th><th>Status</th><th>Reason</th></tr></thead>
+          <tbody>
+            <tr><td>Use a Bun workspace at the repository root: <code>packages/*</code>.</td><td><span class="tag">decided</span></td><td>Bun supports root workspaces, a single lockfile, filtered scripts, and <code>workspace:*</code> dependencies if they are needed later.</td></tr>
+            <tr><td>Move the existing public site into <code>packages/website</code>.</td><td><span class="tag">decided</span></td><td>The move changes its location, not its behavior or stack. <code>bun run dev</code> at the root will remain an alias for the website so the familiar command still works.</td></tr>
+            <tr><td>Add <code>packages/app</code> as a TanStack Start service.</td><td><span class="tag">implemented</span></td><td>It starts with a closed sign-in route, a protected home, and <code>/health</code>; it has no database or shared library yet.</td></tr>
+            <tr><td>Harbor launches <code>website</code>, <code>app</code>, and the existing assistant pane.</td><td><span class="tag">decided</span></td><td>This is the small part of the template’s Harbor setup that helps now. No worktree lifecycle hooks, Stripe, databases, or extra services.</td></tr>
+            <tr><td>Deploy the app as a separate Railway service from the monorepo root.</td><td><span class="tag">decided</span></td><td>Railway can run Bun workspace-filtered build/start commands while retaining access to the root lockfile. The public website can follow the same deployment shape.</td></tr>
+            <tr><td>Point <code>app.abyrd.me</code> through Cloudflare to Railway.</td><td><span class="tag">decided</span></td><td>Cloudflare handles the public edge/DNS; Railway owns the running service and its custom-domain verification.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="structure">
+        <h2>Resulting shape</h2>
+        <pre><span class="modified">abyrd.me/</span>
+├── <span class="modified">package.json</span>                 # workspace definition and root commands
+├── <span class="modified">harbor.json</span>                  # website + app local services
+├── <span class="modified">bun.lock</span>                     # regenerated once from the root
+├── <span class="modified">biome.json</span>                   # root-wide formatting/lint rules
+├── <span class="proposed">packages/</span>
+│   ├── <span class="modified">website/</span>                 # today’s abyrd.me site, relocated intact
+│   │   ├── <span class="modified">package.json</span>
+│   │   ├── <span class="modified">src/</span>
+│   │   ├── <span class="modified">Dockerfile</span>
+│   │   └── <span class="modified">railway.toml</span>
+│   └── <span class="proposed">app/</span>                     # future personal-product home
+│       ├── <span class="proposed">package.json</span>
+│       ├── <span class="proposed">src/routes/</span>          # sign-in, protected home, health check
+│       ├── <span class="proposed">src/server/</span>          # Effect v3 configuration and signed sessions
+│       ├── <span class="proposed">src/components/primitives/</span> # Base UI form controls
+│       ├── <span class="proposed">Dockerfile</span>
+│       └── <span class="proposed">railway.toml</span>
+└── <span class="proposed">docs/plans/bun-monorepo-and-app.html</span>  # this note</pre>
+        <p>The repository root stays the workspace owner: lockfile, formatting, Harbor, and cross-package commands belong there. Each service owns its server entry point, tests, build/run scripts, and deployment file. A future product feature belongs inside <code>packages/app</code> until a second independent package truly needs the same code.</p>
+
+        <h3>Root scripts and package contract</h3>
+        <pre>{
+  "workspaces": ["packages/*"],
+  "scripts": {
+    "dev": "bun --filter @abyrd/website dev",
+    "dev:app": "bun --filter @abyrd/app dev",
+    "check": "bun --filter '*' check"
+  }
+}</pre>
+        <p>Each package will expose its own <code>dev</code>, <code>build</code>, <code>start</code>, <code>lint</code>, <code>typecheck</code>, and <code>check</code> scripts. The exact root aggregation syntax will be checked against the installed Bun version while implementing; the important boundary is that root commands select package scripts by package name.</p>
+
+        <h3>Private app boundary</h3>
+        <pre>packages/app/src/server/auth.ts
+  APP_USERNAME + APP_PASSWORD + APP_SESSION_SECRET
+    → Effect v3 validates credentials
+    → HMAC-signed, HttpOnly session cookie (14 days)
+
+packages/app/src/routes/
+  /sign-in  → TanStack Form + Base UI controls
+  /         → requires a valid session
+  /health   → public deployment check</pre>
+        <p>The app uses TanStack Start because its server functions keep Railway variables server-only. The Base UI button, field, and form primitives follow <code>abyrd-template</code> commit <code>b657c4e</code>; the template’s unrelated product and database layers are not copied.</p>
+      </section>
+
+      <section id="files">
+        <h2>Files involved</h2>
+        <table>
+          <thead><tr><th>Path</th><th>What changes and why</th></tr></thead>
+          <tbody>
+            <tr><td><code>package.json</code></td><td>Becomes the private workspace manifest. It owns root aliases and shared development dependencies; it will not become a runtime service.</td></tr>
+            <tr><td><code>harbor.json</code></td><td>Retains the assistant service and replaces the single root web command with two package-scoped services. The site and app receive distinct local ports.</td></tr>
+            <tr><td><code>packages/website/*</code></td><td>Receives the existing <code>src</code> tree and website-specific configuration. Its module boundary remains the same Bun server callers use today.</td></tr>
+            <tr><td><code>packages/app/package.json</code></td><td>Owns only the app’s lifecycle commands and dependencies. It will not depend on <code>website</code>.</td></tr>
+            <tr><td><code>packages/app/src/server/auth.ts</code> and test</td><td>Own the Effect v3 configuration boundary, constant-time credential comparison, signed session, and authentication tests.</td></tr>
+            <tr><td><code>packages/app/src/routes/sign-in.tsx</code></td><td>Owns the TanStack Form sign-in screen. It never receives, stores, or compares the configured credentials.</td></tr>
+            <tr><td><code>packages/*/Dockerfile</code></td><td>Use the full repository as the Docker build context so Bun can resolve the root workspace and lockfile, then build and run only that service.</td></tr>
+            <tr><td><code>packages/*/railway.toml</code></td><td>Documents package-specific build/start behavior. Railway service settings will point to the relevant file while keeping the source root unrestricted.</td></tr>
+            <tr><td><code>README.md</code></td><td>Updates local commands, Harbor use, package responsibilities, and the deployment/domain handoff.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="questions">
+        <h2>One choice to confirm</h2>
+        <p><strong>Assumption:</strong> Cloudflare should proxy <code>app.abyrd.me</code> (orange cloud) and act as the public edge. This matches Cloudflare’s guidance for HTTP application traffic. Railway’s current custom-domain guide says a proxied Railway domain must use Cloudflare SSL/TLS mode <strong>Full</strong>, not Full (Strict). If you prefer Cloudflare for DNS only, the record will be DNS-only and Railway’s own TLS certificate will serve visitors directly.</p>
+        <p>Everything else can proceed with the defaults above. The app’s actual first product, login model, database, and API are intentionally out of scope for this setup pass.</p>
+      </section>
+
+      <section id="verification">
+        <h2>How we will check it</h2>
+        <ol>
+          <li>Run one root <code>bun install</code>; confirm the single lockfile resolves both packages.</li>
+          <li>Run each package’s <code>check</code>, then the root aggregate check. The website’s current routes, 404 behavior, sitemap, and blog tests must remain green.</li>
+          <li>Start Harbor and confirm both services answer on their assigned local ports; test <code>GET /health</code> on the app.</li>
+          <li>Build both Docker images from the repository root and run each with a supplied <code>PORT</code>.</li>
+          <li>Create the Railway app service, deploy it, and confirm its generated Railway domain responds before adding a custom domain.</li>
+          <li>Add <code>app.abyrd.me</code> in Railway. Copy its exact CNAME and TXT records into Cloudflare, wait for Railway verification, set the selected target port, and test HTTPS plus <code>/health</code>.</li>
+          <li>If Cloudflare proxying is enabled, set its SSL/TLS mode to Full as Railway requires, then verify the proxied custom hostname has no redirect loop or certificate error.</li>
+        </ol>
+        <p>References: <a href="https://bun.com/docs/pm/workspaces">Bun workspaces</a>, <a href="https://docs.railway.com/deployments/monorepo">Railway monorepos</a>, <a href="https://docs.railway.com/networking/domains/working-with-domains">Railway custom domains</a>, and <a href="https://developers.cloudflare.com/dns/proxy-status/use-cases/">Cloudflare proxy use cases</a>.</p>
+      </section>
+    </main>
+  </body>
+</html>

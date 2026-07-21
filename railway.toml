@@ -1,10 +1,8 @@
 [build]
 builder = "dockerfile"
-dockerfilePath = "Dockerfile"
+dockerfilePath = "packages/website/Dockerfile"
 
 [deploy]
-startCommand = "bun run start"
+startCommand = "bun --cwd packages/website run start"
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 10
-
-

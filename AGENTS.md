@@ -7,10 +7,10 @@ When creating a new blog post, follow these steps:
 Name the file starting with the date in `YYYY-MM-DD` format, followed by a slug:
 
 ```
-src/posts/YYYY-MM-DD-post-slug.html
+packages/website/src/posts/YYYY-MM-DD-post-slug.html
 ```
 
-Example: `src/posts/2025-12-03-my-new-post.html`
+Example: `packages/website/src/posts/2025-12-03-my-new-post.html`
 
 ## 2. Required HTML Structure
 
@@ -70,7 +70,7 @@ Every blog post must include these elements. Note: nav and footer are **automati
 </html>
 ```
 
-## 3. Register the Route in `src/index.ts`
+## 3. Register the Route in `packages/website/src/index.ts`
 
 After creating the HTML file, add it to the server routes:
 
@@ -86,9 +86,9 @@ import blog_post_YYYY_MM_DD_slug from "./posts/YYYY-MM-DD-post-slug.html";
 
 ## How Nav/Footer Injection Works
 
-The Bun plugin (`src/plugins/playground.ts`) automatically injects the nav and footer HTML from:
-- `src/shared/nav-bar.html`
-- `src/shared/footer.html`
+The Bun plugin (`packages/website/src/plugins/html-injector.ts`) automatically injects the nav and footer HTML from:
+- `packages/website/src/shared/nav-bar.html`
+- `packages/website/src/shared/footer.html`
 
 This happens at **bundle time**, so the HTML arrives fully rendered. No client-side fetching.
 
@@ -104,5 +104,5 @@ This happens at **bundle time**, so the HTML arrives fully rendered. No client-s
 - [ ] Theme toggle script: `<script type="module" src="../shared/theme-toggle.ts"></script>`
 - [ ] Mobile back link in header (hidden on desktop with `sm:hidden`)
 - [ ] `<time datetime="YYYY-MM-DD">` with formatted date text
-- [ ] Import added to `src/index.ts`
-- [ ] Route added to `src/index.ts` under BLOG ROUTES
+- [ ] Import added to `packages/website/src/index.ts`
+- [ ] Route added to `packages/website/src/index.ts` under BLOG ROUTES

@@ -3,15 +3,20 @@
 	"sessionName": "abyrd",
 	"services": [
 		{
-			"name": "web",
-			"path": ".",
+			"name": "website",
+			"path": "./packages/website",
+			"command": "bun run dev"
+		},
+		{
+			"name": "app",
+			"path": "./packages/app",
 			"command": "bun run dev"
 		},
 		{
 			"name": "opencode",
 			"path": ".",
 			"command": "opencode . --continue",
-			"canAccess": ["web"]
+			"canAccess": ["website", "app"]
 		}
 	],
 	"before": [],

@@ -1,6 +1,11 @@
 # abyrd.me
 
-Personal site for [abyrd.me](https://abyrd.me), built with Bun, HTML, TypeScript, and Tailwind CSS.
+The source for [abyrd.me](https://abyrd.me) and its private companion app. It is a Bun workspace with two independently deployable packages.
+
+| Package | Purpose | Local command |
+| --- | --- | --- |
+| `@abyrd/website` | Public personal site | `bun run dev` |
+| `@abyrd/app` | Private personal tools | `bun run dev:app` |
 
 ## Commands
 
@@ -10,39 +15,47 @@ Install dependencies:
 bun install
 ```
 
-Start the local dev server:
+Start the public site:
 
 ```bash
 bun run dev
 ```
 
-Build and start the production server locally:
+Start the private app:
+
+```bash
+bun run dev:app
+```
+
+Start both through Harbor:
+
+```bash
+harbor launch --headless --name=abyrd
+```
+
+Build and start the public site locally:
 
 ```bash
 bun run build
-bun run start
+bun --filter @abyrd/website start
 ```
 
-Run tests:
-
-```bash
-bun test
-```
-
-Run the full local verification pass:
+Run all tests and checks:
 
 ```bash
 bun run check
 ```
 
-Check dependency freshness:
+## Private app credentials
 
-```bash
-bun run deps:outdated
+The app is closed to everyone except the configured operator. Add these variables to the Railway app service (never commit their values):
+
+```text
+APP_USERNAME
+APP_PASSWORD
+APP_SESSION_SECRET
 ```
 
-Run the formatter/linter checks directly:
+`APP_SESSION_SECRET` must be a random, high-entropy value. It signs the 14-day session cookie; rotating it signs out every existing browser session. Copy [`packages/app/.env.example`](packages/app/.env.example) for local development.
 
-```bash
-bunx @biomejs/biome check .
-```
+The current public website service continues to use [`railway.toml`](railway.toml). Configure the new Railway service with [`railway.app.toml`](railway.app.toml), then add its Railway-provided CNAME and TXT records to Cloudflare for `app.abyrd.me`.
