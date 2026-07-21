@@ -1,46 +1,152 @@
-# Interview Study Hub Design
+# Interview Simulator Design
 
 ## Goal
 
-Add a protected study area to `@abyrd/app` for daily, on-demand FAANG-style interview practice and guided learning. It covers algorithms, system design, programming fundamentals, and web development without adding database infrastructure.
+Turn the private study area into a senior and staff interview simulator. It
+will help Andrew learn, practise, explain, and repeat the work that interviews
+test.
 
-## User experience
+The app will begin with 20 core rehearsals: 10 coding problems and 10 system
+design problems. It will also include a small set of dated technical review
+cards. Each card will link to its source and explain why the fact matters in a
+design discussion.
 
-- The app dashboard links to `/quiz`.
-- **Daily focus** is a deterministic, balanced set derived from the current local calendar day. Reopening it on the same day resumes the same browser-local work.
-- **Practice another set** creates an additional shuffled set at any time.
-- A session supports flashcards, multiple-choice questions, written answers, and code answers.
-- Flashcards reveal their answer and accept a self-rating. Multiple-choice answers are graded immediately. Written and code answers are retained locally, then the app reveals a reference answer, rubric, and explanation for self-review.
-- The study hub also lists guided courses. A course is a short sequence of explanation/checkpoint lessons and ends in a mixed-mode assessment.
+## What the research changes
 
-## Declarative content model
+The app will not use random facts as its main activity. Practice testing and
+spaced practice have strong support for long-term learning. The daily session
+will therefore ask for an answer before it shows help, give clear feedback,
+and bring the same work back after a delay.
 
-Question and course data live in a server-only content module. A `StudyQuestion` discriminated union represents the four interaction modes. Shared metadata (topic, difficulty, explanation, tags) keeps selection and presentation generic.
+System design will follow one repeatable order: define the problem, estimate
+the load, give a high-level design, explain the key path, then discuss limits
+and trade-offs. This order comes from the System Design Primer's interview
+framework.
 
-`StudyCourse` is declarative: title, summary, outcomes, ordered lesson blocks, and a final assessment question list. Lesson blocks are typed content (`concept`, `checkpoint`, or `challenge`), so adding a course is data authoring rather than route or component work.
+Sources:
 
-The first two tracks are:
+- [Practice testing and spaced practice](https://www.psychologicalscience.org/publications/journals/pspi/learning-techniques.html/comment-page-1)
+- [System design interview framework](https://github.com/donnemartin/system-design-primer)
+- [LeetCode interview topics](https://leetcode.com/discuss/study-guide/2580423/New-Data-Structures-and-Algorithms-CONTENT%21/)
 
-1. **Design a URL Shortener**: requirements, estimates, API/data model, architecture, and trade-offs, followed by an assessment.
-2. **Master the Sliding Window**: pattern recognition, invariant derivation, a hard-style challenge, and a final assessment.
+## Core rehearsals
+
+### Coding
+
+1. Two Sum — hash map
+2. Valid Parentheses — stack
+3. Longest Substring Without Repeating Characters — sliding window
+4. Merge Intervals — sorting and interval rules
+5. Search in Rotated Sorted Array — binary search
+6. Reverse Linked List — pointers
+7. Binary Tree Level Order Traversal — tree traversal
+8. Number of Islands — graph traversal
+9. Course Schedule — graph order and cycle checks
+10. Coin Change — dynamic programming
+
+### System design
+
+1. URL shortener
+2. Rate limiter
+3. News feed
+4. Chat service
+5. File storage and sync
+6. Notification platform
+7. Job scheduler
+8. Metrics and logging platform
+9. Collaborative document editor
+10. Feature-flag and experiment platform
+
+Each rehearsal will have a base version and senior/staff follow-ups. The
+follow-ups will cover failure, data freshness, cost, rollout, observability,
+and team boundaries. They will not add complexity unless the problem needs it.
+
+## Daily flow
+
+The daily page will show due work first. If nothing is due, it will offer the
+next new rehearsal and alternate between coding and system design.
+
+Each completed rehearsal returns after 1, 3, 7, and 14 days. A user can also
+start any rehearsal from the catalog.
+
+### Coding rehearsal
+
+1. Read the problem and ask any needed questions.
+2. Write a short plan.
+3. Code against the prompt under a timer.
+4. State edge cases and time and memory cost.
+5. Compare the work with a solution and a checklist.
+6. Record the reason for any miss.
+
+### System-design rehearsal
+
+1. Ask about users, use cases, limits, and success measures.
+2. Estimate traffic, storage, and speed needs.
+3. Write the main parts and their connections.
+4. Explain the key request path.
+5. Discuss failure, data freshness, cost, rollout, and metrics.
+6. Compare the work with a staff-level checklist and record any miss.
+
+The app will use short, direct prose. It will define a technical term before
+it relies on it.
+
+## Current technical review cards
+
+The app will not fetch or summarise a general news feed. News ages quickly and
+does not make a good daily interview task.
+
+Instead, an authored review card will contain:
+
+- A question that asks for one useful fact.
+- A short answer in plain language.
+- Why the fact changes a design choice.
+- A source name and link.
+- The date the card was checked.
+- A review-by date.
+
+Cards will use official product documentation, standards, and engineering
+posts. A card past its review-by date will say that it needs review. The app
+will not present it as current until it is checked again.
 
 ## Architecture
 
-- `src/server/study.ts` owns question/course content, deterministic session selection, DTO creation, and answer evaluation.
-- Effect v3 models the domain program and typed missing/invalid-question errors. It remains server-side and is run at the server-function boundary.
-- `src/server/study-functions.ts` exposes authenticated TanStack Start server functions for loading sessions, revealing flashcards, evaluating answers, and loading course material. Answer keys and reference solutions stay on the server until reveal/evaluation.
-- A pathless `src/routes/_authenticated.tsx` layout owns the session check in `beforeLoad`, shared private app shell, and sign-out action. The dashboard and `/quiz` become its children, so future private routes inherit authentication automatically. `/sign-in` and the Railway `/health` probe stay public.
-- React holds only visible UI state; durable local progress is isolated behind a small local-storage helper.
-- Reusable UI components render all question types and course blocks. TanStack Form owns written and code submission state and validation.
+`src/server/study.ts` will replace the loose question bank with declarative
+rehearsal content. A rehearsal will hold its track, prompt, time limit,
+clarifying questions, answer fields, solution, checklist, common misses, and
+senior/staff follow-ups.
 
-## Persistence and safety
+System-design rehearsals will use named answer sections rather than one large
+text box. The sections will match the interview flow: scope, estimates, main
+design, key path, trade-offs, rollout, and metrics. Coding rehearsals will use
+plan, code, edge cases, and complexity sections.
 
-There is intentionally no database in version one. Browser local storage records daily session identity, selected questions, submitted answers, flashcard ratings, course progress, and completed course assessments. It is scoped to this browser and can be cleared by the user.
+`src/study-progress.ts` will store the attempt date, completion date, review
+date, outcome, and selected miss reasons for each rehearsal. Local storage
+will continue to hold this private progress in the first version.
 
-The pathless route guards private UI, and every study server function independently requires the signed-in session. Server-only content prevents answer keys from being bundled into the browser before the user requests feedback.
+The authenticated `/quiz` route will become the simulator home. It will have:
+
+- Today: due reviews and the next new rehearsal.
+- Coding: the 10-problem catalog and progress.
+- System design: the 10-problem catalog and progress.
+- Keep current: dated source-backed review cards.
+
+The existing pathless authenticated layout and server-side answer protection
+will remain in place.
+
+## Error handling and safety
+
+The server will reject unknown rehearsal and card IDs. It will not send a
+solution or checklist until the user submits or asks to see it. If local
+progress is missing or invalid, the app will start fresh rather than fail.
 
 ## Verification
 
-- Bun tests cover deterministic daily selection, fresh-set variation, balanced topic/mode selection, answer evaluation, course lookup, and course completion data.
-- `bun run check` and `bun run build` validate TypeScript, linting, formatting, tests, and production output.
-- A browser smoke test verifies authentication protection, daily practice, each question mode, fresh practice, course progression, and the final assessment.
+- Content tests will confirm all 20 rehearsals load and their solutions stay
+  private before reveal.
+- Progress tests will confirm the 1, 3, 7, and 14 day review schedule.
+- Route tests will cover the daily queue, catalogs, coding form, design form,
+  source-card dates, and authenticated server functions.
+- `bun run check` will run tests, formatting, types, and production builds.
+- A browser smoke test will cover a coding rehearsal, a design rehearsal, a
+  review, and a dated technical card.
