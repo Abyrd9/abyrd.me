@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Interview Study Hub plan · abyrd.me</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: #172033;
+        background: #f5f7fb;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; line-height: 1.6; }
+      main { width: min(960px, calc(100% - 32px)); margin: 0 auto; padding: 56px 0 80px; }
+      header { border-bottom: 1px solid #dfe4ee; padding-bottom: 28px; }
+      h1, h2, h3 { color: #111827; line-height: 1.2; letter-spacing: -0.025em; }
+      h1 { font-size: clamp(2rem, 5vw, 3.25rem); margin: 0 0 12px; }
+      h2 { font-size: 1.5rem; margin: 48px 0 16px; }
+      h3 { font-size: 1.05rem; margin: 28px 0 8px; }
+      p, li { color: #465168; }
+      .lede { font-size: 1.15rem; max-width: 730px; margin: 0; }
+      .meta, .status { font-size: .9rem; color: #667085; }
+      .status { display: inline-block; margin-top: 18px; padding: 4px 10px; background: #e8f0ff; color: #2656a5; border-radius: 999px; font-weight: 600; }
+      section { scroll-margin-top: 24px; }
+      .card { background: #fff; border: 1px solid #dfe4ee; border-radius: 12px; padding: 20px 22px; margin: 14px 0; }
+      .decision { border-left: 3px solid #3e67bc; }
+      table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: .95rem; }
+      th, td { padding: 12px; text-align: left; vertical-align: top; border-bottom: 1px solid #dfe4ee; }
+      th { color: #334155; font-weight: 700; }
+      code, pre { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; font-size: .9em; }
+      code { color: #243b6b; }
+      pre { overflow: auto; margin: 16px 0; padding: 16px; border-radius: 10px; background: #162033; color: #e6edf7; line-height: 1.5; }
+      .path { white-space: nowrap; }
+      .existing { color: #5e6879; }
+      .modified { color: #9a6700; }
+      .proposed { color: #1a7f37; }
+      .note { padding: 14px 16px; border-radius: 8px; background: #fff8db; color: #6b5511; }
+      a { color: #2656a5; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <p class="meta">abyrd.me · app package · proposed 21 July 2026</p>
+        <h1>Interview Study Hub</h1>
+        <p class="lede">
+          Add a private place in <code>app.abyrd.me</code> for daily interview practice and guided courses. It will cover system design, algorithms, programming fundamentals, and web development without adding a database.
+        </p>
+        <span class="status">Ready to build</span>
+      </header>
+
+      <section id="overview">
+        <h2>What I found</h2>
+        <p>
+          The app is a small Bun workspace package built with TanStack Start, React 19, Tailwind, Base UI, and Effect v3. The home page and server functions already use one signed-in session check. There is no data store today, which makes a browser-local first version the right fit.
+        </p>
+        <p>
+          The existing primitives cover buttons and fields. The study capability is unique to this app, so it belongs in app-local routes, components, and server modules rather than a new shared workspace package. TanStack Router’s pathless-layout convention lets one authenticated parent own the guard and shared private-app shell without changing public URLs.
+        </p>
+      </section>
+
+      <section id="decisions">
+        <h2>What I recommend</h2>
+        <div class="card decision">
+          <strong>One study hub, two ways to learn.</strong>
+          <p>
+            <b>Daily Focus</b> gives a stable, balanced question set for the current day. <b>Practice Another Set</b> gives a new mixed set whenever desired. A separate Courses view teaches a specific problem or pattern, then ends with a focused quiz.
+          </p>
+        </div>
+        <div class="card decision">
+          <strong>Guard the private application once.</strong>
+          <p>
+            A pathless <code>_authenticated</code> route will perform the signed-in check in <code>beforeLoad</code> and render the shared app shell. The home dashboard and <code>/quiz</code> become its children, so future private tools inherit the same guard automatically. <code>/sign-in</code> and the infrastructure health check remain outside it.
+          </p>
+        </div>
+        <div class="card decision">
+          <strong>Keep the course system declarative.</strong>
+          <p>
+            Courses, lessons, checkpoints, questions, answers, and final assessments are typed content. Adding a course means authoring one object in the study content module; routes and generic React components do not change.
+          </p>
+        </div>
+        <div class="card decision">
+          <strong>Store progress in this browser only.</strong>
+          <p>
+            Local storage records the current set, submitted work, flashcard ratings, and course completion. This is intentionally not cross-device and has no Railway database or migration. It can be replaced by a persistence layer later without changing the question or course schema.
+          </p>
+        </div>
+
+        <h3>Choices already made</h3>
+        <table>
+          <thead><tr><th>Choice</th><th>Decision</th><th>Why</th></tr></thead>
+          <tbody>
+            <tr><td>Access</td><td>Existing signed-in users only</td><td>Every study route and server function uses the current session.</td></tr>
+            <tr><td>Route protection</td><td>One pathless authenticated layout</td><td>Its <code>beforeLoad</code> blocks every private child before it loads; server functions still check the session themselves.</td></tr>
+            <tr><td>Study modes</td><td>Flashcard, multiple choice, written, and code</td><td>They match recall, recognition, explanation, and implementation practice.</td></tr>
+            <tr><td>Forms</td><td>TanStack Form for written/code responses</td><td>It owns field state, synchronous required-answer validation, submit state, and accessible error rendering. Buttons remain direct interactions.</td></tr>
+            <tr><td>Answer handling</td><td>Evaluate or reveal through server functions</td><td>Correct choices, rubrics, and reference solutions are not shipped in the initial browser payload.</td></tr>
+            <tr><td>Typed code</td><td>Editor-style textarea plus a reference solution and rubric</td><td>The first version supports real solution writing without pretending to execute untrusted code in production.</td></tr>
+            <tr><td>First courses</td><td>URL Shortener and Sliding Window</td><td>They establish the two requested kinds of guided training: system design and hard programming practice.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="structure">
+        <h2>How it will fit together</h2>
+        <pre>packages/app/src/
+├── routes/
+│   ├── _authenticated.tsx           proposed  — pathless auth guard and private shell
+│   ├── _authenticated.index.tsx     proposed  — private dashboard and study link
+│   ├── _authenticated.quiz.tsx      proposed  — protected study hub route
+│   ├── sign-in.tsx                  existing  — public sign-in
+│   └── health.tsx                   existing  — public Railway health endpoint
+├── components/study/
+│   ├── study-shell.tsx              proposed  — hub navigation and session framing
+│   ├── question-card.tsx            proposed  — chooses the right question UI
+│   ├── flashcard.tsx                proposed  — reveal and self-rating
+│   ├── answer-form.tsx              proposed  — TanStack Form-backed written/code submission
+│   ├── choice-question.tsx          proposed  — immediate multiple-choice feedback
+│   └── course-player.tsx            proposed  — generic lessons and final assessment
+├── server/
+│   ├── auth-functions.ts            modified  — shared signed-in guard if needed
+│   ├── study.ts                     proposed  — content, selection, evaluation, DTOs
+│   └── study-functions.ts           proposed  — authenticated Start server functions
+├── study-progress.ts                proposed  — narrow local-storage boundary
+└── server/study.test.ts             proposed  — domain tests through public study APIs</pre>
+        <p>
+          The pathless parent is the one UI authorization boundary for the private application: its <code>beforeLoad</code> gets the signed-in session and redirects unauthenticated requests before any child loads. It renders a shared header and an <code>Outlet</code>. The route composes the feature but does not contain selection or grading rules. <code>study.ts</code> is the deep module: it owns the question bank, deterministic daily selection, fresh-set selection, and evaluation. Browser-only persistence has one narrow owner, so a later database migration does not spread storage details through components.
+        </p>
+
+        <h3>How forms will work</h3>
+        <p>
+          <code>answer-form.tsx</code> will use one colocated <code>useForm</code> instance per written or code question. A keyed question card gives each prompt a fresh form. The answer field validates required non-whitespace content on submit, exposes its error through the existing Base UI field treatment, and awaits the authenticated server function in <code>onSubmit</code>. A <code>form.Subscribe</code> reads only <code>canSubmit</code> and <code>isSubmitting</code> for the submit control.
+        </p>
+        <p>
+          Multiple choice is intentionally not a form: selecting one option is the complete action, so it calls the evaluation server function directly. Flashcard reveal and “Know it” / “Review again” are likewise direct actions. This keeps Form responsible for actual editable answer data instead of adding state machinery around buttons.
+        </p>
+
+        <h3>The content shape that makes courses easy to add</h3>
+        <pre>type StudyCourse = {
+  id: string
+  title: string
+  summary: string
+  outcomes: readonly string[]
+  lessons: readonly CourseBlock[]
+  assessmentQuestionIds: readonly QuestionId[]
+}
+
+type CourseBlock =
+  | { kind: "concept"; title: string; body: string }
+  | { kind: "checkpoint"; questionId: QuestionId }
+  | { kind: "challenge"; title: string; prompt: string; questionId: QuestionId }</pre>
+        <p>
+          A course author adds content to this data shape. The generic course player renders the sequence and launches the final assessment from the listed question IDs. There is no per-course route, component, or special-case state machine.
+        </p>
+
+        <h3>Initial content</h3>
+        <table>
+          <thead><tr><th>Area</th><th>What it includes</th></tr></thead>
+          <tbody>
+            <tr><td>Daily practice</td><td>A balanced bank spanning algorithms, system design, programming fundamentals, and web development; each daily set contains multiple modes rather than a single topic.</td></tr>
+            <tr><td>Design a URL Shortener</td><td>Requirements, estimation, API/data model, read/write path, scaling and trade-offs, then a mixed final assessment.</td></tr>
+            <tr><td>Master the Sliding Window</td><td>Recognition signals, window invariant, fixed and variable-window reasoning, a typed hard-style challenge, then a focused final assessment.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="files">
+        <h2>Files involved</h2>
+        <table>
+          <thead><tr><th>Path</th><th>Change</th></tr></thead>
+          <tbody>
+            <tr><td class="path proposed">packages/app/src/routes/_authenticated.tsx</td><td>Own the pathless private-app boundary: session check in <code>beforeLoad</code>, redirect target preservation, shared header, sign-out action, and <code>Outlet</code>.</td></tr>
+            <tr><td class="path modified">packages/app/src/routes/index.tsx → _authenticated.index.tsx</td><td>Move the existing dashboard below the authenticated layout and add a clear link into the study hub. Its public URL remains <code>/</code>.</td></tr>
+            <tr><td class="path proposed">packages/app/src/routes/_authenticated.quiz.tsx</td><td>Render <code>/quiz</code> as an authenticated child, load sessions/courses, and compose generic study UI. It will hold display state, not domain rules.</td></tr>
+            <tr><td class="path existing">packages/app/src/routes/sign-in.tsx</td><td>Remain public; after a successful sign-in, use the validated redirect target supplied by the parent guard when one exists.</td></tr>
+            <tr><td class="path existing">packages/app/src/routes/health.tsx</td><td>Remain public for Railway’s health probe; it returns no application data.</td></tr>
+            <tr><td class="path proposed">packages/app/src/server/study.ts</td><td>Own the discriminated question/course data, public DTO mapping, deterministic selection, grading, and typed Effect errors.</td></tr>
+            <tr><td class="path proposed">packages/app/src/server/study-functions.ts</td><td>Expose validated TanStack Start server functions and require the existing session before returning study content or feedback.</td></tr>
+            <tr><td class="path proposed">packages/app/src/components/study/*</td><td>Feature-local React components for the four question modes and declarative course blocks. <code>answer-form.tsx</code> uses TanStack Form for typed responses; Base UI primitives remain the visual building blocks.</td></tr>
+            <tr><td class="path proposed">packages/app/src/study-progress.ts</td><td>Read and write one versioned local-storage document, with safe behavior during server rendering.</td></tr>
+            <tr><td class="path modified">packages/app/src/routeTree.gen.ts</td><td>Generated after adding the quiz route.</td></tr>
+            <tr><td class="path proposed">packages/app/src/server/study.test.ts</td><td>Exercise selection, evaluation, public answer hiding, and declarative course lookup through the study module’s public API.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="questions">
+        <h2>Open questions and assumptions</h2>
+        <p><b>Decided:</b> browser-only progress for version one.</p>
+        <p><b>Decided:</b> all user-facing private routes live under a pathless authenticated layout. The sign-in page and the existing health probe stay public; this preserves Railway monitoring without exposing app content.</p>
+        <p><b>Decided:</b> two initial courses are part of this change, and the content model must make future courses data-only additions.</p>
+        <p><b>Assumption:</b> typed code is self-reviewed against a reference answer and rubric. Running arbitrary submitted programs needs a separate sandbox/runtime design and is outside this first private-app feature.</p>
+        <p><b>Assumption:</b> “daily” uses the browser’s local calendar date. The date seed gives the same daily focus after refresh, while “Practice Another Set” has its own locally stored attempt number.</p>
+      </section>
+
+      <section id="verification">
+        <h2>How we will check it</h2>
+        <ol>
+          <li>Run Bun tests for deterministic daily selection, fresh-set generation, topic/mode balance, answer evaluation, course lookup, and final assessment composition.</li>
+          <li>Run <code>bun run check</code> from the workspace root. It covers the app’s tests, Biome checks, TypeScript, and the production build.</li>
+          <li>Start the app and verify the pathless guard redirects both <code>/</code> and <code>/quiz</code> when signed out, preserves the intended destination through sign-in, and leaves only <code>/sign-in</code> and <code>/health</code> public.</li>
+          <li>Verify the dashboard link, same-day resume, fresh session, flashcard reveal/rating, multiple-choice feedback, typed written answer, typed code answer, and both courses through their final assessment.</li>
+          <li>Verify the text/code form rejects an empty answer, exposes a field error accessibly, prevents duplicate submission while pending, and accepts a completed response.</li>
+          <li>Inspect the browser network payload for a loaded question: it must not include a correct option, rubric, or reference solution before feedback is requested.</li>
+        </ol>
+        <p class="note">No external service changes are planned. This branch changes only the app package and generated route tree.</p>
+      </section>
+    </main>
+  </body>
+</html>
