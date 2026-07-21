@@ -48,7 +48,7 @@
         <p class="lede">
           Add a private place in <code>app.abyrd.me</code> for daily interview practice and guided courses. It will cover system design, algorithms, programming fundamentals, and web development without adding a database.
         </p>
-        <span class="status">Ready to build</span>
+        <span class="status">Implemented and verified</span>
       </header>
 
       <section id="overview">
@@ -205,7 +205,7 @@ type CourseBlock =
           <li>Verify the text/code form rejects an empty answer, exposes a field error accessibly, prevents duplicate submission while pending, and accepts a completed response.</li>
           <li>Inspect the browser network payload for a loaded question: it must not include a correct option, rubric, or reference solution before feedback is requested.</li>
         </ol>
-        <p class="note">No external service changes are planned. This branch changes only the app package and generated route tree.</p>
+        <p class="note">Verified on this branch with Bun tests, formatting, TypeScript, production builds, and a live browser smoke test. No external service changes are required.</p>
       </section>
     </main>
   </body>

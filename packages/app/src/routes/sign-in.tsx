@@ -1,12 +1,16 @@
 import { useForm } from "@tanstack/react-form";
 import { createFileRoute, redirect, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
+import { z } from "zod";
 import { Button } from "#/components/primitives/button";
 import { Field } from "#/components/primitives/field";
 import { Form } from "#/components/primitives/form";
 import { getSession, submitSignIn } from "#/server/auth-functions";
 
 export const Route = createFileRoute("/sign-in")({
+	validateSearch: z.object({
+		redirect: z.string().optional(),
+	}),
 	beforeLoad: async () => {
 		const session = await getSession();
 
@@ -17,6 +21,7 @@ export const Route = createFileRoute("/sign-in")({
 
 function SignInPage() {
 	const router = useRouter();
+	const { redirect: requestedRedirect } = Route.useSearch();
 	const [signInError, setSignInError] = useState<string | null>(null);
 	const form = useForm({
 		defaultValues: {
@@ -33,7 +38,7 @@ function SignInPage() {
 				return;
 			}
 
-			await router.navigate({ to: "/" });
+			router.history.push(_safeRedirect(requestedRedirect));
 		},
 	});
 
@@ -116,9 +121,11 @@ function SignInPage() {
 						</p>
 					) : null}
 
-					<form.Subscribe selector={(state) => state.isSubmitting}>
-						{(isSubmitting) => (
-							<Button disabled={isSubmitting} type="submit">
+					<form.Subscribe
+						selector={(state) => [state.canSubmit, state.isSubmitting]}
+					>
+						{([canSubmit, isSubmitting]) => (
+							<Button disabled={!canSubmit || isSubmitting} type="submit">
 								{isSubmitting ? "Signing in…" : "Sign in"}
 							</Button>
 						)}
@@ -127,4 +134,9 @@ function SignInPage() {
 			</section>
 		</main>
 	);
+}
+
+function _safeRedirect(value: string | undefined) {
+	if (!value?.startsWith("/") || value.startsWith("//")) return "/";
+	return value;
 }
