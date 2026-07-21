@@ -156,140 +156,141 @@ const questions: readonly StudyQuestion[] = [
 	{
 		id: "algorithms-window-invariant",
 		kind: "flashcard",
-		title: "Sliding window invariant",
+		title: "The sliding-window rule",
 		topic: "algorithms",
 		difficulty: "foundation",
 		tags: ["arrays", "sliding-window"],
-		prompt: "What is the invariant of a sliding-window algorithm?",
+		prompt: "What rule should a sliding-window solution keep true?",
 		answer:
-			"A condition that is true for the current window at every step. Expand or shrink the window only to restore that condition, so every pointer moves forward at most n times.",
+			"The current slice of the input must obey one clear rule. For a no-repeat problem, the slice must contain no repeated letter. Add a letter on the right. If it breaks the rule, move the left edge right until the rule holds again.",
 		explanation:
-			"Naming the invariant first turns a two-pointer trick into a proof of correctness and linear time.",
+			"Each edge moves only forward. Together they make at most twice as many moves as there are letters, so the work grows with the input size.",
 	},
 	{
 		id: "algorithms-window-choice",
 		kind: "multiple-choice",
-		title: "Choose the pattern",
+		title: "Find the rule",
 		topic: "algorithms",
 		difficulty: "intermediate",
 		tags: ["strings", "sliding-window"],
 		prompt:
-			"Which invariant best solves “longest substring without repeating characters”?",
+			"For the longest part of a string with no repeated letters, which rule should the current slice follow?",
 		options: [
-			{ id: "a", label: "The window is always sorted." },
-			{ id: "b", label: "The window contains no duplicate character." },
-			{ id: "c", label: "The window sum is never negative." },
-			{ id: "d", label: "The left pointer moves once per right pointer." },
+			{ id: "a", label: "The current slice stays sorted." },
+			{ id: "b", label: "The current slice has no repeated letter." },
+			{ id: "c", label: "The current slice has a non-negative sum." },
+			{ id: "d", label: "The two edges always move together." },
 		],
 		correctOptionId: "b",
 		explanation:
-			"Track each character’s most recent index. When a duplicate enters, move the left edge past its previous occurrence.",
+			"Remember where you last saw each letter. In `abca`, the last `a` makes the slice repeat. Move the left edge past the first `a`; the new slice is `bca`.",
 	},
 	{
 		id: "algorithms-window-written",
 		kind: "written",
-		title: "Explain the complexity",
+		title: "Why this stays fast",
 		topic: "algorithms",
 		difficulty: "intermediate",
 		tags: ["complexity", "two-pointers"],
 		prompt:
-			"Explain why a variable-size sliding window is O(n), even though it has a nested while loop.",
-		placeholder: "State what each pointer does across the full input…",
+			"Why is a sliding-window solution O(n) even when the code has a loop inside another loop?",
+		placeholder: "Count how far the left and right edges can move…",
 		referenceAnswer:
-			"The nested loop is amortized, not independent. The right pointer advances from 0 to n once, and the left pointer also advances from 0 to n at most once. Across the whole run there are at most 2n pointer advances, so the work is O(n).",
+			"Do not count the loops by shape. Count edge moves. The right edge crosses the input once. The left edge also crosses it at most once. That gives at most 2n moves, so the work is O(n).",
 		rubric: [
-			"Identifies the amortized argument.",
-			"Explains that each pointer only moves forward.",
+			"Counts total edge moves, not nested loops.",
+			"Says that both edges move only forward.",
 			"Concludes O(n), not O(n²).",
 		],
 		explanation:
-			"Interviewers look for the global pointer count, not just the visual shape of the loop nesting.",
+			"The inner loop does not restart from the beginning. It only spends moves the left edge has not spent before.",
 	},
 	{
 		id: "algorithms-window-code",
 		kind: "code",
-		title: "Longest unique substring",
+		title: "Longest slice with no repeats",
 		topic: "algorithms",
 		difficulty: "advanced",
 		tags: ["strings", "hash-map", "sliding-window"],
 		prompt:
-			"Implement longestUniqueSubstring. Return the length of the longest substring with no repeated characters.",
+			"Write longestUniqueSubstring. Return the length of the longest slice with no repeated letter. For `abcabcbb`, return 3.",
 		language: "TypeScript",
 		starterCode:
 			"export function longestUniqueSubstring(value: string): number {\n\t// Write your solution\n}\n",
 		referenceAnswer:
 			"export function longestUniqueSubstring(value: string): number {\n\tconst lastSeen = new Map<string, number>();\n\tlet best = 0;\n\tlet left = 0;\n\n\tfor (let right = 0; right < value.length; right += 1) {\n\t\tconst character = value[right];\n\t\tconst previous = lastSeen.get(character);\n\n\t\tif (previous !== undefined && previous >= left) left = previous + 1;\n\n\t\tlastSeen.set(character, right);\n\t\tbest = Math.max(best, right - left + 1);\n\t}\n\n\treturn best;\n}\n",
 		rubric: [
-			"Uses a moving left boundary and one pass of the right boundary.",
-			"Tracks prior character positions.",
-			"Does not move left backward.",
-			"Explains O(n) time and O(min(n, alphabet)) space.",
+			"Moves a left edge and a right edge through the string.",
+			"Remembers where each letter last appeared.",
+			"Never moves the left edge backward.",
+			"Explains O(n) time and space based on the letters seen.",
 		],
 		explanation:
-			"The key edge case is a repeated character that is already outside the current window; it must not pull left backward.",
+			"A repeated letter may sit before the current slice. Ignore it. Only move the left edge when its old position is still inside the slice.",
 	},
 	{
 		id: "system-design-requirements",
 		kind: "flashcard",
-		title: "Functional versus non-functional",
+		title: "What it does and how well it does it",
 		topic: "system-design",
 		difficulty: "foundation",
 		tags: ["requirements", "interviews"],
 		prompt:
-			"Before drawing architecture, what is the difference between functional and non-functional requirements?",
+			"Before you draw a system, what is the difference between what it must do and how well it must do it?",
 		answer:
-			"Functional requirements describe what the system does (for example, create and redirect short links). Non-functional requirements describe qualities and constraints (latency, availability, scale, consistency, cost, and retention).",
+			"First list what the system must do: create a short link and send a visitor to the full link. Then list how well it must do it: how fast it must respond, how much traffic it must handle, how often it may fail, and how long it keeps data.",
 		explanation:
-			"Starting with both categories prevents an attractive diagram from solving the wrong problem.",
+			"If you skip the second list, you can build a system that works but fails under the traffic or speed the question requires.",
 	},
 	{
 		id: "system-design-choice",
 		kind: "multiple-choice",
-		title: "Read-heavy URL shortener",
+		title: "A shortener with many reads",
 		topic: "system-design",
 		difficulty: "intermediate",
 		tags: ["caching", "url-shortener"],
 		prompt:
-			"A URL shortener is overwhelmingly read-heavy. Which change most directly reduces database reads for popular links?",
+			"A shortener gets far more redirects than new links. What change cuts database reads for links many people open?",
 		options: [
 			{ id: "a", label: "Use longer short codes." },
-			{ id: "b", label: "Add a cache in front of the primary mapping store." },
+			{ id: "b", label: "Keep popular link lookups in a cache." },
 			{ id: "c", label: "Make the write API synchronous." },
 			{ id: "d", label: "Store analytics in the same row as the link." },
 		],
 		correctOptionId: "b",
 		explanation:
-			"A cache turns repeated code-to-URL lookups into memory reads while the durable mapping store remains the source of truth.",
+			"A cache keeps a copy of a popular short-link result in memory. Most visitors get the result there. The database still holds the real record.",
 	},
 	{
 		id: "system-design-written",
 		kind: "written",
-		title: "Estimate before architecture",
+		title: "Get the numbers first",
 		topic: "system-design",
 		difficulty: "intermediate",
 		tags: ["capacity-planning", "url-shortener"],
 		prompt:
-			"Name the first capacity estimates you would make for a URL shortener and explain how they change your design.",
-		placeholder: "Think about reads, writes, storage, and latency…",
+			"What numbers would you estimate before designing a URL shortener, and what would those numbers change?",
+		placeholder:
+			"Think about redirects, new links, storage, and response time…",
 		referenceAnswer:
-			"Estimate daily link creations, redirects per link, peak versus average QPS, record size and retention, and acceptable redirect latency. Those figures size the mapping store, tell you whether a cache/CDN is necessary, guide partitioning, and establish how much availability and replication the read path needs.",
+			"Estimate new links per day, redirects per link, busiest requests per second, record size, how long you keep records, and acceptable redirect time. These numbers tell you how much storage you need, whether to add a cache, and when to split data across machines.",
 		rubric: [
-			"Covers reads and writes separately.",
-			"Mentions peak load or a peak factor.",
-			"Connects estimates to storage, cache, partitioning, or replication choices.",
+			"Separates redirects from new links.",
+			"Includes the busiest period, not just the average.",
+			"Links the numbers to storage, caching, or splitting data.",
 		],
 		explanation:
-			"Back-of-the-envelope numbers make design trade-offs concrete and reveal which path deserves optimization.",
+			"The numbers tell you where the pressure is. In this system, redirects usually need the most care.",
 	},
 	{
 		id: "system-design-code",
 		kind: "code",
-		title: "Base62 encoder",
+		title: "Turn a number into a short code",
 		topic: "system-design",
 		difficulty: "intermediate",
 		tags: ["encoding", "url-shortener"],
 		prompt:
-			"Implement encodeBase62 for a non-negative integer ID. This is one possible short-code building block.",
+			"Write encodeBase62 for a whole number that is zero or more. It turns an ID into a short text code.",
 		language: "TypeScript",
 		starterCode:
 			"export function encodeBase62(id: number): string {\n\t// Write your solution\n}\n",
@@ -297,30 +298,31 @@ const questions: readonly StudyQuestion[] = [
 			'const alphabet = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";\n\nexport function encodeBase62(id: number): string {\n\tif (!Number.isSafeInteger(id) || id < 0) throw new Error("id must be a non-negative safe integer");\n\tif (id === 0) return alphabet[0];\n\n\tlet value = id;\n\tlet encoded = "";\n\n\twhile (value > 0) {\n\t\tencoded = alphabet[value % alphabet.length] + encoded;\n\t\tvalue = Math.floor(value / alphabet.length);\n\t}\n\n\treturn encoded;\n}\n',
 		rubric: [
 			"Handles zero explicitly.",
-			"Repeatedly divides by the alphabet base.",
-			"Builds digits in reverse order or reverses them at the end.",
-			"Notes that opaque public IDs may need a separate collision and enumeration strategy.",
+			"Keeps dividing by 62 to find each character.",
+			"Builds the characters from right to left, or reverses them at the end.",
+			"Notes that real public IDs may need to hide their order and avoid clashes.",
 		],
 		explanation:
-			"Base62 makes an integer compact, but production code generation still needs a decision about predictability, collisions, and availability.",
+			"Base62 makes an ID shorter. It does not by itself stop people from guessing nearby IDs or solve how IDs are made during an outage.",
 	},
 	{
 		id: "programming-idempotency",
 		kind: "flashcard",
-		title: "Idempotency",
+		title: "Safe retries",
 		topic: "programming",
 		difficulty: "foundation",
 		tags: ["api-design", "retries"],
-		prompt: "What makes an operation idempotent, and why does it matter?",
+		prompt:
+			"When can a client safely send the same request again, and why does that matter?",
 		answer:
-			"Repeating an idempotent operation has the same intended effect as performing it once. It lets clients safely retry after timeouts without accidentally creating duplicate side effects.",
+			"A request is safe to retry when sending it twice has the same result as sending it once. This matters when a client times out: it can try again without creating two orders, charges, or records.",
 		explanation:
-			"Idempotency keys and resource identifiers are common ways to make create-like operations retry-safe.",
+			"Servers often use a retry key or a client-chosen record ID to spot the second request and return the first result.",
 	},
 	{
 		id: "programming-promise-choice",
 		kind: "multiple-choice",
-		title: "Promise concurrency",
+		title: "What Promise.all does on failure",
 		topic: "programming",
 		difficulty: "intermediate",
 		tags: ["javascript", "promises"],
@@ -336,173 +338,175 @@ const questions: readonly StudyQuestion[] = [
 		],
 		correctOptionId: "b",
 		explanation:
-			"The other promises may still continue in the underlying runtime, but the Promise.all result rejects on the first rejection it observes.",
+			"The Promise.all call fails as soon as one promise fails. Work started by the other promises may still carry on unless you stop it yourself.",
 	},
 	{
 		id: "programming-state-written",
 		kind: "written",
-		title: "State ownership",
+		title: "Where state belongs",
 		topic: "programming",
 		difficulty: "intermediate",
 		tags: ["state", "design"],
-		prompt: "How do you decide where state should live in a component tree?",
-		placeholder: "Describe the smallest useful owner…",
+		prompt: "Where should state live when more than one component needs it?",
+		placeholder:
+			"Name the lowest component that needs to coordinate the others…",
 		referenceAnswer:
-			"Keep each piece of state in the lowest common owner of every component that needs to read or change it. Derive values from that state instead of duplicating them, and lift state only when siblings truly need to coordinate.",
+			"Put state in the lowest component that every reader or updater shares. Compute related values from that state instead of storing copies. Move state higher only when sibling components must stay in step.",
 		rubric: [
-			"Names the lowest common owner.",
-			"Avoids duplicate or contradictory state.",
-			"Distinguishes derived values from independently stored state.",
+			"Names the lowest shared owner.",
+			"Avoids two copies of the same fact.",
+			"Computes values that can come from existing state.",
 		],
 		explanation:
-			"This principle applies beyond React: ownership should follow the smallest group that must coordinate.",
+			"One owner gives the rest of the page one source of truth. That keeps related parts from drifting apart.",
 	},
 	{
 		id: "programming-debounce-code",
 		kind: "code",
-		title: "Debounce a callback",
+		title: "Wait for typing to stop",
 		topic: "programming",
 		difficulty: "advanced",
 		tags: ["javascript", "closures", "timers"],
 		prompt:
-			"Implement debounce. The returned function should run the latest call only after waitMs has passed without another call.",
+			"Write debounce. The returned function should wait until calls stop for waitMs, then run only the most recent call.",
 		language: "TypeScript",
 		starterCode:
 			"export function debounce<TArgs extends unknown[]>(\n\tcallback: (...args: TArgs) => void,\n\twaitMs: number,\n): (...args: TArgs) => void {\n\t// Write your solution\n}\n",
 		referenceAnswer:
 			"export function debounce<TArgs extends unknown[]>(\n\tcallback: (...args: TArgs) => void,\n\twaitMs: number,\n): (...args: TArgs) => void {\n\tlet timeoutId: ReturnType<typeof setTimeout> | undefined;\n\n\treturn (...args) => {\n\t\tif (timeoutId !== undefined) clearTimeout(timeoutId);\n\n\t\ttimeoutId = setTimeout(() => {\n\t\t\tcallback(...args);\n\t\t}, waitMs);\n\t};\n}\n",
 		rubric: [
-			"Keeps the timer in a closure.",
-			"Clears a pending timer before scheduling another.",
-			"Forwards the latest arguments.",
-			"Can discuss cancellation or preserving this when asked.",
+			"Keeps one timer between calls.",
+			"Cancels the old timer before starting a new one.",
+			"Passes through the newest arguments.",
+			"Can explain how to cancel it or keep `this` if asked.",
 		],
 		explanation:
-			"The closure is the key: it gives all calls to the returned function access to one pending timer.",
+			"The returned function keeps the timer between calls. That lets a new call cancel the old wait.",
 	},
 	{
 		id: "web-cache-control",
 		kind: "flashcard",
-		title: "HTTP caching",
+		title: "A 60-second cache",
 		topic: "web",
 		difficulty: "foundation",
 		tags: ["http", "caching"],
-		prompt: "What does Cache-Control: max-age=60 communicate?",
+		prompt: "What does Cache-Control: max-age=60 tell a browser or cache?",
 		answer:
-			"A response may be treated as fresh for 60 seconds from when it is stored. During that time a cache can reuse it without asking the origin, subject to the other directives present.",
+			"It may reuse this response for 60 seconds after saving it. During that time it does not need to ask the server again, unless another cache rule says otherwise.",
 		explanation:
-			"Caching behavior depends on the complete directive set; private, no-store, and stale directives materially change the result.",
+			"Read the whole header. Rules such as `private` or `no-store` can change what a cache may do.",
 	},
 	{
 		id: "web-cors-choice",
 		kind: "multiple-choice",
-		title: "CORS preflight",
+		title: "Why the browser asks first",
 		topic: "web",
 		difficulty: "intermediate",
 		tags: ["http", "cors"],
-		prompt: "Why does a browser send a CORS preflight request?",
+		prompt:
+			"Why does a browser sometimes ask a site for permission before sending a cross-site request?",
 		options: [
 			{ id: "a", label: "To authenticate the user before every request." },
 			{
 				id: "b",
 				label:
-					"To ask whether a cross-origin request with certain methods or headers is allowed.",
+					"To ask whether a cross-site request with certain methods or headers is allowed.",
 			},
 			{ id: "c", label: "To encrypt a request body." },
 			{ id: "d", label: "To warm a CDN cache." },
 		],
 		correctOptionId: "b",
 		explanation:
-			"For non-simple cross-origin requests, the browser sends OPTIONS and checks the server’s allow-origin, allow-methods, and allow-headers response before the actual request.",
+			"For some cross-site requests, the browser first sends an OPTIONS request. It checks whether the server allows that site, method, and headers before sending the real request.",
 	},
 	{
 		id: "web-rendering-written",
 		kind: "written",
-		title: "Critical rendering path",
+		title: "Why a stylesheet can delay the page",
 		topic: "web",
 		difficulty: "intermediate",
 		tags: ["browser", "performance"],
 		prompt:
-			"Explain why a large render-blocking stylesheet can delay first paint and name two ways to improve the experience.",
-		placeholder: "Describe the dependency and practical mitigations…",
+			"Why can a large stylesheet delay the first visible page, and what are two ways to make that faster?",
+		placeholder: "Explain what the browser waits for, then name two fixes…",
 		referenceAnswer:
-			"The browser needs CSSOM information before it can render reliably, so a stylesheet blocks painting while it is fetched and parsed. Reduce and split unused CSS, inline only critical CSS, preload needed assets, and defer non-critical styles when the visual trade-off is acceptable.",
+			"The browser needs style rules before it can draw the page. It waits while it downloads and reads a stylesheet. Cut unused CSS, split large files, include only the styles needed for the first screen, or load less important styles later.",
 		rubric: [
-			"Connects CSS loading/parsing to render or paint delay.",
-			"Offers at least two concrete mitigations.",
-			"Avoids claiming every stylesheet should be deferred.",
+			"Says the browser waits for style rules before it draws.",
+			"Gives at least two clear fixes.",
+			"Does not say every stylesheet should load later.",
 		],
 		explanation:
-			"Performance answers are strongest when they connect a browser dependency to a measured user-visible outcome.",
+			"Tie the file the browser waits for to what the person sees: a blank page or a late first paint.",
 	},
 	{
 		id: "web-debounce-hook-code",
 		kind: "code",
-		title: "Debounced React value",
+		title: "A React value that waits",
 		topic: "web",
 		difficulty: "advanced",
 		tags: ["react", "hooks", "performance"],
 		prompt:
-			"Implement useDebouncedValue. It should return a value that updates waitMs after the latest input change.",
+			"Write useDebouncedValue. It should return a value that updates waitMs after the last input change.",
 		language: "TypeScript / React",
 		starterCode:
 			"export function useDebouncedValue<T>(value: T, waitMs: number): T {\n\t// Write your solution\n}\n",
 		referenceAnswer:
 			'import { useEffect, useState } from "react";\n\nexport function useDebouncedValue<T>(value: T, waitMs: number): T {\n\tconst [debouncedValue, setDebouncedValue] = useState(value);\n\n\tuseEffect(() => {\n\t\tconst timeoutId = setTimeout(() => setDebouncedValue(value), waitMs);\n\t\treturn () => clearTimeout(timeoutId);\n\t}, [value, waitMs]);\n\n\treturn debouncedValue;\n}\n',
 		rubric: [
-			"Uses state for the displayed debounced value.",
-			"Sets and cleans up a timer in an effect.",
-			"Includes value and waitMs as dependencies.",
-			"Can explain why cleanup avoids stale timer updates.",
+			"Stores the value that the page should show.",
+			"Starts a timer and clears the old one in an effect.",
+			"Reacts when value or waitMs changes.",
+			"Explains why clearing the old timer matters.",
 		],
 		explanation:
-			"The effect cleanup gives each value change a cancellation point before the next timer becomes active.",
+			"When the input changes again, cleanup clears the old timer. Only the latest input gets to update the result.",
 	},
 ];
 
 const courses: readonly StudyCourse[] = [
 	{
 		id: "url-shortener",
-		title: "Design a URL Shortener",
+		title: "Build a URL Shortener",
 		summary:
-			"Move from ambiguous requirements to a defendable read-heavy architecture.",
+			"Start with the question, get the key numbers, then design the busy redirect path.",
 		outcomes: [
-			"Frame requirements before components.",
-			"Use estimates to justify design choices.",
-			"Explain the cache, mapping-store, and analytics trade-offs.",
+			"Ask what the system must do before choosing parts.",
+			"Use rough numbers to choose the right work.",
+			"Explain why redirects need a cache and separate analytics.",
 		],
 		lessons: [
 			{
 				id: "requirements",
 				kind: "concept",
-				title: "Start with the contract",
-				body: "Ask what a link creator and a redirect reader must experience. Then separate those capabilities from latency, availability, retention, and scale constraints. This prevents you from choosing a database before understanding the access pattern.",
+				title: "Start with what people need",
+				body: "Ask what happens when someone makes a link and when someone opens one. Then ask how fast, reliable, and large the system must be. Do this before you pick a database or draw boxes.",
 			},
 			{
 				id: "requirements-checkpoint",
 				kind: "checkpoint",
-				title: "Check your framing",
-				body: "Recall the distinction before estimating load.",
+				title: "Check the first step",
+				body: "Name what the system does and how well it must do it before you estimate traffic.",
 				questionId: "system-design-requirements",
 			},
 			{
 				id: "estimation",
 				kind: "concept",
-				title: "Make the read path visible",
-				body: "Estimate daily writes, redirect reads, peak QPS, record size, and retention. A large read-to-write ratio suggests a cache on the redirect path; record growth tells you when partitioning and retention policies matter.",
+				title: "Count the busy work",
+				body: "Estimate new links, redirects, busiest requests per second, record size, and how long you keep records. If many more people open links than create them, make the redirect path fast with a cache.",
 			},
 			{
 				id: "capacity-challenge",
 				kind: "challenge",
-				title: "Turn numbers into decisions",
-				body: "Explain which numbers move the architecture and why.",
+				title: "Let the numbers guide you",
+				body: "Explain which estimates change the design and why.",
 				questionId: "system-design-written",
 			},
 			{
 				id: "architecture",
 				kind: "concept",
-				title: "Build the smallest credible system",
-				body: "Start with a create API, a durable short-code mapping store, and a redirect service. Add a cache for hot reads, asynchronous analytics so redirects stay fast, and replication only where the availability target requires it. Name the failure and consistency trade-off every time you add a piece.",
+				title: "Build the simple version first",
+				body: "Start with a way to create a link, a place to save it, and a way to redirect visitors. Add a cache for popular links. Record analytics in the background so redirects stay fast. Add copies of data only when the uptime goal needs them.",
 			},
 		],
 		assessmentQuestionIds: [
@@ -513,39 +517,39 @@ const courses: readonly StudyCourse[] = [
 	},
 	{
 		id: "sliding-window",
-		title: "Master the Sliding Window",
+		title: "Learn the Sliding Window",
 		summary:
-			"Recognize, derive, and implement the invariant behind a common hard-problem pattern.",
+			"Spot a moving slice of input, state its rule, and write the code one step at a time.",
 		outcomes: [
-			"Recognize when a contiguous range suggests a window.",
-			"State the invariant before coding.",
-			"Prove linear time with an amortized pointer argument.",
+			"Spot when a continuous part of the input may help.",
+			"State the rule before you code.",
+			"Explain why both edges make the code fast.",
 		],
 		lessons: [
 			{
 				id: "recognition",
 				kind: "concept",
-				title: "Look for a contiguous range",
-				body: "A sliding window is often a fit when the question asks about a substring or subarray and a property can be updated as one boundary moves. First decide whether the property is fixed-size, at-most, at-least, or exactly constrained.",
+				title: "Look for one continuous slice",
+				body: "Use this pattern when a question asks about a part of a string or list that stays together. Move one edge at a time and keep track of what is inside. First ask whether the slice has a fixed size or a rule such as “at most k.”",
 			},
 			{
 				id: "invariant-checkpoint",
 				kind: "checkpoint",
-				title: "Name the invariant",
-				body: "A correct window needs a condition you can restore after each expansion.",
+				title: "State the rule",
+				body: "Your current slice needs one rule. When adding an item breaks that rule, move the left edge until it holds again.",
 				questionId: "algorithms-window-invariant",
 			},
 			{
 				id: "proof",
 				kind: "concept",
-				title: "Prove the nested loop is linear",
-				body: "Do not count loop nesting. Count pointer motion across the full input. If neither pointer moves backward, each can cross the input once, producing O(n) total work.",
+				title: "See why it is still fast",
+				body: "Do not judge the code by the number of loops. Count how far each edge can move. If neither edge goes backward, each crosses the input once. That is O(n).",
 			},
 			{
 				id: "implementation-challenge",
 				kind: "challenge",
-				title: "Implement the pattern",
-				body: "Use a last-seen map and make the left-boundary edge case explicit.",
+				title: "Write the code",
+				body: "Remember where you last saw each letter. Move the left edge only when that old letter is still inside the current slice.",
 				questionId: "algorithms-window-code",
 			},
 		],
@@ -570,7 +574,7 @@ export function getStudySession(input: {
 
 	return Effect.succeed({
 		id: `${input.date}:${input.attempt}`,
-		label: input.attempt === 0 ? "Daily Focus" : "Practice Set",
+		label: input.attempt === 0 ? "Today’s questions" : "Question set",
 		questions: questionIds.map((id) => _toPublic(_getQuestionOrDie(id))),
 	});
 }

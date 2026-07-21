@@ -32,14 +32,14 @@ export function AnswerForm({
 			try {
 				await onSubmit(value.answer);
 			} catch {
-				setSubmitError("Your answer could not be saved. Please try again.");
+				setSubmitError("Could not save your answer. Try again.");
 			}
 		},
 	});
 
 	const label =
 		question.kind === "code"
-			? `Your ${question.language} solution`
+			? `Your ${question.language} answer`
 			: "Your answer";
 
 	return (
@@ -53,9 +53,7 @@ export function AnswerForm({
 				name="answer"
 				validators={{
 					onChange: ({ value }) =>
-						value.trim()
-							? undefined
-							: "Write an answer before revealing the guide.",
+						value.trim() ? undefined : "Write an answer first.",
 				}}
 			>
 				{(field) => (
@@ -101,7 +99,7 @@ export function AnswerForm({
 						disabled={disabled || !canSubmit || isSubmitting}
 						type="submit"
 					>
-						{isSubmitting ? "Checking…" : "Reveal guide"}
+						{isSubmitting ? "Loading guide…" : "Show guide"}
 					</Button>
 				)}
 			</form.Subscribe>

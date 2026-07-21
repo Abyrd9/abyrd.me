@@ -79,7 +79,7 @@ test("grades multiple choice answers and reveals typed-answer rubrics", async ()
 	expect(incorrect.correct).toBe(false);
 	expect(written.correct).toBeNull();
 	expect(written.rubric.length).toBeGreaterThan(0);
-	expect(flashcard.answer).toContain("condition");
+	expect(flashcard.answer).toContain("no repeated letter");
 });
 
 test("loads declarative courses and their final assessments", async () => {

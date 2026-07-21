@@ -63,7 +63,7 @@ function StudyHub() {
 			} catch {
 				if (isCurrent) {
 					setMessage(
-						"Study content could not be loaded. Refresh and try again.",
+						"Could not load the study material. Refresh and try again.",
 					);
 				}
 			} finally {
@@ -99,7 +99,7 @@ function StudyHub() {
 			setSessionKey(`daily:${nextSession.id}`);
 			setView("practice");
 		} catch {
-			setMessage("Today’s focus could not be loaded. Please try again.");
+			setMessage("Could not load today’s set. Try again.");
 		} finally {
 			setIsLoading(false);
 		}
@@ -123,7 +123,7 @@ function StudyHub() {
 			setSessionKey(`practice:${nextSession.id}`);
 			setView("practice");
 		} catch {
-			setMessage("A new practice set could not be loaded. Please try again.");
+			setMessage("Could not load a new set. Try again.");
 		} finally {
 			setIsLoading(false);
 		}
@@ -138,7 +138,7 @@ function StudyHub() {
 			setCourse(nextCourse);
 			setView("course");
 		} catch {
-			setMessage("That course could not be loaded. Please try again.");
+			setMessage("Could not load that course. Try again.");
 		} finally {
 			setIsLoading(false);
 		}
@@ -207,11 +207,10 @@ function StudyHub() {
 			<div className="max-w-3xl">
 				<p className="text-sm font-medium text-blue-700">Interview study</p>
 				<h1 className="mt-2 text-4xl font-semibold tracking-tight text-slate-950">
-					Practice the work you want to remember.
+					Practice for technical interviews.
 				</h1>
 				<p className="mt-4 text-lg leading-8 text-slate-600">
-					Daily recall, fresh interview prompts, and guided courses for system
-					design and algorithms.
+					Take a daily set, start a new set, or work through a short course.
 				</p>
 			</div>
 
@@ -225,14 +224,14 @@ function StudyHub() {
 					disabled={isLoading}
 					onClick={() => void loadDailyFocus()}
 				>
-					Daily Focus
+					Today’s questions
 				</Button>
 				<Button
 					className="bg-slate-200 text-slate-800 hover:bg-slate-300"
 					disabled={isLoading}
 					onClick={() => void startAnotherPracticeSet()}
 				>
-					Practice another set
+					New question set
 				</Button>
 				<Button
 					className={
@@ -243,7 +242,7 @@ function StudyHub() {
 					disabled={isLoading}
 					onClick={() => setView("courses")}
 				>
-					Guided courses
+					Courses
 				</Button>
 			</div>
 
@@ -416,11 +415,10 @@ function StudySession({
 					{session.label} complete
 				</p>
 				<h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
-					You reviewed all {session.questions.length} prompts.
+					You reviewed all {session.questions.length} questions.
 				</h2>
 				<p className="mt-3 leading-7 text-slate-700">
-					Choose another set whenever you want a different mix, or keep a few
-					fresh ideas in mind before tomorrow’s focus.
+					Start another set now, or come back tomorrow for a new daily set.
 				</p>
 			</section>
 		);
@@ -516,14 +514,14 @@ function Assessment({
 		return (
 			<section className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6 sm:p-8">
 				<p className="text-sm font-semibold text-emerald-800">
-					Assessment complete
+					Final quiz complete
 				</p>
 				<h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
 					You finished {course.title}.
 				</h2>
 				<p className="mt-3 leading-7 text-slate-700">
-					Keep the reference answers nearby, then return to the daily mix to
-					make the pattern stick.
+					Review the guides, then return to a daily set to practise the same
+					ideas again.
 				</p>
 				<Button className="mt-6" onClick={onComplete}>
 					Back to courses
@@ -535,7 +533,7 @@ function Assessment({
 	return (
 		<div className="grid gap-5">
 			<p className="text-sm font-medium text-slate-500">
-				{course.title} · Final assessment · Question {questionIndex + 1} of{" "}
+				{course.title} · Final quiz · Question {questionIndex + 1} of{" "}
 				{course.assessment.length}
 			</p>
 			<QuestionCard
@@ -548,7 +546,7 @@ function Assessment({
 			/>
 			{feedback[question.id] && questionIndex < course.assessment.length - 1 ? (
 				<Button onClick={() => setQuestionIndex((index) => index + 1)}>
-					Next assessment question
+					Next question
 				</Button>
 			) : null}
 		</div>
@@ -560,7 +558,7 @@ function StudyLoading({ compact = false }: { compact?: boolean }) {
 		<div
 			className={`rounded-2xl border border-slate-200 bg-white text-slate-600 ${compact ? "p-4 text-sm" : "mt-10 p-8"}`}
 		>
-			Loading your study material…
+			Loading…
 		</div>
 	);
 }

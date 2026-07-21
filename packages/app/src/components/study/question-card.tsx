@@ -30,7 +30,7 @@ export function QuestionCard({
 		try {
 			await onReveal(question.id);
 		} catch {
-			setChoiceError("The answer could not be revealed. Please try again.");
+			setChoiceError("Could not load the answer. Try again.");
 		} finally {
 			setIsRevealing(false);
 		}
@@ -43,7 +43,7 @@ export function QuestionCard({
 		try {
 			await onAnswer(question.id, optionId);
 		} catch {
-			setChoiceError("That choice could not be checked. Please try again.");
+			setChoiceError("Could not check that choice. Try again.");
 		} finally {
 			setIsRevealing(false);
 		}
@@ -84,7 +84,9 @@ export function QuestionCard({
 									}
 									onClick={() => onRate(question.id, "know")}
 								>
-									{flashcardRating === "know" ? "Marked: know it" : "Know it"}
+									{flashcardRating === "know"
+										? "Marked: I know this"
+										: "I know this"}
 								</Button>
 								<Button
 									className={
@@ -95,14 +97,14 @@ export function QuestionCard({
 									onClick={() => onRate(question.id, "review")}
 								>
 									{flashcardRating === "review"
-										? "Marked: review again"
-										: "Review again"}
+										? "Marked: review this again"
+										: "Review this again"}
 								</Button>
 							</div>
 						</>
 					) : (
 						<Button disabled={isRevealing} onClick={reveal}>
-							{isRevealing ? "Revealing…" : "Reveal answer"}
+							{isRevealing ? "Loading…" : "Show answer"}
 						</Button>
 					)
 				) : null}
@@ -155,9 +157,9 @@ export function QuestionCard({
 function Feedback({ feedback }: { feedback: StudyAnswerFeedback }) {
 	const status =
 		feedback.correct === true
-			? "Correct"
+			? "Right"
 			: feedback.correct === false
-				? "Not quite"
+				? "Not yet"
 				: "Compare your answer";
 
 	return (
@@ -169,17 +171,28 @@ function Feedback({ feedback }: { feedback: StudyAnswerFeedback }) {
 			}`}
 		>
 			<p className="text-sm font-semibold text-slate-900">{status}</p>
-			<p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">
+			<p className="mt-3 text-xs font-semibold uppercase tracking-wide text-slate-600">
+				Answer
+			</p>
+			<p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-slate-700">
 				{feedback.answer}
 			</p>
 			{feedback.rubric.length > 0 ? (
-				<ul className="mt-3 grid gap-1 text-sm leading-6 text-slate-700">
-					{feedback.rubric.map((item) => (
-						<li key={item}>• {item}</li>
-					))}
-				</ul>
+				<>
+					<p className="mt-3 text-xs font-semibold uppercase tracking-wide text-slate-600">
+						Check for these points
+					</p>
+					<ul className="mt-1 grid gap-1 text-sm leading-6 text-slate-700">
+						{feedback.rubric.map((item) => (
+							<li key={item}>• {item}</li>
+						))}
+					</ul>
+				</>
 			) : null}
-			<p className="mt-3 text-sm leading-6 text-slate-600">
+			<p className="mt-3 text-xs font-semibold uppercase tracking-wide text-slate-600">
+				Why
+			</p>
+			<p className="mt-1 text-sm leading-6 text-slate-600">
 				{feedback.explanation}
 			</p>
 		</section>

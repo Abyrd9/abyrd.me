@@ -7,6 +7,9 @@ import { defineConfig } from "vite";
 
 const config = defineConfig({
 	resolve: { tsconfigPaths: true },
+	server: {
+		allowedHosts: ["andrews-mac-mini-1.tail121ec5.ts.net"],
+	},
 	plugins: [
 		nitro({ rollupConfig: { external: [/^@sentry\//] } }),
 		tailwindcss(),
