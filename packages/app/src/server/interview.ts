@@ -44,7 +44,6 @@ export type CurrentBriefing = {
 	sourceName: string;
 	sourceUrl: string;
 	checkedOn: string;
-	reviewBy: string;
 };
 
 export class InterviewRehearsalNotFound extends Data.TaggedError(
@@ -662,7 +661,6 @@ const briefings: readonly CurrentBriefing[] = [
 		sourceName: "RFC 5861",
 		sourceUrl: "https://www.rfc-editor.org/rfc/rfc5861",
 		checkedOn: "2026-07-21",
-		reviewBy: "2026-10-21",
 	},
 	{
 		id: "sqs-duplicates",
@@ -676,7 +674,6 @@ const briefings: readonly CurrentBriefing[] = [
 		sourceUrl:
 			"https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/standard-queues-at-least-once-delivery.html",
 		checkedOn: "2026-07-21",
-		reviewBy: "2026-10-21",
 	},
 	{
 		id: "server-function-auth",
@@ -690,7 +687,6 @@ const briefings: readonly CurrentBriefing[] = [
 		sourceUrl:
 			"https://tanstack.com/start/latest/docs/framework/react/guide/server-functions",
 		checkedOn: "2026-07-21",
-		reviewBy: "2026-10-21",
 	},
 	{
 		id: "postgres-indexes",
@@ -703,7 +699,6 @@ const briefings: readonly CurrentBriefing[] = [
 		sourceName: "PostgreSQL documentation",
 		sourceUrl: "https://www.postgresql.org/docs/current/indexes-intro.html",
 		checkedOn: "2026-07-21",
-		reviewBy: "2026-10-21",
 	},
 ];
 

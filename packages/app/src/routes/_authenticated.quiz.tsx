@@ -2,16 +2,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { RehearsalForm } from "#/components/interview/rehearsal-form";
 import { Button } from "#/components/primitives/button";
-import {
-	completeInterview,
-	createInterviewProgress,
-	dueInterviewIds,
-	type InterviewProgress,
-	loadInterviewProgress,
-	type MissReason,
-	saveInterviewProgress,
-	setInterviewMissReasons,
-} from "#/interview-progress";
 import type {
 	CurrentBriefing,
 	InterviewGuide,
@@ -24,29 +14,18 @@ import {
 	loadInterviewGuide,
 } from "#/server/interview-functions";
 
-type View = "today" | InterviewTrack | "current";
-
-const missReasons: readonly { id: MissReason; label: string }[] = [
-	{ id: "pattern", label: "I did not find the right pattern." },
-	{ id: "code", label: "My code had a problem." },
-	{ id: "edge-case", label: "I missed an edge case." },
-	{ id: "scale", label: "I did not size the system well." },
-	{ id: "trade-off", label: "I did not explain a trade-off." },
-	{ id: "explanation", label: "I did not explain my answer clearly." },
-	{ id: "current-fact", label: "I needed a current technical fact." },
-];
+type View = InterviewTrack | "current";
 
 export const Route = createFileRoute("/_authenticated/quiz")({
 	component: InterviewHub,
 });
 
 function InterviewHub() {
-	const [progress, setProgress] = useState(createInterviewProgress);
 	const [catalog, setCatalog] = useState<readonly InterviewRehearsalPublic[]>(
 		[],
 	);
 	const [briefings, setBriefings] = useState<readonly CurrentBriefing[]>([]);
-	const [view, setView] = useState<View>("today");
+	const [view, setView] = useState<View>("coding");
 	const [active, setActive] = useState<InterviewRehearsalPublic | null>(null);
 	const [guide, setGuide] = useState<InterviewGuide | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
@@ -65,7 +44,6 @@ function InterviewHub() {
 
 				setCatalog(nextCatalog);
 				setBriefings(nextBriefings);
-				setProgress(loadInterviewProgress());
 			} catch {
 				if (isCurrent)
 					setMessage(
@@ -82,33 +60,20 @@ function InterviewHub() {
 		};
 	}, []);
 
-	function updateProgress(
-		update: (current: InterviewProgress) => InterviewProgress,
-	) {
-		setProgress((current) => {
-			const next = update(current);
-			saveInterviewProgress(next);
-			return next;
-		});
-	}
-
 	function open(rehearsal: InterviewRehearsalPublic) {
 		setActive(rehearsal);
 		setGuide(null);
 		setMessage(null);
 	}
 
-	async function finish(rehearsal: InterviewRehearsalPublic) {
+	async function showGuide(rehearsal: InterviewRehearsalPublic) {
 		const nextGuide = await loadInterviewGuide({
 			data: { rehearsalId: rehearsal.id },
 		});
 		setGuide(nextGuide);
-		updateProgress((current) =>
-			completeInterview(current, rehearsal.id, _localDate()),
-		);
 	}
 
-	function returnToHub(nextView: View = "today") {
+	function returnToHub(nextView: View = "coding") {
 		setActive(null);
 		setGuide(null);
 		setView(nextView);
@@ -121,11 +86,11 @@ function InterviewHub() {
 			<div className="max-w-3xl">
 				<p className="text-sm font-medium text-blue-700">Interview practice</p>
 				<h1 className="mt-2 text-4xl font-semibold tracking-tight text-slate-950">
-					Practise the whole interview.
+					Choose the interview work you need.
 				</h1>
 				<p className="mt-4 text-lg leading-8 text-slate-600">
-					Write an answer first. Then use the guide to see what you missed and
-					come back when it is due.
+					Write an answer when you want to practise, or open the guide whenever
+					you need help.
 				</p>
 			</div>
 
@@ -133,13 +98,7 @@ function InterviewHub() {
 				<Rehearsal
 					guide={guide}
 					onBack={() => returnToHub(active.track)}
-					onFinish={() => finish(active)}
-					onMissReasonsChange={(reasons) =>
-						updateProgress((current) =>
-							setInterviewMissReasons(current, active.id, reasons),
-						)
-					}
-					progress={progress}
+					onShowGuide={() => showGuide(active)}
 					rehearsal={active}
 				/>
 			) : (
@@ -148,12 +107,6 @@ function InterviewHub() {
 						className="mt-8 flex flex-wrap gap-3"
 						aria-label="Interview practice sections"
 					>
-						<NavButton
-							active={view === "today"}
-							onClick={() => setView("today")}
-						>
-							Today
-						</NavButton>
 						<NavButton
 							active={view === "coding"}
 							onClick={() => setView("coding")}
@@ -177,13 +130,9 @@ function InterviewHub() {
 					{message ? <Message>{message}</Message> : null}
 
 					<div className="mt-8">
-						{view === "today" ? (
-							<Today catalog={catalog} onOpen={open} progress={progress} />
-						) : null}
 						{view === "coding" || view === "system-design" ? (
 							<Catalog
 								onOpen={open}
-								progress={progress}
 								rehearsals={catalog.filter((item) => item.track === view)}
 								title={
 									view === "coding"
@@ -200,92 +149,13 @@ function InterviewHub() {
 	);
 }
 
-function Today({
-	catalog,
-	progress,
-	onOpen,
-}: {
-	catalog: readonly InterviewRehearsalPublic[];
-	progress: InterviewProgress;
-	onOpen: (rehearsal: InterviewRehearsalPublic) => void;
-}) {
-	const today = _localDate();
-	const due = dueInterviewIds(progress, today)
-		.map((id) => catalog.find((item) => item.id === id))
-		.filter((item): item is InterviewRehearsalPublic => Boolean(item));
-	const completed = Object.keys(progress.attempts).length;
-	const nextTrack: InterviewTrack =
-		completed % 2 === 0 ? "coding" : "system-design";
-	const nextNew =
-		catalog.find(
-			(item) => item.track === nextTrack && !progress.attempts[item.id],
-		) ?? catalog.find((item) => !progress.attempts[item.id]);
-
-	return (
-		<div className="grid gap-6">
-			<section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
-				<p className="text-sm font-medium text-blue-700">Your next step</p>
-				<h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
-					{due.length > 0
-						? "Review work that is due."
-						: "Start one new rehearsal."}
-				</h2>
-				<p className="mt-3 leading-7 text-slate-600">
-					{due.length > 0
-						? "Repeat the work before you add more. The guide will show your last miss reasons."
-						: "Today alternates between coding and system design. Take the time limit seriously, then use the guide."}
-				</p>
-				{due[0] ? (
-					<Button className="mt-6" onClick={() => onOpen(due[0])}>
-						Review {due[0].title}
-					</Button>
-				) : nextNew ? (
-					<Button className="mt-6" onClick={() => onOpen(nextNew)}>
-						Start {nextNew.title}
-					</Button>
-				) : (
-					<p className="mt-6 text-sm text-slate-600">
-						You have completed the core set. Pick any rehearsal to keep it
-						fresh.
-					</p>
-				)}
-			</section>
-
-			{due.length > 1 ? (
-				<section>
-					<h2 className="text-lg font-semibold text-slate-950">Also due</h2>
-					<div className="mt-3 grid gap-3">
-						{due.slice(1).map((item) => (
-							<button
-								className="rounded-xl border border-slate-200 bg-white p-4 text-left transition hover:border-slate-400"
-								key={item.id}
-								onClick={() => onOpen(item)}
-								type="button"
-							>
-								<span className="font-semibold text-slate-950">
-									{item.title}
-								</span>
-								<span className="ml-2 text-sm text-slate-600">
-									{item.track === "coding" ? "Coding" : "System design"}
-								</span>
-							</button>
-						))}
-					</div>
-				</section>
-			) : null}
-		</div>
-	);
-}
-
 function Catalog({
 	title,
 	rehearsals,
-	progress,
 	onOpen,
 }: {
 	title: string;
 	rehearsals: readonly InterviewRehearsalPublic[];
-	progress: InterviewProgress;
 	onOpen: (rehearsal: InterviewRehearsalPublic) => void;
 }) {
 	return (
@@ -294,29 +164,23 @@ function Catalog({
 				{title}
 			</h2>
 			<div className="mt-5 grid gap-4 sm:grid-cols-2">
-				{rehearsals.map((item) => {
-					const attempt = progress.attempts[item.id];
-					return (
-						<article
-							className="flex flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
-							key={item.id}
-						>
-							<p className="text-sm font-medium text-blue-700">
-								{item.durationMinutes} minutes
-							</p>
-							<h3 className="mt-2 text-xl font-semibold tracking-tight text-slate-950">
-								{item.title}
-							</h3>
-							<p className="mt-3 leading-7 text-slate-600">{item.summary}</p>
-							<p className="mt-4 text-sm text-slate-500">
-								{attempt ? `Next review: ${attempt.dueOn}` : "Not started"}
-							</p>
-							<Button className="mt-5 self-start" onClick={() => onOpen(item)}>
-								{attempt ? "Practise again" : "Start rehearsal"}
-							</Button>
-						</article>
-					);
-				})}
+				{rehearsals.map((item) => (
+					<article
+						className="flex flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+						key={item.id}
+					>
+						<p className="text-sm font-medium text-blue-700">
+							{item.durationMinutes} minutes
+						</p>
+						<h3 className="mt-2 text-xl font-semibold tracking-tight text-slate-950">
+							{item.title}
+						</h3>
+						<p className="mt-3 leading-7 text-slate-600">{item.summary}</p>
+						<Button className="mt-5 self-start" onClick={() => onOpen(item)}>
+							Open rehearsal
+						</Button>
+					</article>
+				))}
 			</div>
 		</section>
 	);
@@ -325,20 +189,14 @@ function Catalog({
 function Rehearsal({
 	rehearsal,
 	guide,
-	progress,
 	onBack,
-	onFinish,
-	onMissReasonsChange,
+	onShowGuide,
 }: {
 	rehearsal: InterviewRehearsalPublic;
 	guide: InterviewGuide | null;
-	progress: InterviewProgress;
 	onBack: () => void;
-	onFinish: () => Promise<void>;
-	onMissReasonsChange: (reasons: readonly MissReason[]) => void;
+	onShowGuide: () => Promise<void>;
 }) {
-	const selectedReasons = progress.attempts[rehearsal.id]?.missReasons ?? [];
-
 	return (
 		<div className="mt-8 grid gap-6">
 			<Button
@@ -373,16 +231,12 @@ function Rehearsal({
 				</section>
 
 				{guide ? (
-					<Guide
-						guide={guide}
-						onMissReasonsChange={onMissReasonsChange}
-						rehearsal={rehearsal}
-						selectedReasons={selectedReasons}
-					/>
+					<Guide guide={guide} rehearsal={rehearsal} />
 				) : (
 					<RehearsalForm
 						key={rehearsal.id}
-						onSubmit={onFinish}
+						onShowGuide={onShowGuide}
+						onSubmit={onShowGuide}
 						rehearsal={rehearsal}
 					/>
 				)}
@@ -394,22 +248,10 @@ function Rehearsal({
 function Guide({
 	rehearsal,
 	guide,
-	selectedReasons,
-	onMissReasonsChange,
 }: {
 	rehearsal: InterviewRehearsalPublic;
 	guide: InterviewGuide;
-	selectedReasons: readonly MissReason[];
-	onMissReasonsChange: (reasons: readonly MissReason[]) => void;
 }) {
-	function toggle(reason: MissReason) {
-		onMissReasonsChange(
-			selectedReasons.includes(reason)
-				? selectedReasons.filter((item) => item !== reason)
-				: [...selectedReasons, reason],
-		);
-	}
-
 	return (
 		<section className="mt-7 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
 			<p className="text-sm font-semibold text-emerald-900">Guide</p>
@@ -447,32 +289,11 @@ function Guide({
 					</ul>
 				</>
 			) : null}
-			<fieldset className="mt-6 border-t border-emerald-200 pt-5">
-				<legend className="text-sm font-semibold text-slate-950">
-					What should you revisit?
-				</legend>
-				<div className="mt-3 grid gap-2">
-					{missReasons.map((reason) => (
-						<label
-							className="flex items-start gap-2 text-sm leading-6 text-slate-700"
-							key={reason.id}
-						>
-							<input
-								checked={selectedReasons.includes(reason.id)}
-								onChange={() => toggle(reason.id)}
-								type="checkbox"
-							/>
-							{reason.label}
-						</label>
-					))}
-				</div>
-			</fieldset>
 		</section>
 	);
 }
 
 function Briefings({ briefings }: { briefings: readonly CurrentBriefing[] }) {
-	const today = _localDate();
 	return (
 		<section>
 			<h2 className="text-2xl font-semibold tracking-tight text-slate-950">
@@ -483,39 +304,34 @@ function Briefings({ briefings }: { briefings: readonly CurrentBriefing[] }) {
 				are short because they support practice; they do not replace it.
 			</p>
 			<div className="mt-5 grid gap-4 sm:grid-cols-2">
-				{briefings.map((card) => {
-					const needsReview = card.reviewBy < today;
-					return (
-						<article
-							className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
-							key={card.id}
+				{briefings.map((card) => (
+					<article
+						className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+						key={card.id}
+					>
+						<p className="text-sm font-medium text-blue-700">
+							Checked {card.checkedOn}
+						</p>
+						<h3 className="mt-2 text-xl font-semibold tracking-tight text-slate-950">
+							{card.title}
+						</h3>
+						<p className="mt-3 font-medium leading-6 text-slate-800">
+							{card.question}
+						</p>
+						<p className="mt-3 leading-7 text-slate-700">{card.answer}</p>
+						<p className="mt-3 text-sm leading-6 text-slate-600">
+							{card.whyItMatters}
+						</p>
+						<a
+							className="mt-4 inline-flex text-sm font-semibold text-blue-700 underline underline-offset-4"
+							href={card.sourceUrl}
+							rel="noreferrer"
+							target="_blank"
 						>
-							<p
-								className={`text-sm font-medium ${needsReview ? "text-amber-700" : "text-blue-700"}`}
-							>
-								{needsReview ? "Needs review" : "Checked"} {card.checkedOn}
-							</p>
-							<h3 className="mt-2 text-xl font-semibold tracking-tight text-slate-950">
-								{card.title}
-							</h3>
-							<p className="mt-3 font-medium leading-6 text-slate-800">
-								{card.question}
-							</p>
-							<p className="mt-3 leading-7 text-slate-700">{card.answer}</p>
-							<p className="mt-3 text-sm leading-6 text-slate-600">
-								{card.whyItMatters}
-							</p>
-							<a
-								className="mt-4 inline-flex text-sm font-semibold text-blue-700 underline underline-offset-4"
-								href={card.sourceUrl}
-								rel="noreferrer"
-								target="_blank"
-							>
-								Read {card.sourceName}
-							</a>
-						</article>
-					);
-				})}
+							Read {card.sourceName}
+						</a>
+					</article>
+				))}
 			</div>
 		</section>
 	);
@@ -559,12 +375,4 @@ function Loading() {
 			Loading interview practice…
 		</div>
 	);
-}
-
-function _localDate() {
-	const date = new Date();
-	const year = date.getFullYear();
-	const month = String(date.getMonth() + 1).padStart(2, "0");
-	const day = String(date.getDate()).padStart(2, "0");
-	return `${year}-${month}-${day}`;
 }

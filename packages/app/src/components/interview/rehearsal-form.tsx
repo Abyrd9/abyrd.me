@@ -63,12 +63,14 @@ type RehearsalFormProps = {
 	rehearsal: InterviewRehearsalPublic;
 	disabled?: boolean;
 	onSubmit: (value: Values) => Promise<void>;
+	onShowGuide: () => Promise<void>;
 };
 
 export function RehearsalForm({
 	rehearsal,
 	disabled = false,
 	onSubmit,
+	onShowGuide,
 }: RehearsalFormProps) {
 	const [submitError, setSubmitError] = useState<string | null>(null);
 	const form = useForm({
@@ -88,6 +90,16 @@ export function RehearsalForm({
 			}
 		},
 	});
+
+	async function showGuide() {
+		setSubmitError(null);
+
+		try {
+			await onShowGuide();
+		} catch {
+			setSubmitError("Could not load the guide. Try again.");
+		}
+	}
 
 	return (
 		<Form
@@ -134,9 +146,19 @@ export function RehearsalForm({
 
 			<form.Subscribe selector={(state) => state.isSubmitting}>
 				{(isSubmitting) => (
-					<Button disabled={disabled || isSubmitting} type="submit">
-						{isSubmitting ? "Loading guide…" : "Finish and show guide"}
-					</Button>
+					<div className="flex flex-wrap gap-3">
+						<Button disabled={disabled || isSubmitting} type="submit">
+							{isSubmitting ? "Loading guide…" : "Finish and show guide"}
+						</Button>
+						<Button
+							className="bg-slate-200 text-slate-800 hover:bg-slate-300"
+							disabled={disabled || isSubmitting}
+							onClick={() => void showGuide()}
+							type="button"
+						>
+							Show guide now
+						</Button>
+					</div>
 				)}
 			</form.Subscribe>
 		</Form>
