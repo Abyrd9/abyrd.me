@@ -61,13 +61,13 @@ Each rehearsal will have a base version and senior/staff follow-ups. The
 follow-ups will cover failure, data freshness, cost, rollout, observability,
 and team boundaries. They will not add complexity unless the problem needs it.
 
-## Daily flow
+## Practice flow
 
-The daily page will show due work first. If nothing is due, it will offer the
-next new rehearsal and alternate between coding and system design.
+The app is a library, not a schedule. A user can open any coding or
+system-design rehearsal at any time.
 
-Each completed rehearsal returns after 1, 3, 7, and 14 days. A user can also
-start any rehearsal from the catalog.
+Each rehearsal shows its guide on request. Writing an answer remains available
+for practice, but it does not block the guide or record completion.
 
 ### Coding rehearsal
 
@@ -102,11 +102,10 @@ Instead, an authored review card will contain:
 - Why the fact changes a design choice.
 - A source name and link.
 - The date the card was checked.
-- A review-by date.
+
 
 Cards will use official product documentation, standards, and engineering
-posts. A card past its review-by date will say that it needs review. The app
-will not present it as current until it is checked again.
+posts. The card shows when its author last checked the source.
 
 ## Architecture
 
@@ -120,15 +119,10 @@ text box. The sections will match the interview flow: scope, estimates, main
 design, key path, trade-offs, rollout, and metrics. Coding rehearsals will use
 plan, code, edge cases, and complexity sections.
 
-`src/study-progress.ts` will store the attempt date, completion date, review
-date, outcome, and selected miss reasons for each rehearsal. Local storage
-will continue to hold this private progress in the first version.
-
 The authenticated `/quiz` route will become the simulator home. It will have:
 
-- Today: due reviews and the next new rehearsal.
-- Coding: the 10-problem catalog and progress.
-- System design: the 10-problem catalog and progress.
+- Coding: the 10-problem catalog.
+- System design: the 10-problem catalog.
 - Keep current: dated source-backed review cards.
 
 The existing pathless authenticated layout and server-side answer protection
@@ -137,16 +131,14 @@ will remain in place.
 ## Error handling and safety
 
 The server will reject unknown rehearsal and card IDs. It will not send a
-solution or checklist until the user submits or asks to see it. If local
-progress is missing or invalid, the app will start fresh rather than fail.
+solution or checklist until the user asks to see it.
 
 ## Verification
 
 - Content tests will confirm all 20 rehearsals load and their solutions stay
   private before reveal.
-- Progress tests will confirm the 1, 3, 7, and 14 day review schedule.
-- Route tests will cover the daily queue, catalogs, coding form, design form,
-  source-card dates, and authenticated server functions.
+- Route tests will cover the catalogs, coding form, design form, source-card
+  dates, and authenticated server functions.
 - `bun run check` will run tests, formatting, types, and production builds.
-- A browser smoke test will cover a coding rehearsal, a design rehearsal, a
-  review, and a dated technical card.
+- A browser smoke test will cover a coding rehearsal, a design rehearsal, and
+  a dated technical card.
