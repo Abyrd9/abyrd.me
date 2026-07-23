@@ -4,11 +4,19 @@ import { Button } from "#/components/primitives/button";
 import { loadFlashcardDecks } from "#/server/flashcard-functions";
 import type {
 	AlgorithmDeck,
+	ArchitecturePatternCard,
 	FlashcardDecks,
 	SystemTermCard,
 } from "#/server/flashcards";
 
-type Deck = "terms" | "algorithms";
+type Deck = "terms" | "patterns" | "algorithms";
+type SearchFilter = "all" | "concept" | "architecture-pattern" | "algorithm";
+type SearchResult = {
+	type: Exclude<SearchFilter, "all">;
+	index: number;
+	title: string;
+	description: string;
+};
 
 export const Route = createFileRoute("/_authenticated/quiz")({
 	component: StudyFlashcards,
@@ -17,7 +25,10 @@ export const Route = createFileRoute("/_authenticated/quiz")({
 function StudyFlashcards() {
 	const [decks, setDecks] = useState<FlashcardDecks | null>(null);
 	const [deck, setDeck] = useState<Deck>("terms");
+	const [search, setSearch] = useState("");
+	const [searchFilter, setSearchFilter] = useState<SearchFilter>("all");
 	const [termIndex, setTermIndex] = useState(0);
+	const [patternIndex, setPatternIndex] = useState(0);
 	const [algorithmIndex, setAlgorithmIndex] = useState(0);
 	const [algorithmCardIndex, setAlgorithmCardIndex] = useState(0);
 	const [showTermAnswer, setShowTermAnswer] = useState(false);
@@ -43,6 +54,7 @@ function StudyFlashcards() {
 
 	function chooseDeck(nextDeck: Deck) {
 		setDeck(nextDeck);
+		setSearch("");
 		setMessage(null);
 		setShowTermAnswer(false);
 	}
@@ -57,11 +69,34 @@ function StudyFlashcards() {
 		setAlgorithmCardIndex(0);
 	}
 
+	function choosePattern(index: number) {
+		setPatternIndex(index);
+	}
+
 	if (message) return <Message>{message}</Message>;
 	if (!decks) return <Loading />;
 
 	const term = decks.systemTerms[termIndex];
+	const pattern = decks.architecturePatterns[patternIndex];
 	const algorithm = decks.algorithms[algorithmIndex];
+	const searchResults = findSearchResults(decks, search, searchFilter);
+	const isSearching = search.trim().length > 0;
+
+	function openSearchResult(result: SearchResult) {
+		setSearch("");
+		if (result.type === "concept") {
+			setDeck("terms");
+			chooseTerm(result.index);
+			return;
+		}
+		if (result.type === "architecture-pattern") {
+			setDeck("patterns");
+			choosePattern(result.index);
+			return;
+		}
+		setDeck("algorithms");
+		chooseAlgorithm(result.index);
+	}
 
 	return (
 		<section className="flex flex-1 flex-col py-10 sm:py-14">
@@ -76,12 +111,25 @@ function StudyFlashcards() {
 				</p>
 			</div>
 
-			<nav className="mt-8 flex flex-wrap gap-3" aria-label="Study decks">
+			<SearchBox
+				filter={searchFilter}
+				onFilterChange={setSearchFilter}
+				onSearchChange={setSearch}
+				search={search}
+			/>
+
+			<nav className="mt-6 flex flex-wrap gap-3" aria-label="Study decks">
 				<DeckButton
 					active={deck === "terms"}
 					onClick={() => chooseDeck("terms")}
 				>
 					System design terms
+				</DeckButton>
+				<DeckButton
+					active={deck === "patterns"}
+					onClick={() => chooseDeck("patterns")}
+				>
+					Architecture patterns
 				</DeckButton>
 				<DeckButton
 					active={deck === "algorithms"}
@@ -91,7 +139,10 @@ function StudyFlashcards() {
 				</DeckButton>
 			</nav>
 
-			{deck === "terms" ? (
+			{isSearching ? (
+				<SearchResults onOpen={openSearchResult} results={searchResults} />
+			) : null}
+			{!isSearching && deck === "terms" ? (
 				<TermsDeck
 					onChoose={chooseTerm}
 					onMove={(direction) => {
@@ -106,7 +157,21 @@ function StudyFlashcards() {
 					term={term}
 					terms={decks.systemTerms}
 				/>
-			) : (
+			) : null}
+			{!isSearching && deck === "patterns" ? (
+				<PatternsDeck
+					onChoose={choosePattern}
+					onMove={(direction) =>
+						setPatternIndex((index) =>
+							move(index, direction, decks.architecturePatterns.length),
+						)
+					}
+					pattern={pattern}
+					patterns={decks.architecturePatterns}
+					selectedIndex={patternIndex}
+				/>
+			) : null}
+			{!isSearching && deck === "algorithms" ? (
 				<AlgorithmsDeck
 					algorithm={algorithm}
 					algorithmCardIndex={algorithmCardIndex}
@@ -122,7 +187,7 @@ function StudyFlashcards() {
 					}
 					selectedIndex={algorithmIndex}
 				/>
-			)}
+			) : null}
 		</section>
 	);
 }
@@ -206,6 +271,160 @@ function TermAnswer({ term }: { term: SystemTermCard }) {
 			<AnswerSection title="Why it matters">{term.whyItMatters}</AnswerSection>
 			<AnswerSection title="Example">{term.example}</AnswerSection>
 		</div>
+	);
+}
+
+function PatternsDeck({
+	patterns,
+	pattern,
+	selectedIndex,
+	onChoose,
+	onMove,
+}: {
+	patterns: readonly ArchitecturePatternCard[];
+	pattern: ArchitecturePatternCard;
+	selectedIndex: number;
+	onChoose: (index: number) => void;
+	onMove: (direction: number) => void;
+}) {
+	return (
+		<div className="mt-8 grid gap-8 lg:grid-cols-[15rem_1fr]">
+			<ItemPicker
+				items={patterns}
+				label="Patterns"
+				onChoose={onChoose}
+				selectedIndex={selectedIndex}
+			/>
+			<article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+				<p className="text-sm font-medium text-blue-700">
+					Pattern {selectedIndex + 1} of {patterns.length}
+				</p>
+				<h2 className="mt-4 text-3xl font-semibold tracking-tight text-slate-950">
+					{pattern.title}
+				</h2>
+				<p className="mt-4 text-lg leading-8 text-slate-700">
+					{pattern.description}
+				</p>
+				<div className="mt-7 grid gap-4 sm:grid-cols-2">
+					<AnswerSection title="What it solves">{pattern.solves}</AnswerSection>
+					<AnswerSection title="When to use it">
+						{pattern.useWhen}
+					</AnswerSection>
+					<AnswerSection title="Main cost or risk">
+						{pattern.tradeoff}
+					</AnswerSection>
+					<AnswerSection title="Example">{pattern.example}</AnswerSection>
+				</div>
+				<div className="mt-8 flex flex-wrap gap-3">
+					<Button
+						className="bg-slate-200 text-slate-800 hover:bg-slate-300"
+						onClick={() => onMove(-1)}
+					>
+						Previous pattern
+					</Button>
+					<Button onClick={() => onMove(1)}>Next pattern</Button>
+				</div>
+			</article>
+		</div>
+	);
+}
+
+function SearchBox({
+	search,
+	filter,
+	onSearchChange,
+	onFilterChange,
+}: {
+	search: string;
+	filter: SearchFilter;
+	onSearchChange: (value: string) => void;
+	onFilterChange: (filter: SearchFilter) => void;
+}) {
+	const filters: readonly { value: SearchFilter; label: string }[] = [
+		{ value: "all", label: "All" },
+		{ value: "concept", label: "Concepts" },
+		{ value: "architecture-pattern", label: "Patterns" },
+		{ value: "algorithm", label: "Algorithms" },
+	];
+
+	return (
+		<section className="mt-8 max-w-3xl">
+			<label
+				className="text-sm font-semibold text-slate-800"
+				htmlFor="study-search"
+			>
+				Search study cards
+			</label>
+			<input
+				className="mt-2 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-slate-950 shadow-sm outline-none transition placeholder:text-slate-500 focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+				id="study-search"
+				onChange={(event) => onSearchChange(event.target.value)}
+				placeholder="Try cache, CQRS, queue, or Two Sum"
+				value={search}
+			/>
+			<fieldset className="mt-3 flex flex-wrap gap-2">
+				<legend className="sr-only">Search filters</legend>
+				{filters.map((item) => (
+					<Button
+						className={
+							filter === item.value
+								? "min-h-9 px-3"
+								: "min-h-9 bg-slate-200 px-3 text-slate-800 hover:bg-slate-300"
+						}
+						key={item.value}
+						onClick={() => onFilterChange(item.value)}
+					>
+						{item.label}
+					</Button>
+				))}
+			</fieldset>
+		</section>
+	);
+}
+
+function SearchResults({
+	results,
+	onOpen,
+}: {
+	results: readonly SearchResult[];
+	onOpen: (result: SearchResult) => void;
+}) {
+	return (
+		<section className="mt-8">
+			<h2 className="text-2xl font-semibold tracking-tight text-slate-950">
+				Search results
+			</h2>
+			{results.length === 0 ? (
+				<p className="mt-4 leading-7 text-slate-600">
+					No cards match that search. Try a shorter or broader word.
+				</p>
+			) : (
+				<div className="mt-5 grid gap-4 sm:grid-cols-2">
+					{results.map((result) => (
+						<article
+							className="flex flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+							key={`${result.type}-${result.index}`}
+						>
+							<p className="text-sm font-medium text-blue-700">
+								{searchResultLabel(result.type)}
+							</p>
+							<h3 className="mt-2 text-xl font-semibold tracking-tight text-slate-950">
+								{result.title}
+							</h3>
+							<p className="mt-3 leading-7 text-slate-600">
+								{result.description}
+							</p>
+							<Button
+								className="mt-5 self-start"
+								onClick={() => onOpen(result)}
+							>
+								Open card
+							</Button>
+						</article>
+					))}
+				</div>
+			)}
+		</section>
 	);
 }
 
@@ -353,4 +572,92 @@ function Message({ children }: { children: string }) {
 
 function move(index: number, direction: number, length: number) {
 	return (index + direction + length) % length;
+}
+
+function findSearchResults(
+	decks: FlashcardDecks,
+	search: string,
+	filter: SearchFilter,
+): readonly SearchResult[] {
+	const query = search.trim().toLowerCase();
+	if (!query) return [];
+
+	const results: SearchResult[] = [];
+	if (filter === "all" || filter === "concept") {
+		decks.systemTerms.forEach((card, index) => {
+			if (
+				matches(query, [
+					card.term,
+					card.definition,
+					card.whyItMatters,
+					card.example,
+				])
+			) {
+				results.push({
+					type: "concept",
+					index,
+					title: card.term,
+					description: card.definition,
+				});
+			}
+		});
+	}
+
+	if (filter === "all" || filter === "architecture-pattern") {
+		decks.architecturePatterns.forEach((card, index) => {
+			if (
+				matches(query, [
+					card.title,
+					card.description,
+					card.solves,
+					card.useWhen,
+					card.tradeoff,
+					card.example,
+				])
+			) {
+				results.push({
+					type: "architecture-pattern",
+					index,
+					title: card.title,
+					description: card.description,
+				});
+			}
+		});
+	}
+
+	if (filter === "all" || filter === "algorithm") {
+		decks.algorithms.forEach((algorithm, index) => {
+			if (
+				matches(query, [
+					algorithm.title,
+					algorithm.summary,
+					...algorithm.cards.flatMap((card) => [
+						card.heading,
+						card.body,
+						card.language ?? "",
+						card.code ?? "",
+					]),
+				])
+			) {
+				results.push({
+					type: "algorithm",
+					index,
+					title: algorithm.title,
+					description: algorithm.summary,
+				});
+			}
+		});
+	}
+
+	return results;
+}
+
+function matches(query: string, values: readonly string[]) {
+	return values.some((value) => value.toLowerCase().includes(query));
+}
+
+function searchResultLabel(type: SearchResult["type"]) {
+	if (type === "concept") return "System concept";
+	if (type === "architecture-pattern") return "Architecture pattern";
+	return "Algorithm";
 }
