@@ -10,6 +10,7 @@ import {
 	getCurrentBriefings,
 	getInterviewCatalog,
 	getInterviewGuide,
+	getInterviewNumbers,
 	getInterviewRehearsal,
 } from "./interview";
 
@@ -54,6 +55,15 @@ export const loadCurrentBriefings = createServerFn({ method: "GET" }).handler(
 		_setNoStore();
 
 		return Effect.runPromise(getCurrentBriefings());
+	},
+);
+
+export const loadInterviewNumbers = createServerFn({ method: "GET" }).handler(
+	async () => {
+		await _requireSignedIn();
+		_setNoStore();
+
+		return Effect.runPromise(getInterviewNumbers());
 	},
 );
 

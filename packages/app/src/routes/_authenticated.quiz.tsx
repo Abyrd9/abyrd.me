@@ -5,6 +5,7 @@ import { Button } from "#/components/primitives/button";
 import type {
 	CurrentBriefing,
 	InterviewGuide,
+	InterviewNumber,
 	InterviewRehearsalPublic,
 	InterviewTrack,
 } from "#/server/interview";
@@ -12,9 +13,10 @@ import {
 	loadCurrentBriefings,
 	loadInterviewCatalog,
 	loadInterviewGuide,
+	loadInterviewNumbers,
 } from "#/server/interview-functions";
 
-type View = InterviewTrack | "current";
+type View = InterviewTrack | "current" | "numbers";
 
 export const Route = createFileRoute("/_authenticated/quiz")({
 	component: InterviewHub,
@@ -25,6 +27,7 @@ function InterviewHub() {
 		[],
 	);
 	const [briefings, setBriefings] = useState<readonly CurrentBriefing[]>([]);
+	const [numbers, setNumbers] = useState<readonly InterviewNumber[]>([]);
 	const [view, setView] = useState<View>("coding");
 	const [active, setActive] = useState<InterviewRehearsalPublic | null>(null);
 	const [guide, setGuide] = useState<InterviewGuide | null>(null);
@@ -36,14 +39,16 @@ function InterviewHub() {
 
 		async function load() {
 			try {
-				const [nextCatalog, nextBriefings] = await Promise.all([
+				const [nextCatalog, nextBriefings, nextNumbers] = await Promise.all([
 					loadInterviewCatalog(),
 					loadCurrentBriefings(),
+					loadInterviewNumbers(),
 				]);
 				if (!isCurrent) return;
 
 				setCatalog(nextCatalog);
 				setBriefings(nextBriefings);
+				setNumbers(nextNumbers);
 			} catch {
 				if (isCurrent)
 					setMessage(
@@ -125,6 +130,12 @@ function InterviewHub() {
 						>
 							Keep current
 						</NavButton>
+						<NavButton
+							active={view === "numbers"}
+							onClick={() => setView("numbers")}
+						>
+							Numbers to know
+						</NavButton>
 					</nav>
 
 					{message ? <Message>{message}</Message> : null}
@@ -142,6 +153,7 @@ function InterviewHub() {
 							/>
 						) : null}
 						{view === "current" ? <Briefings briefings={briefings} /> : null}
+						{view === "numbers" ? <Numbers numbers={numbers} /> : null}
 					</div>
 				</>
 			)}
@@ -319,6 +331,53 @@ function Briefings({ briefings }: { briefings: readonly CurrentBriefing[] }) {
 							{card.question}
 						</p>
 						<p className="mt-3 leading-7 text-slate-700">{card.answer}</p>
+						<p className="mt-3 text-sm leading-6 text-slate-600">
+							{card.whyItMatters}
+						</p>
+						<a
+							className="mt-4 inline-flex text-sm font-semibold text-blue-700 underline underline-offset-4"
+							href={card.sourceUrl}
+							rel="noreferrer"
+							target="_blank"
+						>
+							Read {card.sourceName}
+						</a>
+					</article>
+				))}
+			</div>
+		</section>
+	);
+}
+
+function Numbers({ numbers }: { numbers: readonly InterviewNumber[] }) {
+	return (
+		<section>
+			<h2 className="text-2xl font-semibold tracking-tight text-slate-950">
+				Numbers to know
+			</h2>
+			<p className="mt-3 max-w-2xl leading-7 text-slate-600">
+				Use these as starting points for estimates, not fixed laws. State the
+				workload, then measure the real limit.
+			</p>
+			<div className="mt-5 grid gap-4 sm:grid-cols-2">
+				{numbers.map((card) => (
+					<article
+						className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+						key={card.id}
+					>
+						<div className="flex flex-wrap items-center gap-2">
+							<p className="text-sm font-medium text-blue-700">
+								{card.category}
+							</p>
+							<p className="text-sm text-slate-500">Checked {card.checkedOn}</p>
+						</div>
+						<h3 className="mt-2 text-xl font-semibold tracking-tight text-slate-950">
+							{card.title}
+						</h3>
+						<p className="mt-3 text-lg font-semibold leading-7 text-slate-900">
+							{card.number}
+						</p>
+						<p className="mt-3 leading-7 text-slate-700">{card.context}</p>
 						<p className="mt-3 text-sm leading-6 text-slate-600">
 							{card.whyItMatters}
 						</p>

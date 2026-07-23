@@ -46,6 +46,18 @@ export type CurrentBriefing = {
 	checkedOn: string;
 };
 
+export type InterviewNumber = {
+	id: string;
+	category: "capacity" | "latency" | "network" | "judgment";
+	title: string;
+	number: string;
+	context: string;
+	whyItMatters: string;
+	sourceName: string;
+	sourceUrl: string;
+	checkedOn: string;
+};
+
 export class InterviewRehearsalNotFound extends Data.TaggedError(
 	"InterviewRehearsalNotFound",
 )<{ rehearsalId: string }> {}
@@ -702,6 +714,92 @@ const briefings: readonly CurrentBriefing[] = [
 	},
 ];
 
+const interviewNumbers: readonly InterviewNumber[] = [
+	{
+		id: "ebs-volume-size",
+		category: "capacity",
+		title: "One EBS volume can be large",
+		number: "Up to 64 TiB",
+		context:
+			"Amazon EBS supports volumes up to 64 TiB for supported volume types, partition schemes, operating systems, and file systems.",
+		whyItMatters:
+			"Do the capacity math before you split data across shards. A large data set alone does not prove that one machine has run out of room.",
+		sourceName: "Amazon EBS volume constraints",
+		sourceUrl:
+			"https://docs.aws.amazon.com/ebs/latest/userguide/volume_constraints.html",
+		checkedOn: "2026-07-22",
+	},
+	{
+		id: "same-az-latency",
+		category: "latency",
+		title: "Calls inside one availability zone",
+		number: "Usually less than 1 ms",
+		context:
+			"AWS says round trips between EC2 instances in one availability zone are normally below 1 ms when they use enhanced networking.",
+		whyItMatters:
+			"Keep the tightest request path in one zone when you need low latency. This does not protect you from a zone outage.",
+		sourceName: "AWS Architecture Blog",
+		sourceUrl:
+			"https://aws.amazon.com/blogs/architecture/improving-performance-and-reducing-cost-using-availability-zone-affinity/",
+		checkedOn: "2026-07-22",
+	},
+	{
+		id: "cross-az-latency",
+		category: "latency",
+		title: "Calls across availability zones",
+		number: "Usually single-digit ms",
+		context:
+			"AWS describes round trips across availability zones in one region as generally taking single-digit milliseconds.",
+		whyItMatters:
+			"Multi-zone replication improves resilience, but it adds time and often transfer cost. Name both trade-offs in an interview.",
+		sourceName: "AWS Architecture Blog",
+		sourceUrl:
+			"https://aws.amazon.com/blogs/architecture/improving-performance-and-reducing-cost-using-availability-zone-affinity/",
+		checkedOn: "2026-07-22",
+	},
+	{
+		id: "availability-zone-distance",
+		category: "latency",
+		title: "Availability zones are close, not co-located",
+		number: "Up to about 100 km apart",
+		context:
+			"AWS says availability zones sit within roughly 100 km (60 miles) of one another and use high-bandwidth, low-latency links.",
+		whyItMatters:
+			"You can use synchronous replication across zones for many workloads, but you should still set a latency and recovery target first.",
+		sourceName: "AWS fault isolation boundaries",
+		sourceUrl:
+			"https://docs.aws.amazon.com/whitepapers/latest/aws-fault-isolation-boundaries/availability-zones.html",
+		checkedOn: "2026-07-22",
+	},
+	{
+		id: "gigabits-to-bytes",
+		category: "network",
+		title: "Convert a network rate before you size it",
+		number: "1 Gbps = 125 MB/s",
+		context:
+			"Network rates use bits. Divide gigabits per second by eight to get gigabytes per second: 25 Gbps is 3.125 GB/s before protocol overhead.",
+		whyItMatters:
+			"This lets you check whether a data transfer can finish inside its time budget instead of saying that a link sounds fast.",
+		sourceName: "NIST SI prefixes",
+		sourceUrl: "https://www.nist.gov/pml/owm/metric-si/si-units",
+		checkedOn: "2026-07-22",
+	},
+	{
+		id: "measure-before-sharding",
+		category: "judgment",
+		title: "A number should lead to a limit",
+		number: "Name the measured bottleneck",
+		context:
+			"Before proposing shards, state the storage, write rate, recovery time, or latency limit that one database can no longer meet.",
+		whyItMatters:
+			"Senior and staff answers connect a new component to a real limit. They do not add distributed systems work just because the data set is big.",
+		sourceName: "Hello Interview: Numbers to Know",
+		sourceUrl:
+			"https://www.hellointerview.com/learn/system-design/core-concepts/numbers-to-know",
+		checkedOn: "2026-07-22",
+	},
+];
+
 const rehearsalById = new Map(rehearsals.map((item) => [item.id, item]));
 
 export function getInterviewCatalog(): Effect.Effect<
@@ -733,6 +831,13 @@ export function getCurrentBriefings(): Effect.Effect<
 	never
 > {
 	return Effect.succeed(briefings);
+}
+
+export function getInterviewNumbers(): Effect.Effect<
+	readonly InterviewNumber[],
+	never
+> {
+	return Effect.succeed(interviewNumbers);
 }
 
 function _getRehearsal(

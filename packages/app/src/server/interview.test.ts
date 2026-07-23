@@ -4,6 +4,7 @@ import {
 	getCurrentBriefings,
 	getInterviewCatalog,
 	getInterviewGuide,
+	getInterviewNumbers,
 	getInterviewRehearsal,
 } from "./interview";
 
@@ -37,6 +38,19 @@ test("loads dated source-backed briefing cards", async () => {
 	expect(briefings.length).toBeGreaterThan(0);
 	expect(briefings[0].sourceUrl).toStartWith("https://");
 	expect(briefings[0].checkedOn).toMatch(/^2026-\d{2}-\d{2}$/);
+});
+
+test("loads source-backed system design numbers", async () => {
+	const numbers = await Effect.runPromise(getInterviewNumbers());
+
+	expect(numbers).toHaveLength(6);
+	expect(numbers.find((item) => item.id === "ebs-volume-size")?.number).toBe(
+		"Up to 64 TiB",
+	);
+	for (const item of numbers) {
+		expect(item.sourceUrl).toStartWith("https://");
+		expect(item.checkedOn).toMatch(/^2026-\d{2}-\d{2}$/);
+	}
 });
 
 test("reports an unknown rehearsal as a typed failure", async () => {
