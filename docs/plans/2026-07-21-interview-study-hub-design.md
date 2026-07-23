@@ -107,10 +107,23 @@ Instead, an authored review card will contain:
 Cards will use official product documentation, standards, and engineering
 posts. The card shows when its author last checked the source.
 
+## Numbers to know
+
+The app will also have a separate Numbers to know section. It will hold small,
+source-linked cards for the rough limits that help in a system-design
+interview: storage size, network speed, and latency between availability
+zones.
+
+Each card will state the number or range, the boundary around it, and the
+design choice it should prompt. The cards will use original wording and link
+to a primary source. They will not copy a paid course or pretend that one
+number fits every workload.
+
 ## Architecture
 
-`src/server/study.ts` will replace the loose question bank with declarative
-rehearsal content. A rehearsal will hold its track, prompt, time limit,
+`src/server/interview.ts` will hold the declarative rehearsal content,
+current-review cards, and interview numbers. A rehearsal will hold its track,
+prompt, time limit,
 clarifying questions, answer fields, solution, checklist, common misses, and
 senior/staff follow-ups.
 
@@ -124,6 +137,7 @@ The authenticated `/quiz` route will become the simulator home. It will have:
 - Coding: the 10-problem catalog.
 - System design: the 10-problem catalog.
 - Keep current: dated source-backed review cards.
+- Numbers to know: source-backed limits and the choices they affect.
 
 The existing pathless authenticated layout and server-side answer protection
 will remain in place.
