@@ -17,11 +17,63 @@ test("loads clear system design term cards", async () => {
 test("loads architecture patterns with practical guidance", async () => {
 	const decks = await Effect.runPromise(getFlashcardDecks());
 
-	expect(decks.architecturePatterns).toHaveLength(12);
+	expect(decks.architecturePatterns).toHaveLength(36);
 	const cqrs = decks.architecturePatterns.find((card) => card.id === "cqrs");
 	expect(cqrs?.solves).toBeTruthy();
 	expect(cqrs?.useWhen).toBeTruthy();
 	expect(cqrs?.tradeoff).toBeTruthy();
+	expect(
+		decks.architecturePatterns.some(
+			(card) => card.architectureType === "style",
+		),
+	).toBe(true);
+	expect(
+		decks.architecturePatterns.some(
+			(card) => card.architectureType === "pattern",
+		),
+	).toBe(true);
+	for (const card of decks.architecturePatterns) {
+		expect(card.description).toBeTruthy();
+		expect(card.useWhen).toBeTruthy();
+		expect(card.tradeoff).toBeTruthy();
+		expect(card.example).toBeTruthy();
+	}
+
+	const requiredIds = [
+		"event-driven",
+		"hexagonal",
+		"layered",
+		"microkernel",
+		"pipes-and-filters",
+		"microservices",
+		"modular-monolith",
+		"service-oriented",
+		"service-based",
+		"space-based",
+		"inbox-outbox",
+		"queue-based",
+		"backend-for-frontend",
+		"public-published-interfaces",
+		"asynchronous-messaging",
+		"batch-request",
+		"blackboard",
+		"circuit-breaker-pattern",
+		"client-server",
+		"competing-consumers",
+		"model-view-controller",
+		"claim-check",
+		"peer-to-peer",
+		"publish-subscribe-pattern",
+		"rate-limiting-pattern",
+		"request-response",
+		"retry-pattern",
+		"rule-based",
+		"saga",
+		"strangler-fig",
+		"throttling",
+	];
+	const cardIds = new Set(decks.architecturePatterns.map((card) => card.id));
+	for (const id of requiredIds) expect(cardIds.has(id)).toBe(true);
 });
 
 test("loads TypeScript and Go cards for every algorithm", async () => {

@@ -8,15 +8,13 @@ import type {
 	FlashcardDecks,
 	SystemTermCard,
 } from "#/server/flashcards";
+import {
+	findSearchResults as findStudySearchResults,
+	type SearchFilter,
+	type SearchResult,
+} from "#/study-search";
 
 type Deck = "terms" | "patterns" | "algorithms";
-type SearchFilter = "all" | "concept" | "architecture-pattern" | "algorithm";
-type SearchResult = {
-	type: Exclude<SearchFilter, "all">;
-	index: number;
-	title: string;
-	description: string;
-};
 
 export const Route = createFileRoute("/_authenticated/quiz")({
 	component: StudyFlashcards,
@@ -79,7 +77,7 @@ function StudyFlashcards() {
 	const term = decks.systemTerms[termIndex];
 	const pattern = decks.architecturePatterns[patternIndex];
 	const algorithm = decks.algorithms[algorithmIndex];
-	const searchResults = findSearchResults(decks, search, searchFilter);
+	const searchResults = findStudySearchResults(decks, search, searchFilter);
 	const isSearching = search.trim().length > 0;
 
 	function openSearchResult(result: SearchResult) {
@@ -129,7 +127,7 @@ function StudyFlashcards() {
 					active={deck === "patterns"}
 					onClick={() => chooseDeck("patterns")}
 				>
-					Architecture patterns
+					Architecture catalog
 				</DeckButton>
 				<DeckButton
 					active={deck === "algorithms"}
@@ -297,7 +295,8 @@ function PatternsDeck({
 			/>
 			<article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
 				<p className="text-sm font-medium text-blue-700">
-					Pattern {selectedIndex + 1} of {patterns.length}
+					{formatArchitectureType(pattern.architectureType)} {selectedIndex + 1}{" "}
+					of {patterns.length}
 				</p>
 				<h2 className="mt-4 text-3xl font-semibold tracking-tight text-slate-950">
 					{pattern.title}
@@ -320,10 +319,18 @@ function PatternsDeck({
 						className="bg-slate-200 text-slate-800 hover:bg-slate-300"
 						onClick={() => onMove(-1)}
 					>
-						Previous pattern
+						Previous item
 					</Button>
-					<Button onClick={() => onMove(1)}>Next pattern</Button>
+					<Button onClick={() => onMove(1)}>Next item</Button>
 				</div>
+				<a
+					className="mt-6 inline-flex text-sm font-semibold text-blue-700 underline underline-offset-4"
+					href="https://en.wikipedia.org/wiki/List_of_software_architecture_styles_and_patterns"
+					rel="noreferrer"
+					target="_blank"
+				>
+					Read the architecture catalog source
+				</a>
 			</article>
 		</div>
 	);
@@ -406,7 +413,7 @@ function SearchResults({
 							key={`${result.type}-${result.index}`}
 						>
 							<p className="text-sm font-medium text-blue-700">
-								{searchResultLabel(result.type)}
+								{searchResultLabel(result.type, result.architectureType)}
 							</p>
 							<h3 className="mt-2 text-xl font-semibold tracking-tight text-slate-950">
 								{result.title}
@@ -574,90 +581,19 @@ function move(index: number, direction: number, length: number) {
 	return (index + direction + length) % length;
 }
 
-function findSearchResults(
-	decks: FlashcardDecks,
-	search: string,
-	filter: SearchFilter,
-): readonly SearchResult[] {
-	const query = search.trim().toLowerCase();
-	if (!query) return [];
-
-	const results: SearchResult[] = [];
-	if (filter === "all" || filter === "concept") {
-		decks.systemTerms.forEach((card, index) => {
-			if (
-				matches(query, [
-					card.term,
-					card.definition,
-					card.whyItMatters,
-					card.example,
-				])
-			) {
-				results.push({
-					type: "concept",
-					index,
-					title: card.term,
-					description: card.definition,
-				});
-			}
-		});
-	}
-
-	if (filter === "all" || filter === "architecture-pattern") {
-		decks.architecturePatterns.forEach((card, index) => {
-			if (
-				matches(query, [
-					card.title,
-					card.description,
-					card.solves,
-					card.useWhen,
-					card.tradeoff,
-					card.example,
-				])
-			) {
-				results.push({
-					type: "architecture-pattern",
-					index,
-					title: card.title,
-					description: card.description,
-				});
-			}
-		});
-	}
-
-	if (filter === "all" || filter === "algorithm") {
-		decks.algorithms.forEach((algorithm, index) => {
-			if (
-				matches(query, [
-					algorithm.title,
-					algorithm.summary,
-					...algorithm.cards.flatMap((card) => [
-						card.heading,
-						card.body,
-						card.language ?? "",
-						card.code ?? "",
-					]),
-				])
-			) {
-				results.push({
-					type: "algorithm",
-					index,
-					title: algorithm.title,
-					description: algorithm.summary,
-				});
-			}
-		});
-	}
-
-	return results;
-}
-
-function matches(query: string, values: readonly string[]) {
-	return values.some((value) => value.toLowerCase().includes(query));
-}
-
-function searchResultLabel(type: SearchResult["type"]) {
+function searchResultLabel(
+	type: SearchResult["type"],
+	architectureType?: ArchitecturePatternCard["architectureType"],
+) {
 	if (type === "concept") return "System concept";
-	if (type === "architecture-pattern") return "Architecture pattern";
+	if (type === "architecture-pattern") {
+		return `Architecture ${formatArchitectureType(architectureType ?? "pattern")}`;
+	}
 	return "Algorithm";
+}
+
+function formatArchitectureType(
+	architectureType: ArchitecturePatternCard["architectureType"],
+) {
+	return architectureType === "style" ? "Style" : "Pattern";
 }
