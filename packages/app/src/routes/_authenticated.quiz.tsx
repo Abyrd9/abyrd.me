@@ -525,13 +525,13 @@ function ItemPicker<T extends { id: string; title?: string; term?: string }>({
 			<h2 className="text-sm font-semibold uppercase tracking-wide text-slate-600">
 				{label}
 			</h2>
-			<div className="mt-3 flex snap-x gap-2 overflow-x-auto pb-2 lg:flex-col lg:overflow-visible">
+			<div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:flex lg:flex-col">
 				{items.map((item, index) => (
 					<Button
 						className={
 							index === selectedIndex
-								? "shrink-0 text-left lg:w-full"
-								: "shrink-0 bg-slate-200 text-left text-slate-800 hover:bg-slate-300 lg:w-full"
+								? "w-full text-left"
+								: "w-full bg-slate-200 text-left text-slate-800 hover:bg-slate-300"
 						}
 						key={item.id}
 						onClick={() => onChoose(index)}
