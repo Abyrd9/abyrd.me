@@ -189,7 +189,7 @@ function TermsDeck({
 					Term {selectedIndex + 1} of {terms.length}
 				</p>
 				{showAnswer ? <TermAnswer term={term} /> : <TermFront term={term} />}
-				<div className="mt-8 grid gap-3 sm:flex sm:flex-wrap">
+				<div className="mt-8 grid gap-3 sm:flex sm:flex-wrap sm:justify-center">
 					<Button
 						className="w-full bg-slate-200 text-slate-800 hover:bg-slate-300 sm:w-auto"
 						onClick={() => onMove(-1)}
@@ -283,7 +283,7 @@ function PatternsDeck({
 					</AnswerSection>
 					<AnswerSection title="Example">{pattern.example}</AnswerSection>
 				</div>
-				<div className="mt-8 grid gap-3 sm:flex sm:flex-wrap">
+				<div className="mt-8 grid gap-3 sm:flex sm:flex-wrap sm:justify-center">
 					<Button
 						className="w-full bg-slate-200 text-slate-800 hover:bg-slate-300 sm:w-auto"
 						onClick={() => onMove(-1)}
@@ -355,7 +355,7 @@ function AlgorithmsDeck({
 						</pre>
 					</section>
 				) : null}
-				<div className="mt-8 grid gap-3 sm:flex sm:flex-wrap">
+				<div className="mt-8 grid gap-3 sm:flex sm:flex-wrap sm:justify-center">
 					<Button
 						className="w-full bg-slate-200 text-slate-800 hover:bg-slate-300 sm:w-auto"
 						disabled={isFirstCard}
