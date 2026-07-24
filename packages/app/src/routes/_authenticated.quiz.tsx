@@ -97,13 +97,13 @@ function StudyFlashcards() {
 	}
 
 	return (
-		<section className="flex flex-1 flex-col py-10 sm:py-14">
+		<section className="flex flex-1 flex-col py-8 sm:py-14">
 			<div className="max-w-3xl">
 				<p className="text-sm font-medium text-blue-700">Study cards</p>
-				<h1 className="mt-2 text-4xl font-semibold tracking-tight text-slate-950">
+				<h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
 					Learn the building blocks.
 				</h1>
-				<p className="mt-4 text-lg leading-8 text-slate-600">
+				<p className="mt-4 leading-7 text-slate-600 sm:text-lg sm:leading-8">
 					Review a system-design term or work through a clean algorithm solution
 					in TypeScript and Go.
 				</p>
@@ -116,7 +116,10 @@ function StudyFlashcards() {
 				search={search}
 			/>
 
-			<nav className="mt-6 flex flex-wrap gap-3" aria-label="Study decks">
+			<nav
+				className="mt-6 grid gap-2 sm:flex sm:flex-wrap sm:gap-3"
+				aria-label="Study decks"
+			>
 				<DeckButton
 					active={deck === "terms"}
 					onClick={() => chooseDeck("terms")}
@@ -215,23 +218,23 @@ function TermsDeck({
 				selectedIndex={selectedIndex}
 				label="Terms"
 			/>
-			<article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+			<article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
 				<p className="text-sm font-medium text-blue-700">
 					Term {selectedIndex + 1} of {terms.length}
 				</p>
 				{showAnswer ? <TermAnswer term={term} /> : <TermFront term={term} />}
-				<div className="mt-8 flex flex-wrap gap-3">
+				<div className="mt-8 grid gap-3 sm:flex sm:flex-wrap">
 					<Button
-						className="bg-slate-200 text-slate-800 hover:bg-slate-300"
+						className="w-full bg-slate-200 text-slate-800 hover:bg-slate-300 sm:w-auto"
 						onClick={() => onMove(-1)}
 					>
 						Previous term
 					</Button>
-					<Button onClick={onTurn}>
+					<Button className="w-full sm:w-auto" onClick={onTurn}>
 						{showAnswer ? "Show term" : "Show definition"}
 					</Button>
 					<Button
-						className="bg-slate-200 text-slate-800 hover:bg-slate-300"
+						className="w-full bg-slate-200 text-slate-800 hover:bg-slate-300 sm:w-auto"
 						onClick={() => onMove(1)}
 					>
 						Next term
@@ -244,11 +247,11 @@ function TermsDeck({
 
 function TermFront({ term }: { term: SystemTermCard }) {
 	return (
-		<div className="mt-12 min-h-60 content-center text-center">
-			<h2 className="text-4xl font-semibold tracking-tight text-slate-950">
+		<div className="mt-8 min-h-52 content-center text-center sm:mt-12 sm:min-h-60">
+			<h2 className="text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
 				{term.term}
 			</h2>
-			<p className="mt-5 text-lg leading-8 text-slate-600">
+			<p className="mt-5 leading-7 text-slate-600 sm:text-lg sm:leading-8">
 				What does this mean, and why would you use it?
 			</p>
 		</div>
@@ -259,10 +262,10 @@ function TermAnswer({ term }: { term: SystemTermCard }) {
 	return (
 		<div className="mt-8 grid gap-6">
 			<div>
-				<h2 className="text-3xl font-semibold tracking-tight text-slate-950">
+				<h2 className="text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl">
 					{term.term}
 				</h2>
-				<p className="mt-4 text-lg leading-8 text-slate-700">
+				<p className="mt-4 leading-7 text-slate-700 sm:text-lg sm:leading-8">
 					{term.definition}
 				</p>
 			</div>
@@ -293,15 +296,15 @@ function PatternsDeck({
 				onChoose={onChoose}
 				selectedIndex={selectedIndex}
 			/>
-			<article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+			<article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
 				<p className="text-sm font-medium text-blue-700">
 					{formatArchitectureType(pattern.architectureType)} {selectedIndex + 1}{" "}
 					of {patterns.length}
 				</p>
-				<h2 className="mt-4 text-3xl font-semibold tracking-tight text-slate-950">
+				<h2 className="mt-4 text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl">
 					{pattern.title}
 				</h2>
-				<p className="mt-4 text-lg leading-8 text-slate-700">
+				<p className="mt-4 leading-7 text-slate-700 sm:text-lg sm:leading-8">
 					{pattern.description}
 				</p>
 				<div className="mt-7 grid gap-4 sm:grid-cols-2">
@@ -314,14 +317,16 @@ function PatternsDeck({
 					</AnswerSection>
 					<AnswerSection title="Example">{pattern.example}</AnswerSection>
 				</div>
-				<div className="mt-8 flex flex-wrap gap-3">
+				<div className="mt-8 grid gap-3 sm:flex sm:flex-wrap">
 					<Button
-						className="bg-slate-200 text-slate-800 hover:bg-slate-300"
+						className="w-full bg-slate-200 text-slate-800 hover:bg-slate-300 sm:w-auto"
 						onClick={() => onMove(-1)}
 					>
 						Previous item
 					</Button>
-					<Button onClick={() => onMove(1)}>Next item</Button>
+					<Button className="w-full sm:w-auto" onClick={() => onMove(1)}>
+						Next item
+					</Button>
 				</div>
 				<a
 					className="mt-6 inline-flex text-sm font-semibold text-blue-700 underline underline-offset-4"
@@ -369,14 +374,14 @@ function SearchBox({
 				placeholder="Try cache, CQRS, queue, or Two Sum"
 				value={search}
 			/>
-			<fieldset className="mt-3 flex flex-wrap gap-2">
+			<fieldset className="mt-3 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
 				<legend className="sr-only">Search filters</legend>
 				{filters.map((item) => (
 					<Button
 						className={
 							filter === item.value
-								? "min-h-9 px-3"
-								: "min-h-9 bg-slate-200 px-3 text-slate-800 hover:bg-slate-300"
+								? "min-h-10 w-full px-3 sm:w-auto"
+								: "min-h-10 w-full bg-slate-200 px-3 text-slate-800 hover:bg-slate-300 sm:w-auto"
 						}
 						key={item.value}
 						onClick={() => onFilterChange(item.value)}
@@ -398,7 +403,7 @@ function SearchResults({
 }) {
 	return (
 		<section className="mt-8">
-			<h2 className="text-2xl font-semibold tracking-tight text-slate-950">
+			<h2 className="text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
 				Search results
 			</h2>
 			{results.length === 0 ? (
@@ -462,17 +467,19 @@ function AlgorithmsDeck({
 				onChoose={onChoose}
 				selectedIndex={selectedIndex}
 			/>
-			<article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+			<article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
 				<p className="text-sm font-medium text-blue-700">
 					{algorithm.title} · Card {algorithmCardIndex + 1} of{" "}
 					{algorithm.cards.length}
 				</p>
-				<h2 className="mt-4 text-3xl font-semibold tracking-tight text-slate-950">
+				<h2 className="mt-4 text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl">
 					{card.heading}
 				</h2>
-				<p className="mt-4 text-lg leading-8 text-slate-700">{card.body}</p>
+				<p className="mt-4 leading-7 text-slate-700 sm:text-lg sm:leading-8">
+					{card.body}
+				</p>
 				{card.code ? (
-					<section className="mt-6 overflow-hidden rounded-xl border border-slate-200 bg-slate-950">
+					<section className="mt-6 overflow-hidden rounded-xl border border-slate-200 bg-black">
 						<p className="border-b border-slate-700 px-4 py-3 text-sm font-medium text-slate-300">
 							{card.language}
 						</p>
@@ -481,15 +488,19 @@ function AlgorithmsDeck({
 						</pre>
 					</section>
 				) : null}
-				<div className="mt-8 flex flex-wrap gap-3">
+				<div className="mt-8 grid gap-3 sm:flex sm:flex-wrap">
 					<Button
-						className="bg-slate-200 text-slate-800 hover:bg-slate-300"
+						className="w-full bg-slate-200 text-slate-800 hover:bg-slate-300 sm:w-auto"
 						disabled={isFirstCard}
 						onClick={() => onMoveCard(-1)}
 					>
 						Previous card
 					</Button>
-					<Button disabled={isLastCard} onClick={() => onMoveCard(1)}>
+					<Button
+						className="w-full sm:w-auto"
+						disabled={isLastCard}
+						onClick={() => onMoveCard(1)}
+					>
 						Next card
 					</Button>
 				</div>
@@ -514,7 +525,7 @@ function ItemPicker<T extends { id: string; title?: string; term?: string }>({
 			<h2 className="text-sm font-semibold uppercase tracking-wide text-slate-600">
 				{label}
 			</h2>
-			<div className="mt-3 flex gap-2 overflow-x-auto pb-2 lg:flex-col lg:overflow-visible">
+			<div className="mt-3 flex snap-x gap-2 overflow-x-auto pb-2 lg:flex-col lg:overflow-visible">
 				{items.map((item, index) => (
 					<Button
 						className={
@@ -560,7 +571,9 @@ function DeckButton({
 	return (
 		<Button
 			className={
-				active ? undefined : "bg-slate-200 text-slate-800 hover:bg-slate-300"
+				active
+					? "w-full sm:w-auto"
+					: "w-full bg-slate-200 text-slate-800 hover:bg-slate-300 sm:w-auto"
 			}
 			onClick={onClick}
 		>

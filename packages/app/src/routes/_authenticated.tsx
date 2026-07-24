@@ -6,6 +6,7 @@ import {
 	useRouter,
 } from "@tanstack/react-router";
 import { Button } from "#/components/primitives/button";
+import { ThemeToggle } from "#/components/theme-toggle";
 import { getSession, signOut } from "#/server/auth-functions";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -31,9 +32,9 @@ function AuthenticatedLayout() {
 	}
 
 	return (
-		<main className="mx-auto flex min-h-dvh w-full max-w-5xl flex-col px-6 py-8 sm:px-10">
-			<header className="flex items-center justify-between gap-4 border-b border-slate-200 pb-5">
-				<div className="flex items-center gap-6">
+		<main className="mx-auto flex min-h-dvh w-full max-w-5xl flex-col px-4 py-5 sm:px-10 sm:py-8">
+			<header className="flex flex-col gap-4 border-b border-slate-200 pb-5 sm:flex-row sm:items-center sm:justify-between">
+				<div className="flex items-center justify-between gap-4 sm:justify-start sm:gap-6">
 					<Link className="font-semibold tracking-tight text-slate-950" to="/">
 						Andrew Byrd
 					</Link>
@@ -57,7 +58,12 @@ function AuthenticatedLayout() {
 						</Link>
 					</nav>
 				</div>
-				<Button onClick={handleSignOut}>Sign out</Button>
+				<div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
+					<ThemeToggle />
+					<Button className="w-full sm:w-auto" onClick={handleSignOut}>
+						Sign out
+					</Button>
+				</div>
 			</header>
 
 			<Outlet />

@@ -43,8 +43,8 @@ function SignInPage() {
 	});
 
 	return (
-		<main className="grid min-h-dvh place-items-center px-6 py-12">
-			<section className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 shadow-xl shadow-slate-950/5 sm:p-8">
+		<main className="grid min-h-dvh place-items-center px-4 py-6 sm:px-6 sm:py-12">
+			<section className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-5 shadow-xl shadow-slate-950/5 sm:p-8">
 				<a
 					className="text-sm font-semibold tracking-tight text-slate-950"
 					href="https://abyrd.me"
@@ -114,7 +114,7 @@ function SignInPage() {
 
 					{signInError ? (
 						<p
-							className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800"
+							className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800 dark:bg-red-950/50 dark:text-red-200"
 							role="alert"
 						>
 							{signInError}

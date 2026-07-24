@@ -1,5 +1,6 @@
 import { createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 
+import { ThemeInitializer } from "#/components/theme-toggle";
 import appCss from "../styles.css?url";
 
 export const Route = createRootRoute({
@@ -33,6 +34,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 				<HeadContent />
 			</head>
 			<body>
+				<ThemeInitializer />
 				{children}
 				<Scripts />
 			</body>

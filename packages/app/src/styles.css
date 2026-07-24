@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
 	--font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
 }
@@ -20,6 +22,70 @@ body {
 	background: #f8fafc;
 	color: #0f172a;
 	font-family: var(--font-sans);
+}
+
+html.dark {
+	color-scheme: dark;
+}
+
+html.dark body {
+	background: #020617;
+	color: #e2e8f0;
+}
+
+/* The app uses a deliberately small palette. These theme mappings keep shared
+ * primitives and route-level cards consistent without duplicating each style. */
+html.dark .bg-white {
+	background-color: #0f172a;
+}
+
+html.dark .bg-slate-50 {
+	background-color: #1e293b;
+}
+
+html.dark .bg-slate-200 {
+	background-color: #334155;
+}
+
+html.dark .bg-slate-950 {
+	background-color: #2563eb;
+}
+
+html.dark .hover\:bg-slate-800:hover {
+	background-color: #1d4ed8;
+}
+
+html.dark .hover\:bg-slate-300:hover {
+	background-color: #475569;
+}
+
+html.dark .border-slate-200,
+html.dark .border-slate-300 {
+	border-color: #334155;
+}
+
+html.dark .text-slate-950,
+html.dark .text-slate-800 {
+	color: #f8fafc;
+}
+
+html.dark .text-slate-700,
+html.dark .text-slate-600,
+html.dark .text-slate-500 {
+	color: #cbd5e1;
+}
+
+html.dark .placeholder\:text-slate-500::placeholder,
+html.dark .placeholder\:text-slate-400::placeholder {
+	color: #94a3b8;
+}
+
+html.dark .focus\:ring-slate-200:focus {
+	--tw-ring-color: #334155;
+}
+
+html.dark .focus\:ring-blue-100:focus {
+	--tw-ring-color: #1e3a8a;
 }
 
 button,
