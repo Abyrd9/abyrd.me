@@ -80,10 +80,6 @@ html.dark .focus\:ring-slate-200:focus {
 	--tw-ring-color: #334155;
 }
 
-html.dark .focus\:ring-blue-100:focus {
-	--tw-ring-color: #1e3a8a;
-}
-
 button,
 input {
 	font: inherit;

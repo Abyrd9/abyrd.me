@@ -73,7 +73,9 @@ function StudyFlashcards() {
 	return (
 		<section className="flex flex-1 flex-col py-8 sm:py-14">
 			<div className="max-w-3xl">
-				<p className="text-sm font-medium text-blue-700">Study cards</p>
+				<p className="text-sm font-medium text-amber-700 dark:text-amber-300">
+					Study cards
+				</p>
 				<h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
 					Learn the building blocks.
 				</h1>
@@ -183,7 +185,7 @@ function TermsDeck({
 				label="Terms"
 			/>
 			<article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
-				<p className="text-sm font-medium text-blue-700">
+				<p className="text-sm font-medium text-amber-700 dark:text-amber-300">
 					Term {selectedIndex + 1} of {terms.length}
 				</p>
 				{showAnswer ? <TermAnswer term={term} /> : <TermFront term={term} />}
@@ -261,7 +263,7 @@ function PatternsDeck({
 				selectedIndex={selectedIndex}
 			/>
 			<article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
-				<p className="text-sm font-medium text-blue-700">
+				<p className="text-sm font-medium text-amber-700 dark:text-amber-300">
 					{formatArchitectureType(pattern.architectureType)} {selectedIndex + 1}{" "}
 					of {patterns.length}
 				</p>
@@ -293,7 +295,7 @@ function PatternsDeck({
 					</Button>
 				</div>
 				<a
-					className="mt-6 inline-flex text-sm font-semibold text-blue-700 underline underline-offset-4"
+					className="mt-6 inline-flex text-sm font-semibold text-amber-700 underline underline-offset-4 hover:text-amber-800 dark:text-amber-300 dark:hover:text-amber-200"
 					href="https://en.wikipedia.org/wiki/List_of_software_architecture_styles_and_patterns"
 					rel="noreferrer"
 					target="_blank"
@@ -333,7 +335,7 @@ function AlgorithmsDeck({
 				selectedIndex={selectedIndex}
 			/>
 			<article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
-				<p className="text-sm font-medium text-blue-700">
+				<p className="text-sm font-medium text-amber-700 dark:text-amber-300">
 					{algorithm.title} · Card {algorithmCardIndex + 1} of{" "}
 					{algorithm.cards.length}
 				</p>
