@@ -8,11 +8,6 @@ import type {
 	FlashcardDecks,
 	SystemTermCard,
 } from "#/server/flashcards";
-import {
-	findSearchResults as findStudySearchResults,
-	type SearchFilter,
-	type SearchResult,
-} from "#/study-search";
 
 type Deck = "terms" | "patterns" | "algorithms";
 
@@ -23,8 +18,6 @@ export const Route = createFileRoute("/_authenticated/quiz")({
 function StudyFlashcards() {
 	const [decks, setDecks] = useState<FlashcardDecks | null>(null);
 	const [deck, setDeck] = useState<Deck>("terms");
-	const [search, setSearch] = useState("");
-	const [searchFilter, setSearchFilter] = useState<SearchFilter>("all");
 	const [termIndex, setTermIndex] = useState(0);
 	const [patternIndex, setPatternIndex] = useState(0);
 	const [algorithmIndex, setAlgorithmIndex] = useState(0);
@@ -52,7 +45,6 @@ function StudyFlashcards() {
 
 	function chooseDeck(nextDeck: Deck) {
 		setDeck(nextDeck);
-		setSearch("");
 		setMessage(null);
 		setShowTermAnswer(false);
 	}
@@ -77,24 +69,6 @@ function StudyFlashcards() {
 	const term = decks.systemTerms[termIndex];
 	const pattern = decks.architecturePatterns[patternIndex];
 	const algorithm = decks.algorithms[algorithmIndex];
-	const searchResults = findStudySearchResults(decks, search, searchFilter);
-	const isSearching = search.trim().length > 0;
-
-	function openSearchResult(result: SearchResult) {
-		setSearch("");
-		if (result.type === "concept") {
-			setDeck("terms");
-			chooseTerm(result.index);
-			return;
-		}
-		if (result.type === "architecture-pattern") {
-			setDeck("patterns");
-			choosePattern(result.index);
-			return;
-		}
-		setDeck("algorithms");
-		chooseAlgorithm(result.index);
-	}
 
 	return (
 		<section className="flex flex-1 flex-col py-8 sm:py-14">
@@ -109,15 +83,8 @@ function StudyFlashcards() {
 				</p>
 			</div>
 
-			<SearchBox
-				filter={searchFilter}
-				onFilterChange={setSearchFilter}
-				onSearchChange={setSearch}
-				search={search}
-			/>
-
 			<nav
-				className="mt-6 grid gap-2 sm:flex sm:flex-wrap sm:gap-3"
+				className="mt-8 grid gap-2 sm:flex sm:flex-wrap sm:gap-3"
 				aria-label="Study decks"
 			>
 				<DeckButton
@@ -140,10 +107,7 @@ function StudyFlashcards() {
 				</DeckButton>
 			</nav>
 
-			{isSearching ? (
-				<SearchResults onOpen={openSearchResult} results={searchResults} />
-			) : null}
-			{!isSearching && deck === "terms" ? (
+			{deck === "terms" ? (
 				<TermsDeck
 					onChoose={chooseTerm}
 					onMove={(direction) => {
@@ -159,7 +123,7 @@ function StudyFlashcards() {
 					terms={decks.systemTerms}
 				/>
 			) : null}
-			{!isSearching && deck === "patterns" ? (
+			{deck === "patterns" ? (
 				<PatternsDeck
 					onChoose={choosePattern}
 					onMove={(direction) =>
@@ -172,7 +136,7 @@ function StudyFlashcards() {
 					selectedIndex={patternIndex}
 				/>
 			) : null}
-			{!isSearching && deck === "algorithms" ? (
+			{deck === "algorithms" ? (
 				<AlgorithmsDeck
 					algorithm={algorithm}
 					algorithmCardIndex={algorithmCardIndex}
@@ -341,105 +305,6 @@ function PatternsDeck({
 	);
 }
 
-function SearchBox({
-	search,
-	filter,
-	onSearchChange,
-	onFilterChange,
-}: {
-	search: string;
-	filter: SearchFilter;
-	onSearchChange: (value: string) => void;
-	onFilterChange: (filter: SearchFilter) => void;
-}) {
-	const filters: readonly { value: SearchFilter; label: string }[] = [
-		{ value: "all", label: "All" },
-		{ value: "concept", label: "Concepts" },
-		{ value: "architecture-pattern", label: "Patterns" },
-		{ value: "algorithm", label: "Algorithms" },
-	];
-
-	return (
-		<section className="mt-8 max-w-3xl">
-			<label
-				className="text-sm font-semibold text-slate-800"
-				htmlFor="study-search"
-			>
-				Search study cards
-			</label>
-			<input
-				className="mt-2 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-slate-950 shadow-sm outline-none transition placeholder:text-slate-500 focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
-				id="study-search"
-				onChange={(event) => onSearchChange(event.target.value)}
-				placeholder="Try cache, CQRS, queue, or Two Sum"
-				value={search}
-			/>
-			<fieldset className="mt-3 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
-				<legend className="sr-only">Search filters</legend>
-				{filters.map((item) => (
-					<Button
-						className={
-							filter === item.value
-								? "min-h-10 w-full bg-slate-200 px-3 sm:w-auto"
-								: "min-h-10 w-full px-3 sm:w-auto"
-						}
-						key={item.value}
-						onClick={() => onFilterChange(item.value)}
-					>
-						{item.label}
-					</Button>
-				))}
-			</fieldset>
-		</section>
-	);
-}
-
-function SearchResults({
-	results,
-	onOpen,
-}: {
-	results: readonly SearchResult[];
-	onOpen: (result: SearchResult) => void;
-}) {
-	return (
-		<section className="mt-8">
-			<h2 className="text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
-				Search results
-			</h2>
-			{results.length === 0 ? (
-				<p className="mt-4 leading-7 text-slate-600">
-					No cards match that search. Try a shorter or broader word.
-				</p>
-			) : (
-				<div className="mt-5 grid gap-4 sm:grid-cols-2">
-					{results.map((result) => (
-						<article
-							className="flex flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
-							key={`${result.type}-${result.index}`}
-						>
-							<p className="text-sm font-medium text-blue-700">
-								{searchResultLabel(result.type, result.architectureType)}
-							</p>
-							<h3 className="mt-2 text-xl font-semibold tracking-tight text-slate-950">
-								{result.title}
-							</h3>
-							<p className="mt-3 leading-7 text-slate-600">
-								{result.description}
-							</p>
-							<Button
-								className="mt-5 self-start"
-								onClick={() => onOpen(result)}
-							>
-								Open card
-							</Button>
-						</article>
-					))}
-				</div>
-			)}
-		</section>
-	);
-}
-
 function AlgorithmsDeck({
 	algorithms,
 	algorithm,
@@ -588,17 +453,6 @@ function Message({ children }: { children: string }) {
 
 function move(index: number, direction: number, length: number) {
 	return (index + direction + length) % length;
-}
-
-function searchResultLabel(
-	type: SearchResult["type"],
-	architectureType?: ArchitecturePatternCard["architectureType"],
-) {
-	if (type === "concept") return "System concept";
-	if (type === "architecture-pattern") {
-		return `Architecture ${formatArchitectureType(architectureType ?? "pattern")}`;
-	}
-	return "Algorithm";
 }
 
 function formatArchitectureType(
