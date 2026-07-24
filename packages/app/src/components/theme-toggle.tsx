@@ -30,11 +30,15 @@ export function ThemeToggle() {
 		<Button
 			aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
 			aria-pressed={theme === "dark"}
-			className="min-w-20 bg-slate-200 text-slate-800 hover:bg-slate-300"
+			className="min-h-9 size-9 rounded-full bg-slate-100 p-0 text-lg leading-none hover:bg-slate-200"
 			onClick={toggleTheme}
+			title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
 			type="button"
 		>
-			{theme === "dark" ? "Light mode" : "Dark mode"}
+			<span aria-hidden="true">{theme === "dark" ? "☀︎" : "☾"}</span>
+			<span className="sr-only">
+				Switch to {theme === "dark" ? "light" : "dark"} mode
+			</span>
 		</Button>
 	);
 }

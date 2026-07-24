@@ -43,16 +43,12 @@ html.dark .bg-slate-50 {
 	background-color: #1e293b;
 }
 
+html.dark .bg-slate-100 {
+	background-color: #1e293b;
+}
+
 html.dark .bg-slate-200 {
 	background-color: #334155;
-}
-
-html.dark .bg-slate-950 {
-	background-color: #2563eb;
-}
-
-html.dark .hover\:bg-slate-800:hover {
-	background-color: #1d4ed8;
 }
 
 html.dark .hover\:bg-slate-300:hover {

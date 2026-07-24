@@ -380,8 +380,8 @@ function SearchBox({
 					<Button
 						className={
 							filter === item.value
-								? "min-h-10 w-full px-3 sm:w-auto"
-								: "min-h-10 w-full bg-slate-200 px-3 text-slate-800 hover:bg-slate-300 sm:w-auto"
+								? "min-h-10 w-full bg-slate-200 px-3 sm:w-auto"
+								: "min-h-10 w-full px-3 sm:w-auto"
 						}
 						key={item.value}
 						onClick={() => onFilterChange(item.value)}
@@ -530,8 +530,8 @@ function ItemPicker<T extends { id: string; title?: string; term?: string }>({
 					<Button
 						className={
 							index === selectedIndex
-								? "w-full text-left"
-								: "w-full bg-slate-200 text-left text-slate-800 hover:bg-slate-300"
+								? "w-full bg-slate-200 text-left"
+								: "w-full text-left"
 						}
 						key={item.id}
 						onClick={() => onChoose(index)}
@@ -570,11 +570,7 @@ function DeckButton({
 }) {
 	return (
 		<Button
-			className={
-				active
-					? "w-full sm:w-auto"
-					: "w-full bg-slate-200 text-slate-800 hover:bg-slate-300 sm:w-auto"
-			}
+			className={active ? "w-full bg-slate-200 sm:w-auto" : "w-full sm:w-auto"}
 			onClick={onClick}
 		>
 			{children}

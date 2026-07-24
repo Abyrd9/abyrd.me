@@ -58,9 +58,9 @@ function AuthenticatedLayout() {
 						</Link>
 					</nav>
 				</div>
-				<div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
+				<div className="flex items-center justify-end gap-2">
 					<ThemeToggle />
-					<Button className="w-full sm:w-auto" onClick={handleSignOut}>
+					<Button className="min-h-9 px-3" onClick={handleSignOut}>
 						Sign out
 					</Button>
 				</div>
