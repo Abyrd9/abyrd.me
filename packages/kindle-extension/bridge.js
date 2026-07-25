@@ -1,3 +1,12 @@
+const extensionVersion = chrome.runtime.getManifest().version;
+
+function updateSetupStatus() {
+	const status = document.querySelector("#kindle-extension-status");
+	if (status instanceof HTMLElement) {
+		status.textContent = `Extension detected (v${extensionVersion}). Preparing connection…`;
+	}
+}
+
 function connectSetupPage() {
 	const button = document.querySelector("#connect-kindle-extension");
 	const status = document.querySelector("#kindle-extension-status");
@@ -17,6 +26,8 @@ function connectSetupPage() {
 	button.dataset.kindleExtensionReady = "true";
 	button.removeAttribute("data-sync-token");
 	button.disabled = false;
+	button.textContent = "Connect Kindle extension";
+	status.textContent = `Extension detected (v${extensionVersion}). Connect when you are ready.`;
 	button.addEventListener("click", async () => {
 		button.disabled = true;
 		status.textContent = "Opening Kindle Notebook…";
@@ -33,8 +44,11 @@ function connectSetupPage() {
 	return true;
 }
 
+updateSetupStatus();
+
 if (!connectSetupPage()) {
 	const observer = new MutationObserver(() => {
+		updateSetupStatus();
 		if (connectSetupPage()) observer.disconnect();
 	});
 	observer.observe(document.documentElement, {
