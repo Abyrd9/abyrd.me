@@ -397,8 +397,8 @@ function ItemPicker<T extends { id: string; title?: string; term?: string }>({
 					<Button
 						className={
 							index === selectedIndex
-								? "w-full bg-slate-200 text-left"
-								: "w-full text-left"
+								? "w-full bg-slate-200 text-center"
+								: "w-full text-center"
 						}
 						key={item.id}
 						onClick={() => onChoose(index)}
