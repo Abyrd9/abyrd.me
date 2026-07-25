@@ -11,7 +11,10 @@ const config = defineConfig({
 		allowedHosts: ["andrews-mac-mini-1.tail121ec5.ts.net"],
 	},
 	plugins: [
-		nitro({ rollupConfig: { external: [/^@sentry\//] } }),
+		nitro({
+			plugins: ["./src/server/database/nitro-plugin.ts"],
+			rollupConfig: { external: [/^@sentry\//] },
+		}),
 		tailwindcss(),
 		tanstackStart(),
 		viteReact(),

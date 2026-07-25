@@ -11,6 +11,9 @@
 		"build": "vite build",
 		"preview": "vite preview",
 		"test": "bun test",
+		"db:generate": "drizzle-kit generate",
+		"db:check": "drizzle-kit check",
+		"db:migrate": "bun src/server/database/migrate.ts",
 		"format": "bunx @biomejs/biome format --write .",
 		"lint": "bunx @biomejs/biome check .",
 		"typecheck": "bunx tsc --noEmit",
@@ -25,6 +28,7 @@
 		"@tanstack/react-router-ssr-query": "latest",
 		"@tanstack/react-start": "latest",
 		"@tanstack/router-plugin": "^1.132.0",
+		"drizzle-orm": "^0.45.2",
 		"effect": "^3",
 		"nitro": "npm:nitro-nightly@latest",
 		"react": "^19.2.0",
@@ -38,6 +42,7 @@
 		"@types/react": "^19.2.0",
 		"@types/react-dom": "^19.2.0",
 		"@vitejs/plugin-react": "^6.0.1",
+		"drizzle-kit": "^0.31.10",
 		"typescript": "^6.0.2",
 		"vite": "^8.0.0"
 	}
