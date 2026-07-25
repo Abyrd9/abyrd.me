@@ -36,8 +36,9 @@ data; it does not need Amazon credentials or a separate connection table.
 5. The worker persists each status update and broadcasts it to every open app
    page. The bridge updates the displayed status and refreshes the library after
    a successful import.
-6. A Kindle sign-in redirect produces a specific recovery message. An import
-   authorization failure produces a reconnect message and setup link.
+6. A Kindle sign-in redirect produces a specific recovery message. After the
+   user signs in in the opened tab, the same sync resumes automatically. An
+   import authorization failure produces a reconnect message and setup link.
 
 ## Error handling
 

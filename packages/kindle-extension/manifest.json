@@ -1,7 +1,7 @@
 {
 	"manifest_version": 3,
 	"name": "Andrew Byrd Kindle Sync",
-	"version": "1.0.1",
+	"version": "1.0.2",
 	"description": "Sync Kindle highlights to Andrew Byrd's private app.",
 	"permissions": ["alarms", "storage", "tabs"],
 	"host_permissions": [

@@ -36,8 +36,8 @@ function KindleSetup() {
 				<li>
 					<strong>3. Connect it here.</strong>
 					<br />
-					Keep this page open. The extension reads the sync token below and
-					opens Kindle Notebook when you connect.
+					Keep this page open. The extension will connect, then open Kindle
+					Notebook to import your highlights.
 				</li>
 			</ol>
 			{token ? (
@@ -54,8 +54,8 @@ function KindleSetup() {
 				<p className="mt-8 text-slate-600">Preparing your connection…</p>
 			)}
 			<p className="mt-3 text-sm text-slate-600" id="kindle-extension-status">
-				Download and load the extension in Chrome, then return here. The button
-				will become available.
+				Load the extension in Chrome, then return here. This page will confirm
+				when it detects the extension.
 			</p>
 		</section>
 	);

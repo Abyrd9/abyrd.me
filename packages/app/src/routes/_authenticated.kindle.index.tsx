@@ -65,12 +65,15 @@ function KindleLibrary() {
 				</p>
 			</div>
 			<div className="mt-8 flex flex-wrap gap-3">
-			<Link
-				className="inline-flex min-h-10 items-center rounded-md bg-slate-100 px-3 text-sm font-medium text-slate-950 hover:bg-slate-200"
-				to="/kindle/setup"
-			>
-				Set up Kindle sync
-			</Link>
+				<Button disabled id="sync-kindle-now" type="button">
+					Waiting for Kindle extension
+				</Button>
+				<Link
+					className="inline-flex min-h-10 items-center rounded-md bg-slate-100 px-3 text-sm font-medium text-slate-950 hover:bg-slate-200"
+					to="/kindle/setup"
+				>
+					Set up Kindle sync
+				</Link>
 				<Link
 					className="inline-flex min-h-10 items-center rounded-md bg-slate-100 px-3 text-sm font-medium text-slate-950 hover:bg-slate-200"
 					to="/kindle/archived"
@@ -78,17 +81,20 @@ function KindleLibrary() {
 					Archived
 				</Link>
 			</div>
+			<p className="mt-4 text-sm text-slate-600" id="kindle-sync-status">
+				Load the extension to sync your Kindle library.
+			</p>
 			{message ? <p className="mt-8 text-red-700">{message}</p> : null}
 			{!library && !message ? (
 				<p className="mt-8 text-slate-600">Loading Kindle library…</p>
 			) : null}
 			{library ? (
 				<>
-					<p className="mt-8 text-sm text-slate-600">
-						{library.lastSync
-							? `Last sync: ${library.lastSync.status}.`
-							: "Set up the extension to import your Kindle library."}
-					</p>
+					{library.lastSync ? (
+						<p className="mt-8 text-sm text-slate-600">
+							Last completed import: {library.lastSync.status}.
+						</p>
+					) : null}
 					<label className="mt-5 grid max-w-xl gap-2 text-sm font-medium text-slate-700">
 						Search highlights
 						<input
