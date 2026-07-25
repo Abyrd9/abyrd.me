@@ -44,16 +44,18 @@ function KindleSetup() {
 				<button
 					className="mt-8 max-w-xs rounded-md bg-slate-100 px-3 py-2 text-sm font-medium text-slate-950"
 					data-sync-token={token}
+					disabled
 					id="connect-kindle-extension"
 					type="button"
 				>
-					Connect Kindle extension
+					Waiting for Kindle extension
 				</button>
 			) : (
 				<p className="mt-8 text-slate-600">Preparing your connection…</p>
 			)}
 			<p className="mt-3 text-sm text-slate-600" id="kindle-extension-status">
-				Load the extension, then return here.
+				Download and load the extension in Chrome, then return here. The button
+				will become available.
 			</p>
 		</section>
 	);
