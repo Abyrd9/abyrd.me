@@ -1,4 +1,4 @@
-import { Config, Data, Effect } from "effect";
+import { Config, Data, Effect, Redacted } from "effect";
 
 const LOCAL_DATABASE_PATH = "./data/app.sqlite";
 
@@ -16,6 +16,14 @@ export class DatabaseConfigurationError extends Data.TaggedError(
 const appDatabasePath = Config.string("APP_DATABASE_PATH").pipe(
 	Config.withDefault(LOCAL_DATABASE_PATH),
 );
+
+const kindleSyncSecret = Config.redacted(
+	Config.string("APP_KINDLE_SYNC_SECRET"),
+);
+
+export const loadKindleSyncSecret = Effect.gen(function* () {
+	return Redacted.value(yield* kindleSyncSecret);
+});
 
 export const loadDatabaseConfig = Effect.gen(function* () {
 	const databasePath = yield* appDatabasePath;

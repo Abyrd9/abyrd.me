@@ -14,6 +14,7 @@ const config = defineConfig({
 		nitro({
 			plugins: ["./src/server/database/nitro-plugin.ts"],
 			rollupConfig: { external: [/^@sentry\//] },
+			serverDir: "./server",
 		}),
 		tailwindcss(),
 		tanstackStart(),

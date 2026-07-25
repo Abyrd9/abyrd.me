@@ -1,0 +1,14 @@
+{
+	"manifest_version": 3,
+	"name": "Andrew Byrd Kindle Sync",
+	"version": "1.0.0",
+	"description": "Sync Kindle highlights to Andrew Byrd's private app.",
+	"permissions": ["alarms", "storage", "tabs"],
+	"host_permissions": ["https://read.amazon.com/*", "https://app.abyrd.me/*", "https://andrews-mac-mini-1.tail121ec5.ts.net/*"],
+	"background": { "service_worker": "service-worker.js" },
+	"action": { "default_title": "Open Kindle library" },
+	"content_scripts": [
+		{ "matches": ["https://app.abyrd.me/*", "https://andrews-mac-mini-1.tail121ec5.ts.net/*"], "js": ["bridge.js"] },
+		{ "matches": ["https://read.amazon.com/notebook*"], "js": ["notebook.js"] }
+	]
+}

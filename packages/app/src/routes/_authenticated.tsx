@@ -56,6 +56,13 @@ function AuthenticatedLayout() {
 						>
 							Study
 						</Link>
+						<Link
+							activeProps={{ className: "font-semibold text-slate-950" }}
+							className="text-slate-600 transition hover:text-slate-950"
+							to="/kindle"
+						>
+							Kindle
+						</Link>
 					</nav>
 				</div>
 				<div className="flex items-center justify-end gap-2">

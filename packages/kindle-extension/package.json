@@ -1,0 +1,7 @@
+{
+	"name": "@abyrd/kindle-extension",
+	"private": true,
+	"scripts": {
+		"zip": "mkdir -p ../app/public && rm -f ../app/public/kindle-extension.zip && zip -r ../app/public/kindle-extension.zip manifest.json bridge.js service-worker.js notebook.js"
+	}
+}

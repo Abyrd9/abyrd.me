@@ -13,7 +13,10 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as HealthRouteImport } from './routes/health'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated.index'
+import { Route as AuthenticatedKindleRouteImport } from './routes/_authenticated.kindle'
 import { Route as AuthenticatedQuizRouteImport } from './routes/_authenticated.quiz'
+import { Route as AuthenticatedKindleArchivedRouteImport } from './routes/_authenticated.kindle.archived'
+import { Route as AuthenticatedKindleSetupRouteImport } from './routes/_authenticated.kindle.setup'
 
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
   id: '/_authenticated',
@@ -34,44 +37,87 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedKindleRoute = AuthenticatedKindleRouteImport.update({
+  id: '/kindle',
+  path: '/kindle',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedQuizRoute = AuthenticatedQuizRouteImport.update({
   id: '/quiz',
   path: '/quiz',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedKindleArchivedRoute =
+  AuthenticatedKindleArchivedRouteImport.update({
+    id: '/archived',
+    path: '/archived',
+    getParentRoute: () => AuthenticatedKindleRoute,
+  } as any)
+const AuthenticatedKindleSetupRoute =
+  AuthenticatedKindleSetupRouteImport.update({
+    id: '/setup',
+    path: '/setup',
+    getParentRoute: () => AuthenticatedKindleRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/health': typeof HealthRoute
   '/sign-in': typeof SignInRoute
+  '/kindle': typeof AuthenticatedKindleRouteWithChildren
   '/quiz': typeof AuthenticatedQuizRoute
+  '/kindle/archived': typeof AuthenticatedKindleArchivedRoute
+  '/kindle/setup': typeof AuthenticatedKindleSetupRoute
 }
 export interface FileRoutesByTo {
   '/health': typeof HealthRoute
   '/sign-in': typeof SignInRoute
+  '/kindle': typeof AuthenticatedKindleRouteWithChildren
   '/quiz': typeof AuthenticatedQuizRoute
   '/': typeof AuthenticatedIndexRoute
+  '/kindle/archived': typeof AuthenticatedKindleArchivedRoute
+  '/kindle/setup': typeof AuthenticatedKindleSetupRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/health': typeof HealthRoute
   '/sign-in': typeof SignInRoute
+  '/_authenticated/kindle': typeof AuthenticatedKindleRouteWithChildren
   '/_authenticated/quiz': typeof AuthenticatedQuizRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/kindle/archived': typeof AuthenticatedKindleArchivedRoute
+  '/_authenticated/kindle/setup': typeof AuthenticatedKindleSetupRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/health' | '/sign-in' | '/quiz'
+  fullPaths:
+    | '/'
+    | '/health'
+    | '/sign-in'
+    | '/kindle'
+    | '/quiz'
+    | '/kindle/archived'
+    | '/kindle/setup'
   fileRoutesByTo: FileRoutesByTo
-  to: '/health' | '/sign-in' | '/quiz' | '/'
+  to:
+    | '/health'
+    | '/sign-in'
+    | '/kindle'
+    | '/quiz'
+    | '/'
+    | '/kindle/archived'
+    | '/kindle/setup'
   id:
     | '__root__'
     | '/_authenticated'
     | '/health'
     | '/sign-in'
+    | '/_authenticated/kindle'
     | '/_authenticated/quiz'
     | '/_authenticated/'
+    | '/_authenticated/kindle/archived'
+    | '/_authenticated/kindle/setup'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -110,6 +156,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/kindle': {
+      id: '/_authenticated/kindle'
+      path: '/kindle'
+      fullPath: '/kindle'
+      preLoaderRoute: typeof AuthenticatedKindleRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/quiz': {
       id: '/_authenticated/quiz'
       path: '/quiz'
@@ -117,15 +170,44 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedQuizRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/kindle/archived': {
+      id: '/_authenticated/kindle/archived'
+      path: '/archived'
+      fullPath: '/kindle/archived'
+      preLoaderRoute: typeof AuthenticatedKindleArchivedRouteImport
+      parentRoute: typeof AuthenticatedKindleRoute
+    }
+    '/_authenticated/kindle/setup': {
+      id: '/_authenticated/kindle/setup'
+      path: '/setup'
+      fullPath: '/kindle/setup'
+      preLoaderRoute: typeof AuthenticatedKindleSetupRouteImport
+      parentRoute: typeof AuthenticatedKindleRoute
+    }
   }
 }
 
+interface AuthenticatedKindleRouteChildren {
+  AuthenticatedKindleArchivedRoute: typeof AuthenticatedKindleArchivedRoute
+  AuthenticatedKindleSetupRoute: typeof AuthenticatedKindleSetupRoute
+}
+
+const AuthenticatedKindleRouteChildren: AuthenticatedKindleRouteChildren = {
+  AuthenticatedKindleArchivedRoute: AuthenticatedKindleArchivedRoute,
+  AuthenticatedKindleSetupRoute: AuthenticatedKindleSetupRoute,
+}
+
+const AuthenticatedKindleRouteWithChildren =
+  AuthenticatedKindleRoute._addFileChildren(AuthenticatedKindleRouteChildren)
+
 interface AuthenticatedRouteChildren {
+  AuthenticatedKindleRoute: typeof AuthenticatedKindleRouteWithChildren
   AuthenticatedQuizRoute: typeof AuthenticatedQuizRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedKindleRoute: AuthenticatedKindleRouteWithChildren,
   AuthenticatedQuizRoute: AuthenticatedQuizRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
 }
