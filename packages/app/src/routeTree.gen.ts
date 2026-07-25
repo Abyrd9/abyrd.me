@@ -15,6 +15,7 @@ import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated.index'
 import { Route as AuthenticatedKindleRouteImport } from './routes/_authenticated.kindle'
 import { Route as AuthenticatedQuizRouteImport } from './routes/_authenticated.quiz'
+import { Route as AuthenticatedKindleIndexRouteImport } from './routes/_authenticated.kindle.index'
 import { Route as AuthenticatedKindleArchivedRouteImport } from './routes/_authenticated.kindle.archived'
 import { Route as AuthenticatedKindleSetupRouteImport } from './routes/_authenticated.kindle.setup'
 
@@ -47,6 +48,12 @@ const AuthenticatedQuizRoute = AuthenticatedQuizRouteImport.update({
   path: '/quiz',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedKindleIndexRoute =
+  AuthenticatedKindleIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedKindleRoute,
+  } as any)
 const AuthenticatedKindleArchivedRoute =
   AuthenticatedKindleArchivedRouteImport.update({
     id: '/archived',
@@ -68,15 +75,16 @@ export interface FileRoutesByFullPath {
   '/quiz': typeof AuthenticatedQuizRoute
   '/kindle/archived': typeof AuthenticatedKindleArchivedRoute
   '/kindle/setup': typeof AuthenticatedKindleSetupRoute
+  '/kindle/': typeof AuthenticatedKindleIndexRoute
 }
 export interface FileRoutesByTo {
   '/health': typeof HealthRoute
   '/sign-in': typeof SignInRoute
-  '/kindle': typeof AuthenticatedKindleRouteWithChildren
   '/quiz': typeof AuthenticatedQuizRoute
   '/': typeof AuthenticatedIndexRoute
   '/kindle/archived': typeof AuthenticatedKindleArchivedRoute
   '/kindle/setup': typeof AuthenticatedKindleSetupRoute
+  '/kindle': typeof AuthenticatedKindleIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -88,6 +96,7 @@ export interface FileRoutesById {
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/kindle/archived': typeof AuthenticatedKindleArchivedRoute
   '/_authenticated/kindle/setup': typeof AuthenticatedKindleSetupRoute
+  '/_authenticated/kindle/': typeof AuthenticatedKindleIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -99,15 +108,16 @@ export interface FileRouteTypes {
     | '/quiz'
     | '/kindle/archived'
     | '/kindle/setup'
+    | '/kindle/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/health'
     | '/sign-in'
-    | '/kindle'
     | '/quiz'
     | '/'
     | '/kindle/archived'
     | '/kindle/setup'
+    | '/kindle'
   id:
     | '__root__'
     | '/_authenticated'
@@ -118,6 +128,7 @@ export interface FileRouteTypes {
     | '/_authenticated/'
     | '/_authenticated/kindle/archived'
     | '/_authenticated/kindle/setup'
+    | '/_authenticated/kindle/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -170,6 +181,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedQuizRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/kindle/': {
+      id: '/_authenticated/kindle/'
+      path: '/'
+      fullPath: '/kindle/'
+      preLoaderRoute: typeof AuthenticatedKindleIndexRouteImport
+      parentRoute: typeof AuthenticatedKindleRoute
+    }
     '/_authenticated/kindle/archived': {
       id: '/_authenticated/kindle/archived'
       path: '/archived'
@@ -190,11 +208,13 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedKindleRouteChildren {
   AuthenticatedKindleArchivedRoute: typeof AuthenticatedKindleArchivedRoute
   AuthenticatedKindleSetupRoute: typeof AuthenticatedKindleSetupRoute
+  AuthenticatedKindleIndexRoute: typeof AuthenticatedKindleIndexRoute
 }
 
 const AuthenticatedKindleRouteChildren: AuthenticatedKindleRouteChildren = {
   AuthenticatedKindleArchivedRoute: AuthenticatedKindleArchivedRoute,
   AuthenticatedKindleSetupRoute: AuthenticatedKindleSetupRoute,
+  AuthenticatedKindleIndexRoute: AuthenticatedKindleIndexRoute,
 }
 
 const AuthenticatedKindleRouteWithChildren =
