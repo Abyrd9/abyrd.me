@@ -65,12 +65,12 @@ function KindleLibrary() {
 				</p>
 			</div>
 			<div className="mt-8 flex flex-wrap gap-3">
-				<Link
-					className="inline-flex min-h-10 items-center rounded-md bg-slate-100 px-3 text-sm font-medium text-slate-950 hover:bg-slate-200"
-					to="/kindle/setup"
-				>
-					Set up sync
-				</Link>
+			<Link
+				className="inline-flex min-h-10 items-center rounded-md bg-slate-100 px-3 text-sm font-medium text-slate-950 hover:bg-slate-200"
+				to="/kindle/setup"
+			>
+				Set up Kindle sync
+			</Link>
 				<Link
 					className="inline-flex min-h-10 items-center rounded-md bg-slate-100 px-3 text-sm font-medium text-slate-950 hover:bg-slate-200"
 					to="/kindle/archived"
