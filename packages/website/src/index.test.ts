@@ -30,6 +30,7 @@ test("returns a real 404 response for missing pages", async () => {
 
 test("production build processes Tailwind and injects shared HTML", async () => {
 	const outputDirectory = await mkdtemp(join(tmpdir(), "abyrd-website-"));
+	let productionServer: ReturnType<typeof Bun.spawn> | undefined;
 
 	try {
 		const build = Bun.spawn({
@@ -56,7 +57,41 @@ test("production build processes Tailwind and injects shared HTML", async () => 
 
 		expect(stylesheet).toContain(".min-h-dvh");
 		expect(homepage).toContain('id="nav-logo"');
+
+		productionServer = Bun.spawn({
+			cmd: ["bun", "index.js"],
+			cwd: outputDirectory,
+			env: { ...process.env, NODE_ENV: "production", PORT: "0" },
+			stderr: "pipe",
+			stdout: "pipe",
+		});
+
+		const serverOutput = productionServer.stdout;
+
+		if (!serverOutput || typeof serverOutput === "number") {
+			throw new Error(
+				"Production server did not expose a readable output stream.",
+			);
+		}
+
+		const serverUrl = await _readServerUrl(serverOutput);
+		const stylesheetResponse = await fetch(new URL(stylesheetPath, serverUrl));
+
+		expect(stylesheetResponse.status).toBe(200);
+		expect(stylesheetResponse.headers.get("Content-Type")).toContain(
+			"text/css",
+		);
+
+		const unregisteredAsset = await fetch(new URL("/index.css", serverUrl));
+
+		expect(unregisteredAsset.status).toBe(200);
+		expect(unregisteredAsset.headers.get("Content-Type")).toContain("text/css");
 	} finally {
+		if (productionServer) {
+			productionServer.kill();
+			await productionServer.exited;
+		}
+
 		await rm(outputDirectory, { force: true, recursive: true });
 	}
 });
@@ -76,3 +111,22 @@ test("includes the resume in the sitemap", async () => {
 		`<loc>${server.url.origin}/resume</loc>`,
 	);
 });
+
+async function _readServerUrl(output: ReadableStream<Uint8Array>) {
+	const decoder = new TextDecoder();
+	const reader = output.getReader();
+	let text = "";
+
+	while (true) {
+		const chunk = await reader.read();
+
+		if (chunk.done)
+			throw new Error(`Production server stopped before it started: ${text}`);
+
+		text += decoder.decode(chunk.value, { stream: true });
+
+		const url = text.match(/Server running at (http:\/\/localhost:\d+\/)/)?.[1];
+
+		if (url) return new URL(url);
+	}
+}

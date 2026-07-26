@@ -55,7 +55,11 @@ export const server = serve({
 		"/": index,
 		"/resume": resume,
 	},
-	fetch() {
+	async fetch(request) {
+		const asset = await _buildAssetResponse(request);
+
+		if (asset) return asset;
+
 		return new Response(Bun.file(new URL(fourOhFour.index, import.meta.url)), {
 			status: 404,
 			headers: { "Content-Type": "text/html; charset=utf-8" },
@@ -69,3 +73,36 @@ export const server = serve({
 });
 
 console.log(`🚀 Server running at ${server.url}`);
+
+/** Every file in the production build directory is a public website asset. */
+async function _buildAssetResponse(request: Request) {
+	if (request.method !== "GET" && request.method !== "HEAD") return;
+
+	const assetPath = _buildAssetPath(new URL(request.url).pathname);
+
+	if (!assetPath) return;
+
+	const asset = Bun.file(`${process.cwd()}/${assetPath}`);
+
+	if (!(await asset.exists())) return;
+
+	return new Response(asset);
+}
+
+function _buildAssetPath(pathname: string) {
+	let decodedPath: string;
+
+	try {
+		decodedPath = decodeURIComponent(pathname);
+	} catch {
+		return;
+	}
+
+	const pathSegments = decodedPath.split("/").filter(Boolean);
+
+	if (pathSegments.length === 0) return;
+	if (pathSegments.some((segment) => segment === "." || segment === ".."))
+		return;
+
+	return pathSegments.join("/");
+}
