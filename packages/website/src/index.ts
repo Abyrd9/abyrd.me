@@ -12,22 +12,6 @@ import { sitemap } from "./routes/sitemap";
 
 const port = process.env.PORT ? Number(process.env.PORT) : 3000;
 
-const staticAssetExtensions = new Set([
-	".avif",
-	".css",
-	".gif",
-	".ico",
-	".jpeg",
-	".jpg",
-	".js",
-	".mjs",
-	".png",
-	".svg",
-	".webp",
-	".woff",
-	".woff2",
-]);
-
 export const server = serve({
 	port,
 	routes: {
@@ -71,11 +55,7 @@ export const server = serve({
 		"/": index,
 		"/resume": resume,
 	},
-	async fetch(request) {
-		const asset = await _staticAssetResponse(request);
-
-		if (asset) return asset;
-
+	fetch() {
 		return new Response(Bun.file(new URL(fourOhFour.index, import.meta.url)), {
 			status: 404,
 			headers: { "Content-Type": "text/html; charset=utf-8" },
@@ -89,41 +69,3 @@ export const server = serve({
 });
 
 console.log(`🚀 Server running at ${server.url}`);
-
-/**
- * Bun's HTML-import manifest does not always retain every emitted asset. Serve
- * only known public asset types from the production bundle before returning 404.
- */
-async function _staticAssetResponse(request: Request) {
-	if (process.env.NODE_ENV !== "production") return;
-
-	const assetPath = _publicAssetPath(new URL(request.url).pathname);
-
-	if (!assetPath) return;
-
-	const asset = Bun.file(`${process.cwd()}/${assetPath}`);
-
-	if (!(await asset.exists())) return;
-
-	return new Response(asset);
-}
-
-function _publicAssetPath(pathname: string) {
-	let decodedPath: string;
-
-	try {
-		decodedPath = decodeURIComponent(pathname);
-	} catch {
-		return;
-	}
-
-	const assetPath = decodedPath.replace(/^\/+/, "");
-	const pathSegments = assetPath.split("/");
-	const extension = assetPath.slice(assetPath.lastIndexOf("."));
-
-	if (pathSegments.some((segment) => segment === "." || segment === ".."))
-		return;
-	if (!staticAssetExtensions.has(extension)) return;
-
-	return assetPath;
-}

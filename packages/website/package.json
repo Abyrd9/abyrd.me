@@ -5,11 +5,11 @@
 	"type": "module",
 	"scripts": {
 		"dev": "bun --hot src/index.ts",
-		"build": "NODE_ENV=production bun build --target bun src/index.ts --outdir dist",
+		"build": "NODE_ENV=production bun run build.ts",
 		"start": "NODE_ENV=production bun --cwd dist index.js",
 		"lint": "bunx @biomejs/biome check .",
 		"typecheck": "bunx tsc --noEmit",
-		"build:verify": "NODE_ENV=production TMPDIR=/tmp bun build --target bun src/index.ts --outdir /tmp/abyrd-me-build",
+		"build:verify": "NODE_ENV=production TMPDIR=/tmp bun run build.ts /tmp/abyrd-me-build",
 		"test": "bun test",
 		"check": "bun run test && bun run lint && bun run typecheck && bun run build:verify",
 		"deps:outdated": "TMPDIR=/tmp bun outdated --no-progress",
