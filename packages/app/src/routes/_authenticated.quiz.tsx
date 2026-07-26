@@ -1,15 +1,31 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import {
+	clearAlgorithmProgress,
+	readAlgorithmProgress,
+	writeAlgorithmProgress,
+} from "#/algorithm-progress";
 import { Button } from "#/components/primitives/button";
 import { loadFlashcardDecks } from "#/server/flashcard-functions";
 import type {
-	AlgorithmDeck,
+	AlgorithmPath,
+	AlgorithmPatternLesson,
 	ArchitecturePatternCard,
 	FlashcardDecks,
 	SystemTermCard,
 } from "#/server/flashcards";
 
 type Deck = "terms" | "patterns" | "algorithms";
+
+const algorithmStages = [
+	{ id: "spot", label: "Spot it", prompt: "What clues point here?" },
+	{ id: "state", label: "State it", prompt: "What must stay true?" },
+	{ id: "write", label: "Write it", prompt: "Can you rebuild the recipe?" },
+	{ id: "trace", label: "Trace it", prompt: "Can you run it by hand?" },
+	{ id: "choose", label: "Choose it", prompt: "Why this pattern?" },
+	{ id: "use", label: "Use it", prompt: "Can you apply it with less help?" },
+	{ id: "check", label: "Check it", prompt: "What does it cost?" },
+] as const;
 
 export const Route = createFileRoute("/_authenticated/quiz")({
 	component: StudyFlashcards,
@@ -20,8 +36,6 @@ function StudyFlashcards() {
 	const [deck, setDeck] = useState<Deck>("terms");
 	const [termIndex, setTermIndex] = useState(0);
 	const [patternIndex, setPatternIndex] = useState(0);
-	const [algorithmIndex, setAlgorithmIndex] = useState(0);
-	const [algorithmCardIndex, setAlgorithmCardIndex] = useState(0);
 	const [showTermAnswer, setShowTermAnswer] = useState(false);
 	const [message, setMessage] = useState<string | null>(null);
 
@@ -54,11 +68,6 @@ function StudyFlashcards() {
 		setShowTermAnswer(false);
 	}
 
-	function chooseAlgorithm(index: number) {
-		setAlgorithmIndex(index);
-		setAlgorithmCardIndex(0);
-	}
-
 	function choosePattern(index: number) {
 		setPatternIndex(index);
 	}
@@ -68,7 +77,6 @@ function StudyFlashcards() {
 
 	const term = decks.systemTerms[termIndex];
 	const pattern = decks.architecturePatterns[patternIndex];
-	const algorithm = decks.algorithms[algorithmIndex];
 
 	return (
 		<section className="flex flex-1 flex-col py-8 sm:py-14">
@@ -80,8 +88,8 @@ function StudyFlashcards() {
 					Learn the building blocks.
 				</h1>
 				<p className="mt-4 leading-7 text-slate-600 sm:text-lg sm:leading-8">
-					Review a system-design term or work through a clean algorithm solution
-					in TypeScript and Go.
+					Review a system-design term, study an architecture pattern, or learn
+					an algorithm pattern in TypeScript.
 				</p>
 			</div>
 
@@ -139,21 +147,7 @@ function StudyFlashcards() {
 				/>
 			) : null}
 			{deck === "algorithms" ? (
-				<AlgorithmsDeck
-					algorithm={algorithm}
-					algorithmCardIndex={algorithmCardIndex}
-					algorithms={decks.algorithms}
-					onChoose={chooseAlgorithm}
-					onMoveCard={(direction) =>
-						setAlgorithmCardIndex((index) =>
-							Math.min(
-								Math.max(index + direction, 0),
-								algorithm.cards.length - 1,
-							),
-						)
-					}
-					selectedIndex={algorithmIndex}
-				/>
+				<AlgorithmsDeck paths={decks.algorithmPaths} />
 			) : null}
 		</section>
 	);
@@ -307,73 +301,520 @@ function PatternsDeck({
 	);
 }
 
-function AlgorithmsDeck({
-	algorithms,
-	algorithm,
-	selectedIndex,
-	algorithmCardIndex,
-	onChoose,
-	onMoveCard,
-}: {
-	algorithms: readonly AlgorithmDeck[];
-	algorithm: AlgorithmDeck;
-	selectedIndex: number;
-	algorithmCardIndex: number;
-	onChoose: (index: number) => void;
-	onMoveCard: (direction: number) => void;
-}) {
-	const card = algorithm.cards[algorithmCardIndex];
-	const isFirstCard = algorithmCardIndex === 0;
-	const isLastCard = algorithmCardIndex === algorithm.cards.length - 1;
+function AlgorithmsDeck({ paths }: { paths: readonly AlgorithmPath[] }) {
+	const [pathIndex, setPathIndex] = useState<number | null>(null);
+	const [lessonIndex, setLessonIndex] = useState<number | null>(null);
+	const [cardIndex, setCardIndex] = useState(0);
+	const [showRecipe, setShowRecipe] = useState(false);
+	const [completedLessonIds, setCompletedLessonIds] = useState<Set<string>>(
+		new Set(),
+	);
+
+	useEffect(() => {
+		setCompletedLessonIds(readAlgorithmProgress());
+	}, []);
+
+	const path = pathIndex === null ? null : paths[pathIndex];
+	const lesson =
+		path && lessonIndex !== null ? path.lessons[lessonIndex] : null;
+
+	function openPath(index: number) {
+		setPathIndex(index);
+		setLessonIndex(null);
+		setCardIndex(0);
+		setShowRecipe(false);
+	}
+
+	function openLesson(index: number) {
+		setLessonIndex(index);
+		setCardIndex(0);
+		setShowRecipe(false);
+	}
+
+	function openCard(index: number) {
+		setCardIndex(index);
+		setShowRecipe(false);
+	}
+
+	function toggleLessonComplete(lessonId: string) {
+		const next = new Set(completedLessonIds);
+		if (next.has(lessonId)) next.delete(lessonId);
+		else next.add(lessonId);
+
+		setCompletedLessonIds(next);
+		writeAlgorithmProgress(next);
+	}
+
+	function clearProgress() {
+		if (!window.confirm("Clear all completed algorithm lessons?")) return;
+		clearAlgorithmProgress();
+		setCompletedLessonIds(new Set());
+	}
+
+	if (!path) {
+		return (
+			<AlgorithmPathOverview
+				completedLessonIds={completedLessonIds}
+				onClear={clearProgress}
+				onOpen={openPath}
+				paths={paths}
+			/>
+		);
+	}
+
+	if (!lesson) {
+		return (
+			<AlgorithmPathLessons
+				completedLessonIds={completedLessonIds}
+				onBack={() => setPathIndex(null)}
+				onOpen={openLesson}
+				path={path}
+			/>
+		);
+	}
 
 	return (
-		<div className="mt-8 grid gap-8 lg:grid-cols-[15rem_1fr]">
-			<ItemPicker
-				items={algorithms}
-				label="Problems"
-				onChoose={onChoose}
-				selectedIndex={selectedIndex}
-			/>
-			<article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
-				<p className="text-sm font-medium text-amber-700 dark:text-amber-300">
-					{algorithm.title} · Card {algorithmCardIndex + 1} of{" "}
-					{algorithm.cards.length}
-				</p>
-				<h2 className="mt-4 text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl">
-					{card.heading}
-				</h2>
-				<p className="mt-4 leading-7 text-slate-700 sm:text-lg sm:leading-8">
-					{card.body}
-				</p>
-				{card.code ? (
-					<section className="mt-6 overflow-hidden rounded-xl border border-slate-200 bg-black">
-						<p className="border-b border-slate-700 px-4 py-3 text-sm font-medium text-slate-300">
-							{card.language}
+		<AlgorithmLesson
+			cardIndex={cardIndex}
+			isComplete={completedLessonIds.has(lesson.id)}
+			lesson={lesson}
+			onBack={() => setLessonIndex(null)}
+			onOpenCard={openCard}
+			onToggleComplete={() => toggleLessonComplete(lesson.id)}
+			onToggleRecipe={() => setShowRecipe((isShown) => !isShown)}
+			path={path}
+			showRecipe={showRecipe}
+		/>
+	);
+}
+
+function AlgorithmPathOverview({
+	paths,
+	completedLessonIds,
+	onOpen,
+	onClear,
+}: {
+	paths: readonly AlgorithmPath[];
+	completedLessonIds: ReadonlySet<string>;
+	onOpen: (index: number) => void;
+	onClear: () => void;
+}) {
+	const totalLessons = paths.reduce(
+		(sum, path) => sum + path.lessons.length,
+		0,
+	);
+	const completedLessons = paths.reduce(
+		(sum, path) => sum + _completedCount(path, completedLessonIds),
+		0,
+	);
+
+	return (
+		<section className="mt-8">
+			<header className="overflow-hidden rounded-2xl bg-slate-950 text-white shadow-sm">
+				<div className="grid sm:grid-cols-[9rem_1fr]">
+					<div className="flex items-center bg-amber-400 px-6 py-5 font-mono text-sm font-semibold uppercase tracking-[0.18em] text-slate-950 sm:items-start sm:py-8">
+						29 patterns
+					</div>
+					<div className="px-6 py-7 sm:p-8">
+						<p className="text-sm font-medium text-amber-300">Pattern paths</p>
+						<h2 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
+							Learn the move before the problem.
+						</h2>
+						<p className="mt-3 max-w-2xl leading-7 text-slate-300">
+							Pick a path. Each lesson trains you to spot, state, write, trace,
+							choose, and use one pattern.
 						</p>
-						<pre className="overflow-x-auto p-4 text-sm leading-6 text-slate-100">
-							<code>{card.code}</code>
-						</pre>
-					</section>
+					</div>
+				</div>
+			</header>
+
+			<div className="mt-6 grid gap-4 md:grid-cols-2">
+				{paths.map((path, index) => {
+					const completed = _completedCount(path, completedLessonIds);
+					return (
+						<button
+							className="group rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-amber-400 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600 sm:p-6"
+							key={path.id}
+							onClick={() => onOpen(index)}
+							type="button"
+						>
+							<div className="flex items-start justify-between gap-4">
+								<p className="font-mono text-xs font-semibold uppercase tracking-[0.18em] text-amber-700 dark:text-amber-300">
+									Path {String(index + 1).padStart(2, "0")}
+								</p>
+								<span className="text-sm text-slate-500">
+									{path.lessons.length} lessons
+								</span>
+							</div>
+							<h3 className="mt-4 text-xl font-semibold tracking-tight text-slate-950 group-hover:text-amber-800 dark:group-hover:text-amber-300">
+								{path.title}
+							</h3>
+							<p className="mt-2 leading-7 text-slate-600">{path.summary}</p>
+							<AlgorithmProgress
+								completed={completed}
+								total={path.lessons.length}
+							/>
+						</button>
+					);
+				})}
+			</div>
+
+			<div className="mt-6 flex flex-col gap-3 border-t border-slate-200 pt-5 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
+				<p>
+					{completedLessons} of {totalLessons} lessons complete
+				</p>
+				{completedLessons > 0 ? (
+					<Button
+						className="bg-transparent px-0 text-red-700 hover:bg-transparent"
+						onClick={onClear}
+					>
+						Clear progress
+					</Button>
 				) : null}
-				<div className="mt-8 grid gap-3 sm:flex sm:flex-wrap sm:justify-center">
+			</div>
+		</section>
+	);
+}
+
+function AlgorithmPathLessons({
+	path,
+	completedLessonIds,
+	onBack,
+	onOpen,
+}: {
+	path: AlgorithmPath;
+	completedLessonIds: ReadonlySet<string>;
+	onBack: () => void;
+	onOpen: (index: number) => void;
+}) {
+	const completed = _completedCount(path, completedLessonIds);
+
+	return (
+		<section className="mt-8">
+			<Button
+				className="bg-transparent px-0 text-amber-800 hover:bg-transparent dark:text-amber-300"
+				onClick={onBack}
+			>
+				← All paths
+			</Button>
+			<header className="mt-4 grid gap-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:grid-cols-[1fr_13rem] sm:p-8">
+				<div>
+					<p className="text-sm font-medium text-amber-700 dark:text-amber-300">
+						Pattern path
+					</p>
+					<h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl">
+						{path.title}
+					</h2>
+					<p className="mt-3 leading-7 text-slate-600">{path.summary}</p>
+				</div>
+				<div className="self-center">
+					<AlgorithmProgress
+						completed={completed}
+						total={path.lessons.length}
+					/>
+				</div>
+			</header>
+
+			<ol className="mt-5 grid gap-3">
+				{path.lessons.map((lesson, index) => {
+					const isComplete = completedLessonIds.has(lesson.id);
+					return (
+						<li key={lesson.id}>
+							<button
+								className="group grid w-full grid-cols-[2.75rem_1fr_auto] items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:border-amber-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600 sm:gap-5 sm:px-5"
+								onClick={() => onOpen(index)}
+								type="button"
+							>
+								<span className="font-mono text-sm text-slate-500">
+									{String(index + 1).padStart(2, "0")}
+								</span>
+								<span>
+									<span className="block font-semibold text-slate-950 group-hover:text-amber-800 dark:group-hover:text-amber-300">
+										{lesson.title}
+									</span>
+									<span className="mt-1 block text-sm leading-6 text-slate-600">
+										{lesson.summary}
+									</span>
+								</span>
+								<span
+									className={
+										isComplete
+											? "text-sm font-medium text-emerald-700 dark:text-emerald-300"
+											: "text-slate-400"
+									}
+								>
+									{isComplete ? "Complete" : "→"}
+								</span>
+							</button>
+						</li>
+					);
+				})}
+			</ol>
+		</section>
+	);
+}
+
+function AlgorithmLesson({
+	path,
+	lesson,
+	cardIndex,
+	showRecipe,
+	isComplete,
+	onBack,
+	onOpenCard,
+	onToggleRecipe,
+	onToggleComplete,
+}: {
+	path: AlgorithmPath;
+	lesson: AlgorithmPatternLesson;
+	cardIndex: number;
+	showRecipe: boolean;
+	isComplete: boolean;
+	onBack: () => void;
+	onOpenCard: (index: number) => void;
+	onToggleRecipe: () => void;
+	onToggleComplete: () => void;
+}) {
+	const stage = algorithmStages[cardIndex];
+	const isFirst = cardIndex === 0;
+	const isLast = cardIndex === algorithmStages.length - 1;
+
+	return (
+		<section className="mt-8">
+			<Button
+				className="bg-transparent px-0 text-amber-800 hover:bg-transparent dark:text-amber-300"
+				onClick={onBack}
+			>
+				← {path.title}
+			</Button>
+
+			<nav aria-label="Lesson cards" className="mt-4 overflow-x-auto pb-2">
+				<ol className="grid min-w-[44rem] grid-cols-7 overflow-hidden rounded-xl border border-slate-200 bg-white">
+					{algorithmStages.map((item, index) => (
+						<li
+							className="border-r border-slate-200 last:border-r-0"
+							key={item.id}
+						>
+							<button
+								aria-current={index === cardIndex ? "step" : undefined}
+								className={
+									index === cardIndex
+										? "w-full bg-amber-400 px-3 py-3 text-left text-slate-950"
+										: "w-full px-3 py-3 text-left text-slate-600 transition hover:bg-slate-50"
+								}
+								onClick={() => onOpenCard(index)}
+								type="button"
+							>
+								<span className="block font-mono text-[0.65rem] font-semibold uppercase tracking-[0.16em]">
+									{String(index + 1).padStart(2, "0")}
+								</span>
+								<span className="mt-1 block text-sm font-semibold">
+									{item.label}
+								</span>
+							</button>
+						</li>
+					))}
+				</ol>
+			</nav>
+
+			<article className="mt-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
+				<div className="flex flex-col gap-3 border-b border-slate-200 pb-5 sm:flex-row sm:items-start sm:justify-between">
+					<div>
+						<p className="text-sm font-medium text-amber-700 dark:text-amber-300">
+							{lesson.title} · {stage.label}
+						</p>
+						<h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl">
+							{stage.prompt}
+						</h2>
+					</div>
+					<span className="font-mono text-sm text-slate-500">
+						{cardIndex + 1} / {algorithmStages.length}
+					</span>
+				</div>
+
+				<AlgorithmLessonContent
+					cardIndex={cardIndex}
+					lesson={lesson}
+					onToggleRecipe={onToggleRecipe}
+					showRecipe={showRecipe}
+				/>
+
+				<div className="mt-8 grid gap-3 border-t border-slate-200 pt-6 sm:flex sm:flex-wrap sm:justify-between">
 					<Button
 						className="w-full bg-slate-200 text-slate-800 hover:bg-slate-300 sm:w-auto"
-						disabled={isFirstCard}
-						onClick={() => onMoveCard(-1)}
+						disabled={isFirst}
+						onClick={() => onOpenCard(cardIndex - 1)}
 					>
 						Previous card
 					</Button>
-					<Button
-						className="w-full sm:w-auto"
-						disabled={isLastCard}
-						onClick={() => onMoveCard(1)}
-					>
-						Next card
-					</Button>
+					{isLast ? (
+						<Button
+							className={
+								isComplete
+									? "w-full bg-emerald-100 text-emerald-900 hover:bg-emerald-200 sm:w-auto"
+									: "w-full bg-emerald-700 text-white hover:bg-emerald-800 sm:w-auto"
+							}
+							onClick={onToggleComplete}
+						>
+							{isComplete ? "Mark incomplete" : "Mark lesson complete"}
+						</Button>
+					) : (
+						<Button
+							className="w-full sm:w-auto"
+							onClick={() => onOpenCard(cardIndex + 1)}
+						>
+							Next card
+						</Button>
+					)}
 				</div>
 			</article>
+		</section>
+	);
+}
+
+function AlgorithmLessonContent({
+	lesson,
+	cardIndex,
+	showRecipe,
+	onToggleRecipe,
+}: {
+	lesson: AlgorithmPatternLesson;
+	cardIndex: number;
+	showRecipe: boolean;
+	onToggleRecipe: () => void;
+}) {
+	if (cardIndex === 0) return <LessonText>{lesson.spot}</LessonText>;
+
+	if (cardIndex === 1) {
+		return (
+			<div className="mt-6 rounded-xl border-l-4 border-amber-400 bg-amber-50 p-5 dark:bg-slate-800">
+				<p className="text-xs font-semibold uppercase tracking-[0.16em] text-amber-800 dark:text-amber-300">
+					Say this before you code
+				</p>
+				<p className="mt-3 leading-7 text-slate-800 sm:text-lg">
+					{lesson.state}
+				</p>
+			</div>
+		);
+	}
+
+	if (cardIndex === 2) {
+		return (
+			<div className="mt-6">
+				<p className="leading-7 text-slate-700 sm:text-lg">
+					Write the shape from memory. Name each moving part before you reveal
+					it.
+				</p>
+				<Button className="mt-5" onClick={onToggleRecipe}>
+					{showRecipe ? "Hide recipe" : "Reveal TypeScript recipe"}
+				</Button>
+				{showRecipe ? <CodeRecipe code={lesson.recipe} /> : null}
+			</div>
+		);
+	}
+
+	if (cardIndex === 3) return <LessonText>{lesson.trace}</LessonText>;
+	if (cardIndex === 4) return <LessonText>{lesson.choose}</LessonText>;
+
+	if (cardIndex === 5) {
+		return (
+			<ol className="mt-6 grid gap-3">
+				{lesson.problems.map((problem, index) => (
+					<li
+						className="rounded-xl border border-slate-200 bg-slate-50 p-4"
+						key={problem.slug}
+					>
+						<div className="flex items-start gap-4">
+							<span className="font-mono text-xs font-semibold text-amber-700 dark:text-amber-300">
+								{String(index + 1).padStart(2, "0")}
+							</span>
+							<div>
+								<a
+									className="font-semibold text-slate-950 underline decoration-amber-400 decoration-2 underline-offset-4 hover:text-amber-800 dark:hover:text-amber-300"
+									href={`https://leetcode.com/problems/${problem.slug}/`}
+									rel="noreferrer"
+									target="_blank"
+								>
+									{problem.title}
+								</a>
+								<p className="mt-2 leading-6 text-slate-600">
+									{problem.prompt}
+								</p>
+							</div>
+						</div>
+					</li>
+				))}
+			</ol>
+		);
+	}
+
+	return (
+		<div className="mt-6 grid gap-4 sm:grid-cols-2">
+			<AnswerSection title="Time and memory">{lesson.complexity}</AnswerSection>
+			<AnswerSection title="Common mistake">{lesson.mistake}</AnswerSection>
 		</div>
 	);
+}
+
+function LessonText({ children }: { children: string }) {
+	return (
+		<p className="mt-6 max-w-3xl text-lg leading-8 text-slate-700">
+			{children}
+		</p>
+	);
+}
+
+function CodeRecipe({ code }: { code: string }) {
+	return (
+		<section className="mt-5 overflow-hidden rounded-xl border border-slate-700 bg-black">
+			<p className="border-b border-slate-700 px-4 py-3 font-mono text-xs font-semibold uppercase tracking-[0.16em] text-slate-300">
+				TypeScript recipe
+			</p>
+			<pre className="overflow-x-auto p-4 text-sm leading-6 text-slate-100">
+				<code>{code}</code>
+			</pre>
+		</section>
+	);
+}
+
+function AlgorithmProgress({
+	completed,
+	total,
+}: {
+	completed: number;
+	total: number;
+}) {
+	const percent = total === 0 ? 0 : (completed / total) * 100;
+
+	return (
+		<div className="mt-5">
+			<div className="flex items-center justify-between gap-3 text-xs font-medium text-slate-500">
+				<span>{completed} complete</span>
+				<span>{total}</span>
+			</div>
+			<div
+				aria-label={`${completed} of ${total} lessons complete`}
+				aria-valuemax={total}
+				aria-valuemin={0}
+				aria-valuenow={completed}
+				className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-200"
+				role="progressbar"
+			>
+				<div
+					className="h-full rounded-full bg-amber-400"
+					style={{ width: `${percent}%` }}
+				/>
+			</div>
+		</div>
+	);
+}
+
+function _completedCount(
+	path: AlgorithmPath,
+	completedLessonIds: ReadonlySet<string>,
+) {
+	return path.lessons.filter((lesson) => completedLessonIds.has(lesson.id))
+		.length;
 }
 
 function ItemPicker<T extends { id: string; title?: string; term?: string }>({

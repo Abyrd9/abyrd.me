@@ -21,7 +21,7 @@ function Home() {
 			</div>
 			<div className="mt-8 grid gap-4 sm:grid-cols-2">
 				<AppCard
-					description="Review system-design terms, architecture patterns, and algorithm solutions."
+					description="Review system-design terms, architecture patterns, and algorithm patterns."
 					label="Study"
 					to="/quiz"
 					title="Interview practice"
