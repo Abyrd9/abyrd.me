@@ -206,7 +206,7 @@ export function StudyVisual({ visual }: { visual: StudyVisualSpec }) {
 					{frame.note}
 				</p>
 
-				<div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+				<div className="mt-4 grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-3">
 					<button
 						aria-label="Previous diagram frame"
 						className="study-visual-control"
@@ -219,7 +219,7 @@ export function StudyVisual({ visual }: { visual: StudyVisualSpec }) {
 
 					<fieldset
 						aria-label="Diagram frames"
-						className="m-0 flex items-center gap-2 border-0 p-0"
+						className="m-0 flex min-w-0 items-center justify-center gap-1.5 overflow-x-auto border-0 px-1 py-1 sm:gap-2"
 					>
 						{visual.frames.map((item, index) => (
 							<button
