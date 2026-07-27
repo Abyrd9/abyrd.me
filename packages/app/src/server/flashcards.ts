@@ -1,5 +1,6 @@
 import { Effect } from "effect";
 import { algorithmPaths } from "./algorithm-paths";
+import { type StudyVisualCatalog, studyVisuals } from "./study-visuals";
 
 export type {
 	AlgorithmPath,
@@ -34,6 +35,7 @@ export type FlashcardDecks = {
 	systemTerms: readonly SystemTermCard[];
 	architecturePatterns: readonly ArchitecturePatternCard[];
 	algorithmPaths: typeof algorithmPaths;
+	studyVisuals: StudyVisualCatalog;
 };
 
 const systemTerms: readonly SystemTerm[] = [
@@ -919,5 +921,6 @@ export function getFlashcardDecks(): Effect.Effect<FlashcardDecks, never> {
 		})),
 		architecturePatterns,
 		algorithmPaths,
+		studyVisuals,
 	});
 }

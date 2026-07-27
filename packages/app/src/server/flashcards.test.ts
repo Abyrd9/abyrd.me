@@ -106,3 +106,44 @@ test("loads complete algorithm pattern paths", async () => {
 		expect(lesson.mistake).toBeTruthy();
 	}
 });
+
+test("covers every learning item with a valid interactive visual", async () => {
+	const decks = await Effect.runPromise(getFlashcardDecks());
+	const expectedKeys = [
+		...decks.systemTerms.map((card) => `term:${card.id}`),
+		...decks.architecturePatterns.map((card) => `architecture:${card.id}`),
+		...decks.algorithmPaths.flatMap((path) =>
+			path.lessons.map((lesson) => `algorithm:${lesson.id}`),
+		),
+	];
+
+	expect(expectedKeys).toHaveLength(97);
+	expect(Object.keys(decks.studyVisuals).sort()).toEqual(expectedKeys.sort());
+
+	for (const [key, visual] of Object.entries(decks.studyVisuals)) {
+		expect(visual.title.length).toBeGreaterThan(0);
+		expect(visual.nodes.length).toBeGreaterThanOrEqual(2);
+		expect(visual.frames.length).toBeGreaterThanOrEqual(2);
+
+		const nodeIds = new Set(visual.nodes.map((node) => node.id));
+		const edgeIds = new Set(visual.edges.map((edge) => edge.id));
+		expect(nodeIds.size).toBe(visual.nodes.length);
+		expect(edgeIds.size).toBe(visual.edges.length);
+
+		for (const edge of visual.edges) {
+			expect(nodeIds.has(edge.from)).toBe(true);
+			expect(nodeIds.has(edge.to)).toBe(true);
+		}
+
+		for (const frame of visual.frames) {
+			expect(frame.label.length).toBeGreaterThan(0);
+			expect(frame.note.length).toBeGreaterThan(0);
+			expect(frame.activeNodes.length).toBeGreaterThan(0);
+			for (const id of frame.activeNodes) expect(nodeIds.has(id)).toBe(true);
+			for (const id of frame.activeEdges ?? [])
+				expect(edgeIds.has(id)).toBe(true);
+		}
+
+		expect(key).toMatch(/^(term|architecture|algorithm):/);
+	}
+});

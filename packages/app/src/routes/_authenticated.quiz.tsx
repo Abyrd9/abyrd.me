@@ -6,6 +6,7 @@ import {
 	writeAlgorithmProgress,
 } from "#/algorithm-progress";
 import { Button } from "#/components/primitives/button";
+import { StudyVisual } from "#/components/study/study-visual";
 import { loadFlashcardDecks } from "#/server/flashcard-functions";
 import type {
 	AlgorithmPath,
@@ -14,6 +15,10 @@ import type {
 	FlashcardDecks,
 	SystemTermCard,
 } from "#/server/flashcards";
+import type {
+	StudyVisualCatalog,
+	StudyVisualSpec,
+} from "#/server/study-visuals";
 
 type Deck = "terms" | "patterns" | "algorithms";
 
@@ -129,6 +134,7 @@ function StudyFlashcards() {
 					onTurn={() => setShowTermAnswer((isShown) => !isShown)}
 					selectedIndex={termIndex}
 					showAnswer={showTermAnswer}
+					studyVisuals={decks.studyVisuals}
 					term={term}
 					terms={decks.systemTerms}
 				/>
@@ -144,10 +150,14 @@ function StudyFlashcards() {
 					pattern={pattern}
 					patterns={decks.architecturePatterns}
 					selectedIndex={patternIndex}
+					studyVisuals={decks.studyVisuals}
 				/>
 			) : null}
 			{deck === "algorithms" ? (
-				<AlgorithmsDeck paths={decks.algorithmPaths} />
+				<AlgorithmsDeck
+					paths={decks.algorithmPaths}
+					studyVisuals={decks.studyVisuals}
+				/>
 			) : null}
 		</section>
 	);
@@ -161,6 +171,7 @@ function TermsDeck({
 	onChoose,
 	onMove,
 	onTurn,
+	studyVisuals,
 }: {
 	terms: readonly SystemTermCard[];
 	term: SystemTermCard;
@@ -169,6 +180,7 @@ function TermsDeck({
 	onChoose: (index: number) => void;
 	onMove: (direction: number) => void;
 	onTurn: () => void;
+	studyVisuals: StudyVisualCatalog;
 }) {
 	return (
 		<div className="mt-8 grid gap-8 lg:grid-cols-[15rem_1fr]">
@@ -182,7 +194,11 @@ function TermsDeck({
 				<p className="text-sm font-medium text-amber-700 dark:text-amber-300">
 					Term {selectedIndex + 1} of {terms.length}
 				</p>
-				{showAnswer ? <TermAnswer term={term} /> : <TermFront term={term} />}
+				{showAnswer ? (
+					<TermAnswer studyVisuals={studyVisuals} term={term} />
+				) : (
+					<TermFront term={term} />
+				)}
 				<div className="mt-8 grid gap-3 sm:flex sm:flex-wrap sm:justify-center">
 					<Button
 						className="w-full bg-slate-200 text-slate-800 hover:bg-slate-300 sm:w-auto"
@@ -218,7 +234,13 @@ function TermFront({ term }: { term: SystemTermCard }) {
 	);
 }
 
-function TermAnswer({ term }: { term: SystemTermCard }) {
+function TermAnswer({
+	term,
+	studyVisuals,
+}: {
+	term: SystemTermCard;
+	studyVisuals: StudyVisualCatalog;
+}) {
 	return (
 		<div className="mt-8 grid gap-6">
 			<div>
@@ -229,6 +251,10 @@ function TermAnswer({ term }: { term: SystemTermCard }) {
 					{term.definition}
 				</p>
 			</div>
+			<StudyVisual
+				key={`term:${term.id}`}
+				visual={studyVisuals[`term:${term.id}`]}
+			/>
 			<AnswerSection title="Why it matters">{term.whyItMatters}</AnswerSection>
 			<AnswerSection title="Example">{term.example}</AnswerSection>
 		</div>
@@ -241,12 +267,14 @@ function PatternsDeck({
 	selectedIndex,
 	onChoose,
 	onMove,
+	studyVisuals,
 }: {
 	patterns: readonly ArchitecturePatternCard[];
 	pattern: ArchitecturePatternCard;
 	selectedIndex: number;
 	onChoose: (index: number) => void;
 	onMove: (direction: number) => void;
+	studyVisuals: StudyVisualCatalog;
 }) {
 	return (
 		<div className="mt-8 grid gap-8 lg:grid-cols-[15rem_1fr]">
@@ -267,6 +295,10 @@ function PatternsDeck({
 				<p className="mt-4 leading-7 text-slate-700 sm:text-lg sm:leading-8">
 					{pattern.description}
 				</p>
+				<StudyVisual
+					key={`architecture:${pattern.id}`}
+					visual={studyVisuals[`architecture:${pattern.id}`]}
+				/>
 				<div className="mt-7 grid gap-4 sm:grid-cols-2">
 					<AnswerSection title="What it solves">{pattern.solves}</AnswerSection>
 					<AnswerSection title="When to use it">
@@ -301,7 +333,13 @@ function PatternsDeck({
 	);
 }
 
-function AlgorithmsDeck({ paths }: { paths: readonly AlgorithmPath[] }) {
+function AlgorithmsDeck({
+	paths,
+	studyVisuals,
+}: {
+	paths: readonly AlgorithmPath[];
+	studyVisuals: StudyVisualCatalog;
+}) {
 	const [pathIndex, setPathIndex] = useState<number | null>(null);
 	const [lessonIndex, setLessonIndex] = useState<number | null>(null);
 	const [cardIndex, setCardIndex] = useState(0);
@@ -384,6 +422,7 @@ function AlgorithmsDeck({ paths }: { paths: readonly AlgorithmPath[] }) {
 			onToggleRecipe={() => setShowRecipe((isShown) => !isShown)}
 			path={path}
 			showRecipe={showRecipe}
+			visual={studyVisuals[`algorithm:${lesson.id}`]}
 		/>
 	);
 }
@@ -564,6 +603,7 @@ function AlgorithmLesson({
 	onOpenCard,
 	onToggleRecipe,
 	onToggleComplete,
+	visual,
 }: {
 	path: AlgorithmPath;
 	lesson: AlgorithmPatternLesson;
@@ -574,6 +614,7 @@ function AlgorithmLesson({
 	onOpenCard: (index: number) => void;
 	onToggleRecipe: () => void;
 	onToggleComplete: () => void;
+	visual: StudyVisualSpec;
 }) {
 	const stage = algorithmStages[cardIndex];
 	const isFirst = cardIndex === 0;
@@ -631,6 +672,8 @@ function AlgorithmLesson({
 						{cardIndex + 1} / {algorithmStages.length}
 					</span>
 				</div>
+
+				<StudyVisual key={`algorithm:${lesson.id}`} visual={visual} />
 
 				<AlgorithmLessonContent
 					cardIndex={cardIndex}

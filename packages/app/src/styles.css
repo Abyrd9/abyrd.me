@@ -84,3 +84,157 @@ button,
 input {
 	font: inherit;
 }
+
+.study-visual-edge {
+	stroke: #94a3b8;
+	stroke-width: 2;
+}
+
+.study-visual-edge-active {
+	stroke: #f59e0b;
+	stroke-dasharray: 8 6;
+	stroke-width: 3;
+	animation: study-signal 0.8s linear infinite;
+}
+
+.study-visual-marker {
+	fill: #94a3b8;
+}
+
+.study-visual-marker-active {
+	fill: #f59e0b;
+}
+
+.study-visual-node {
+	fill: #fff;
+	stroke: #cbd5e1;
+	stroke-width: 2;
+	transition:
+		fill 180ms ease,
+		stroke 180ms ease,
+		filter 180ms ease;
+}
+
+.study-visual-node-active .study-visual-node {
+	fill: #fbbf24;
+	stroke: #b45309;
+	filter: drop-shadow(0 5px 5px rgb(15 23 42 / 0.16));
+}
+
+.study-visual-node-label {
+	fill: #334155;
+	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+	font-size: 11px;
+	font-weight: 650;
+	text-anchor: middle;
+	dominant-baseline: middle;
+	pointer-events: none;
+}
+
+.study-visual-node-active .study-visual-node-label {
+	fill: #0f172a;
+}
+
+.study-visual-edge-label {
+	fill: #64748b;
+	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+	font-size: 10px;
+	text-anchor: middle;
+}
+
+.study-visual-control {
+	min-height: 2.25rem;
+	border: 1px solid #cbd5e1;
+	border-radius: 0.5rem;
+	background: #fff;
+	padding: 0.45rem 0.75rem;
+	color: #334155;
+	font-size: 0.75rem;
+	font-weight: 650;
+	cursor: pointer;
+}
+
+.study-visual-control:hover:not(:disabled) {
+	border-color: #f59e0b;
+	color: #92400e;
+}
+
+.study-visual-control:disabled {
+	opacity: 0.4;
+	cursor: not-allowed;
+}
+
+.study-visual-control:focus-visible,
+.study-visual-dot:focus-visible {
+	outline: 2px solid #d97706;
+	outline-offset: 3px;
+}
+
+.study-visual-dot {
+	width: 0.65rem;
+	height: 0.65rem;
+	border: 0;
+	border-radius: 999px;
+	background: #cbd5e1;
+	padding: 0;
+	cursor: pointer;
+}
+
+.study-visual-dot[aria-pressed="true"] {
+	background: #d97706;
+	box-shadow: 0 0 0 3px #fef3c7;
+}
+
+html.dark .study-visual-node {
+	fill: #1e293b;
+	stroke: #475569;
+}
+
+html.dark .study-visual-node-label {
+	fill: #e2e8f0;
+}
+
+html.dark .study-visual-node-active .study-visual-node {
+	fill: #fbbf24;
+	stroke: #fef3c7;
+}
+
+html.dark .study-visual-node-active .study-visual-node-label {
+	fill: #0f172a;
+}
+
+html.dark .study-visual-control {
+	border-color: #475569;
+	background: #1e293b;
+	color: #e2e8f0;
+}
+
+html.dark .study-visual-control:hover:not(:disabled) {
+	border-color: #fbbf24;
+	color: #fde68a;
+}
+
+html.dark .study-visual-dot {
+	background: #475569;
+}
+
+html.dark .study-visual-dot[aria-pressed="true"] {
+	background: #fbbf24;
+	box-shadow: 0 0 0 3px #78350f;
+}
+
+@keyframes study-signal {
+	to {
+		stroke-dashoffset: -14;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.study-visual-edge-active {
+		animation: none;
+	}
+
+	.study-visual-node {
+		transition: none;
+	}
+}
