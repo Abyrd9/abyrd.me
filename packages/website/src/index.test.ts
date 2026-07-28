@@ -44,10 +44,14 @@ test("production build processes Tailwind and injects shared HTML", async () => 
 		expect(await build.exited).toBe(0);
 
 		const homepage = await Bun.file(join(outputDirectory, "index.html")).text();
+		const faviconPath = homepage.match(
+			/<link rel="icon"[^>]*href="([^"]+\.ico)"/,
+		)?.[1];
 		const stylesheetPath = homepage.match(
 			/<link rel="stylesheet"[^>]*href="([^"]+\.css)">/,
 		)?.[1];
 
+		if (!faviconPath) throw new Error("Production homepage has no favicon.");
 		if (!stylesheetPath)
 			throw new Error("Production homepage has no stylesheet.");
 
@@ -75,8 +79,11 @@ test("production build processes Tailwind and injects shared HTML", async () => 
 		}
 
 		const serverUrl = await _readServerUrl(serverOutput);
+		const faviconResponse = await fetch(new URL(faviconPath, serverUrl));
 		const stylesheetResponse = await fetch(new URL(stylesheetPath, serverUrl));
 
+		expect(faviconResponse.status).toBe(200);
+		expect(faviconResponse.headers.get("Content-Type")).toContain("image/");
 		expect(stylesheetResponse.status).toBe(200);
 		expect(stylesheetResponse.headers.get("Content-Type")).toContain(
 			"text/css",
