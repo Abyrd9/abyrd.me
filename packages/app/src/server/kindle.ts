@@ -173,6 +173,7 @@ export function loadKindleLibrary(db: AppDatabaseClient, archived = false) {
 		annotations: db
 			.select({
 				id: kindleAnnotations.id,
+				bookAsin: kindleAnnotations.bookAsin,
 				highlight: kindleAnnotations.highlight,
 				note: kindleAnnotations.note,
 				location: kindleAnnotations.location,
@@ -208,6 +209,17 @@ export function setKindleAnnotationArchived(
 	db.update(kindleAnnotations)
 		.set({ archivedAt: archived ? Date.now() : null })
 		.where(eq(kindleAnnotations.id, id))
+		.run();
+}
+
+export function setKindleBookArchived(
+	db: AppDatabaseClient,
+	bookAsin: string,
+	archived: boolean,
+) {
+	db.update(kindleAnnotations)
+		.set({ archivedAt: archived ? Date.now() : null })
+		.where(eq(kindleAnnotations.bookAsin, bookAsin))
 		.run();
 }
 

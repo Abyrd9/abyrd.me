@@ -4,6 +4,7 @@ import { Button } from "#/components/primitives/button";
 import {
 	loadKindleLibrary,
 	updateKindleArchive,
+	updateKindleBookArchive,
 } from "#/server/kindle-functions";
 
 export const Route = createFileRoute("/_authenticated/kindle/")({
@@ -27,17 +28,40 @@ function KindleLibrary() {
 			);
 	}, []);
 
-	const annotations = useMemo(
-		() =>
-			library?.annotations.filter((annotation) =>
-				`${annotation.title} ${annotation.author} ${annotation.highlight ?? ""} ${annotation.note ?? ""}`
-					.toLowerCase()
-					.includes(query.trim().toLowerCase()),
-			) ?? [],
-		[library, query],
-	);
+	const books = useMemo(() => {
+		const annotations = library?.annotations ?? [];
+		const grouped = new Map<
+			string,
+			{
+				asin: string;
+				title: string;
+				author: string;
+				annotations: typeof annotations;
+			}
+		>();
 
-	async function archive(id: number) {
+		for (const annotation of annotations) {
+			const book = grouped.get(annotation.bookAsin);
+
+			if (book) book.annotations.push(annotation);
+			else {
+				grouped.set(annotation.bookAsin, {
+					asin: annotation.bookAsin,
+					title: annotation.title,
+					author: annotation.author,
+					annotations: [annotation],
+				});
+			}
+		}
+
+		const search = query.trim().toLowerCase();
+
+		return [...grouped.values()].filter((book) =>
+			`${book.title} ${book.author}`.toLowerCase().includes(search),
+		);
+	}, [library, query]);
+
+	async function archiveAnnotation(id: number) {
 		await updateKindleArchive({ data: { id, archived: true } });
 		setLibrary((current) =>
 			current
@@ -45,6 +69,20 @@ function KindleLibrary() {
 						...current,
 						annotations: current.annotations.filter(
 							(annotation) => annotation.id !== id,
+						),
+					}
+				: current,
+		);
+	}
+
+	async function archiveBook(asin: string) {
+		await updateKindleBookArchive({ data: { asin, archived: true } });
+		setLibrary((current) =>
+			current
+				? {
+						...current,
+						annotations: current.annotations.filter(
+							(annotation) => annotation.bookAsin !== asin,
 						),
 					}
 				: current,
@@ -96,52 +134,79 @@ function KindleLibrary() {
 						</p>
 					) : null}
 					<label className="mt-5 grid max-w-xl gap-2 text-sm font-medium text-slate-700">
-						Search highlights
+						Search books
 						<input
 							className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 text-slate-950"
 							onChange={(event) => setQuery(event.target.value)}
-							placeholder="Book, highlight, or note"
+							placeholder="Title or author"
 							value={query}
 						/>
 					</label>
 					<div className="mt-8 grid gap-4">
-						{annotations.map((annotation) => (
+						{books.map((book) => (
 							<article
 								className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
-								key={annotation.id}
+								key={book.asin}
 							>
-								<p className="text-sm font-medium text-slate-700">
-									{annotation.title}
-								</p>
-								<p className="text-sm text-slate-600">{annotation.author}</p>
-								{annotation.highlight ? (
-									<blockquote className="mt-4 border-l-2 border-amber-400 pl-4 leading-7 text-slate-800">
-										{annotation.highlight}
-									</blockquote>
-								) : null}
-								{annotation.note ? (
-									<p className="mt-4 rounded-lg bg-slate-100 p-3 leading-7 text-slate-800">
-										{annotation.note}
-									</p>
-								) : null}
-								<div className="mt-4 flex items-center justify-between gap-3 text-sm text-slate-600">
-									<span>
-										{annotation.location
-											? `Location ${annotation.location}`
-											: annotation.page
-												? `Page ${annotation.page}`
-												: ""}
-									</span>
-									<Button onClick={() => void archive(annotation.id)}>
-										Archive
+								<div className="flex items-start justify-between gap-4">
+									<div>
+										<h2 className="font-medium text-slate-950">{book.title}</h2>
+										<p className="mt-1 text-sm text-slate-600">{book.author}</p>
+										<p className="mt-2 text-sm text-slate-600">
+											{book.annotations.length}{" "}
+											{book.annotations.length === 1
+												? "note or highlight"
+												: "notes and highlights"}
+										</p>
+									</div>
+									<Button onClick={() => void archiveBook(book.asin)}>
+										Archive book
 									</Button>
 								</div>
+								<details className="mt-5 border-t border-slate-200 pt-4">
+									<summary className="cursor-pointer text-sm font-medium text-slate-700">
+										View notes and highlights
+									</summary>
+									<div className="mt-4 grid gap-4">
+										{book.annotations.map((annotation) => (
+											<div
+												className="rounded-xl bg-slate-50 p-4"
+												key={annotation.id}
+											>
+												{annotation.highlight ? (
+													<blockquote className="border-l-2 border-amber-400 pl-4 leading-7 text-slate-800">
+														{annotation.highlight}
+													</blockquote>
+												) : null}
+												{annotation.note ? (
+													<p className="mt-4 rounded-lg bg-slate-100 p-3 leading-7 text-slate-800">
+														{annotation.note}
+													</p>
+												) : null}
+												<div className="mt-4 flex items-center justify-between gap-3 text-sm text-slate-600">
+													<span>
+														{annotation.location
+															? `Location ${annotation.location}`
+															: annotation.page
+																? `Page ${annotation.page}`
+																: ""}
+													</span>
+													<Button
+														onClick={() =>
+															void archiveAnnotation(annotation.id)
+														}
+													>
+														Archive note
+													</Button>
+												</div>
+											</div>
+										))}
+									</div>
+								</details>
 							</article>
 						))}
-						{annotations.length === 0 ? (
-							<p className="text-slate-600">
-								No visible highlights match this search.
-							</p>
+						{books.length === 0 ? (
+							<p className="text-slate-600">No books match this search.</p>
 						) : null}
 					</div>
 				</>
