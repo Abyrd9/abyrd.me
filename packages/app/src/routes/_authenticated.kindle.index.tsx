@@ -36,6 +36,7 @@ function KindleLibrary() {
 				asin: string;
 				title: string;
 				author: string;
+				coverUrl: string | null;
 				annotations: typeof annotations;
 			}
 		>();
@@ -49,6 +50,7 @@ function KindleLibrary() {
 					asin: annotation.bookAsin,
 					title: annotation.title,
 					author: annotation.author,
+					coverUrl: annotation.coverUrl,
 					annotations: [annotation],
 				});
 			}
@@ -149,7 +151,15 @@ function KindleLibrary() {
 								key={book.asin}
 							>
 								<div className="flex items-start justify-between gap-4">
-									<div>
+									{book.coverUrl ? (
+										<img
+											alt=""
+											className="h-24 w-16 shrink-0 rounded object-cover shadow-sm"
+											loading="lazy"
+											src={book.coverUrl}
+										/>
+									) : null}
+									<div className="min-w-0 flex-1">
 										<h2 className="font-medium text-slate-950">{book.title}</h2>
 										<p className="mt-1 text-sm text-slate-600">{book.author}</p>
 										<p className="mt-2 text-sm text-slate-600">

@@ -4,6 +4,7 @@ export const kindleBooks = sqliteTable("kindle_books", {
 	asin: text("asin").primaryKey(),
 	title: text("title").notNull(),
 	author: text("author").notNull().default(""),
+	coverUrl: text("cover_url"),
 	lastAnnotatedAt: text("last_annotated_at"),
 	lastSyncedAt: integer("last_synced_at").notNull(),
 });

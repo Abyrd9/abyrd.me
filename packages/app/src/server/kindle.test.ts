@@ -27,6 +27,7 @@ test("preserves an archive decision across later Kindle imports", async () => {
 					asin: "book",
 					title: "A book",
 					author: "An author",
+					coverUrl: "https://m.media-amazon.com/images/I/cover.jpg",
 					lastAnnotatedAt: "",
 					annotations: [{ highlight: "Keep this", location: "10" }],
 				},
@@ -39,6 +40,9 @@ test("preserves an archive decision across later Kindle imports", async () => {
 		if (!annotation) throw new Error("Expected an imported annotation.");
 		setKindleAnnotationArchived(database.client, annotation.id, true);
 		importKindleBooks(database.client, imported);
+		expect(
+			loadKindleLibrary(database.client, true).annotations[0]?.coverUrl,
+		).toBe("https://m.media-amazon.com/images/I/cover.jpg");
 		expect(loadKindleLibrary(database.client).annotations).toHaveLength(0);
 		expect(loadKindleLibrary(database.client, true).annotations).toHaveLength(
 			1,

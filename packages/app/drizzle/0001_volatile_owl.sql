@@ -1,0 +1,1 @@
+ALTER TABLE `kindle_books` ADD `cover_url` text;

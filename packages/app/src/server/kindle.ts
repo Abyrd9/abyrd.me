@@ -20,6 +20,7 @@ export type KindleBookInput = {
 	asin: string;
 	title: string;
 	author: string;
+	coverUrl?: string;
 	lastAnnotatedAt: string;
 	annotations: readonly KindleAnnotationInput[];
 };
@@ -95,6 +96,7 @@ export function importKindleBooks(
 						asin: book.asin,
 						title: book.title,
 						author: book.author,
+						coverUrl: book.coverUrl || null,
 						lastAnnotatedAt: book.lastAnnotatedAt || null,
 						lastSyncedAt: startedAt,
 					})
@@ -103,6 +105,7 @@ export function importKindleBooks(
 						set: {
 							title: book.title,
 							author: book.author,
+							...(book.coverUrl ? { coverUrl: book.coverUrl } : {}),
 							lastAnnotatedAt: book.lastAnnotatedAt || null,
 							lastSyncedAt: startedAt,
 						},
@@ -182,6 +185,7 @@ export function loadKindleLibrary(db: AppDatabaseClient, archived = false) {
 				archivedAt: kindleAnnotations.archivedAt,
 				title: kindleBooks.title,
 				author: kindleBooks.author,
+				coverUrl: kindleBooks.coverUrl,
 			})
 			.from(kindleAnnotations)
 			.innerJoin(kindleBooks, eq(kindleAnnotations.bookAsin, kindleBooks.asin))
@@ -239,10 +243,19 @@ function readText(value: unknown, name: string, required = false) {
 function parseBook(value: unknown, index: number): KindleBookInput {
 	if (!isRecord(value) || !Array.isArray(value.annotations))
 		throw new Error(`Book ${index + 1} is invalid.`);
+	const coverUrl = readText(value.coverUrl, "Book cover URL");
+	if (
+		coverUrl &&
+		(coverUrl.length > 2_048 ||
+			!URL.canParse(coverUrl) ||
+			new URL(coverUrl).protocol !== "https:")
+	)
+		throw new Error("Book cover URL must be a valid HTTPS URL.");
 	return {
 		asin: readText(value.asin, "Book ASIN", true),
 		title: readText(value.title, "Book title", true),
 		author: readText(value.author, "Book author"),
+		coverUrl,
 		lastAnnotatedAt: readText(
 			value.lastAnnotatedAt ?? value.lastAnnotated,
 			"Book annotation date",

@@ -86,11 +86,14 @@ async function scrape() {
 			type: "kindle-progress",
 			message: `Reading book ${index + 1} of ${books.length}…`,
 		});
-		book.annotations = readAnnotations(
-			await fetchDocument(
-				`${notebookUrl}?asin=${encodeURIComponent(book.asin)}`,
-			),
+		const bookDocument = await fetchDocument(
+			`${notebookUrl}?asin=${encodeURIComponent(book.asin)}`,
 		);
+		book.coverUrl =
+			bookDocument
+				.querySelector("#annotation-section img.kp-notebook-cover-image-border")
+				?.getAttribute("src") || "";
+		book.annotations = readAnnotations(bookDocument);
 	}
 
 	await chrome.runtime.sendMessage({
