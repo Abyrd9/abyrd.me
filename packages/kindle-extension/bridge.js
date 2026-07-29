@@ -51,7 +51,12 @@ function renderLibraryStatus(status) {
 	const button = document.querySelector("#sync-kindle-now");
 	if (!(button instanceof HTMLButtonElement)) return;
 	setButton(button, status, "Sync now");
-	if (status?.state === "complete") {
+	const completedAt = String(status?.updatedAt);
+	if (
+		status?.state === "complete" &&
+		sessionStorage.getItem("kindle-last-refreshed-sync") !== completedAt
+	) {
+		sessionStorage.setItem("kindle-last-refreshed-sync", completedAt);
 		window.setTimeout(() => window.location.reload(), 800);
 	}
 }
