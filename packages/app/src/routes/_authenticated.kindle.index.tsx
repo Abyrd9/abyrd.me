@@ -175,7 +175,7 @@ function KindleLibrary() {
 								</div>
 								<details className="mt-5 border-t border-slate-200 pt-4">
 									<summary className="cursor-pointer text-sm font-medium text-slate-700">
-										View notes and highlights
+										View notes and highlights ({book.annotations.length})
 									</summary>
 									<div className="mt-4 grid gap-4">
 										{book.annotations.map((annotation) => (
