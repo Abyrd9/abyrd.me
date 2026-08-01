@@ -15,6 +15,7 @@ import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated.index'
 import { Route as AuthenticatedKindleRouteImport } from './routes/_authenticated.kindle'
 import { Route as AuthenticatedQuizRouteImport } from './routes/_authenticated.quiz'
+import { Route as AuthenticatedQuotesRouteImport } from './routes/_authenticated.quotes'
 import { Route as AuthenticatedKindleIndexRouteImport } from './routes/_authenticated.kindle.index'
 import { Route as AuthenticatedKindleArchivedRouteImport } from './routes/_authenticated.kindle.archived'
 import { Route as AuthenticatedKindleSetupRouteImport } from './routes/_authenticated.kindle.setup'
@@ -48,6 +49,11 @@ const AuthenticatedQuizRoute = AuthenticatedQuizRouteImport.update({
   path: '/quiz',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedQuotesRoute = AuthenticatedQuotesRouteImport.update({
+  id: '/quotes',
+  path: '/quotes',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedKindleIndexRoute =
   AuthenticatedKindleIndexRouteImport.update({
     id: '/',
@@ -73,6 +79,7 @@ export interface FileRoutesByFullPath {
   '/sign-in': typeof SignInRoute
   '/kindle': typeof AuthenticatedKindleRouteWithChildren
   '/quiz': typeof AuthenticatedQuizRoute
+  '/quotes': typeof AuthenticatedQuotesRoute
   '/kindle/archived': typeof AuthenticatedKindleArchivedRoute
   '/kindle/setup': typeof AuthenticatedKindleSetupRoute
   '/kindle/': typeof AuthenticatedKindleIndexRoute
@@ -81,6 +88,7 @@ export interface FileRoutesByTo {
   '/health': typeof HealthRoute
   '/sign-in': typeof SignInRoute
   '/quiz': typeof AuthenticatedQuizRoute
+  '/quotes': typeof AuthenticatedQuotesRoute
   '/': typeof AuthenticatedIndexRoute
   '/kindle/archived': typeof AuthenticatedKindleArchivedRoute
   '/kindle/setup': typeof AuthenticatedKindleSetupRoute
@@ -93,6 +101,7 @@ export interface FileRoutesById {
   '/sign-in': typeof SignInRoute
   '/_authenticated/kindle': typeof AuthenticatedKindleRouteWithChildren
   '/_authenticated/quiz': typeof AuthenticatedQuizRoute
+  '/_authenticated/quotes': typeof AuthenticatedQuotesRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/kindle/archived': typeof AuthenticatedKindleArchivedRoute
   '/_authenticated/kindle/setup': typeof AuthenticatedKindleSetupRoute
@@ -106,6 +115,7 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/kindle'
     | '/quiz'
+    | '/quotes'
     | '/kindle/archived'
     | '/kindle/setup'
     | '/kindle/'
@@ -114,6 +124,7 @@ export interface FileRouteTypes {
     | '/health'
     | '/sign-in'
     | '/quiz'
+    | '/quotes'
     | '/'
     | '/kindle/archived'
     | '/kindle/setup'
@@ -125,6 +136,7 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/_authenticated/kindle'
     | '/_authenticated/quiz'
+    | '/_authenticated/quotes'
     | '/_authenticated/'
     | '/_authenticated/kindle/archived'
     | '/_authenticated/kindle/setup'
@@ -181,6 +193,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedQuizRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/quotes': {
+      id: '/_authenticated/quotes'
+      path: '/quotes'
+      fullPath: '/quotes'
+      preLoaderRoute: typeof AuthenticatedQuotesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/kindle/': {
       id: '/_authenticated/kindle/'
       path: '/'
@@ -223,12 +242,14 @@ const AuthenticatedKindleRouteWithChildren =
 interface AuthenticatedRouteChildren {
   AuthenticatedKindleRoute: typeof AuthenticatedKindleRouteWithChildren
   AuthenticatedQuizRoute: typeof AuthenticatedQuizRoute
+  AuthenticatedQuotesRoute: typeof AuthenticatedQuotesRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedKindleRoute: AuthenticatedKindleRouteWithChildren,
   AuthenticatedQuizRoute: AuthenticatedQuizRoute,
+  AuthenticatedQuotesRoute: AuthenticatedQuotesRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
 }
 

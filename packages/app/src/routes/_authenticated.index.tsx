@@ -15,8 +15,8 @@ function Home() {
 					Choose what you want to work on.
 				</h1>
 				<p className="mt-4 leading-7 text-slate-600 sm:text-lg sm:leading-8">
-					Study interview fundamentals or return to the highlights you saved
-					from your Kindle.
+					Study interview fundamentals, revisit Kindle highlights, or save a
+					quote you want to find again.
 				</p>
 			</div>
 			<div className="mt-8 grid gap-4 sm:grid-cols-2">
@@ -32,6 +32,12 @@ function Home() {
 					to="/kindle"
 					title="Your reading library"
 				/>
+				<AppCard
+					description="Save memorable lines with optional attribution, a web reference, and your own note."
+					label="Quotes"
+					to="/quotes"
+					title="A personal quote library"
+				/>
 			</div>
 		</section>
 	);
@@ -46,7 +52,7 @@ function AppCard({
 	readonly description: string;
 	readonly label: string;
 	readonly title: string;
-	readonly to: "/kindle" | "/quiz";
+	readonly to: "/kindle" | "/quiz" | "/quotes";
 }) {
 	return (
 		<Link

@@ -15,6 +15,13 @@
       "when": 1785333198305,
       "tag": "0001_volatile_owl",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1785543458778,
+      "tag": "0002_parched_grandmaster",
+      "breakpoints": true
     }
   ]
 }

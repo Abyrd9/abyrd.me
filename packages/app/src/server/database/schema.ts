@@ -42,3 +42,17 @@ export const kindleSyncRuns = sqliteTable("kindle_sync_runs", {
 	annotationCount: integer("annotation_count").notNull().default(0),
 	error: text("error"),
 });
+
+export const quotes = sqliteTable(
+	"quotes",
+	{
+		id: integer("id").primaryKey({ autoIncrement: true }),
+		text: text("text").notNull(),
+		attribution: text("attribution"),
+		sourceUrl: text("source_url"),
+		sourceNote: text("source_note"),
+		createdAt: integer("created_at").notNull(),
+		updatedAt: integer("updated_at").notNull(),
+	},
+	(table) => [index("quotes_created_at_idx").on(table.createdAt)],
+);
