@@ -1,6 +1,7 @@
+import { Dialog } from "@base-ui/react/dialog";
 import { useForm } from "@tanstack/react-form";
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "#/components/primitives/button";
 import { Field } from "#/components/primitives/field";
 import { Form } from "#/components/primitives/form";
@@ -33,7 +34,9 @@ const emptyQuote: QuoteFields = {
 
 function QuotesLibrary() {
 	const [quotes, setQuotes] = useState<Quote[]>([]);
+	const [query, setQuery] = useState("");
 	const [editingQuote, setEditingQuote] = useState<Quote | null>(null);
+	const [isDialogOpen, setIsDialogOpen] = useState(false);
 	const [deleteCandidate, setDeleteCandidate] = useState<Quote | null>(null);
 	const [message, setMessage] = useState<string | null>(null);
 	const form = useForm({
@@ -59,6 +62,7 @@ function QuotesLibrary() {
 				}
 
 				form.reset(emptyQuote);
+				setIsDialogOpen(false);
 			} catch {
 				setMessage("Could not save that quote. Please try again.");
 			}
@@ -73,16 +77,44 @@ function QuotesLibrary() {
 			);
 	}, []);
 
+	const filteredQuotes = useMemo(() => {
+		const search = query.trim().toLowerCase();
+
+		if (!search) return quotes;
+
+		return quotes.filter((quote) =>
+			[quote.text, quote.attribution, quote.sourceUrl, quote.sourceNote]
+				.filter(Boolean)
+				.join(" ")
+				.toLowerCase()
+				.includes(search),
+		);
+	}, [query, quotes]);
+
+	function startAdding() {
+		setEditingQuote(null);
+		setDeleteCandidate(null);
+		setMessage(null);
+		form.reset(emptyQuote);
+		setIsDialogOpen(true);
+	}
+
 	function startEditing(quote: Quote) {
 		setEditingQuote(quote);
 		setDeleteCandidate(null);
 		setMessage(null);
 		form.reset(toFields(quote));
+		setIsDialogOpen(true);
 	}
 
 	function cancelEditing() {
 		setEditingQuote(null);
 		form.reset(emptyQuote);
+	}
+
+	function handleDialogOpenChange(open: boolean) {
+		setIsDialogOpen(open);
+		if (!open) cancelEditing();
 	}
 
 	async function confirmDelete(quote: Quote) {
@@ -97,6 +129,32 @@ function QuotesLibrary() {
 		} catch {
 			setMessage("Could not delete that quote. Please try again.");
 		}
+	}
+
+	function renderTextField(
+		name: "attribution" | "sourceNote" | "sourceUrl",
+		label: string,
+		placeholder?: string,
+	) {
+		return (
+			<form.Field name={name}>
+				{(field) => (
+					<Field.Root invalid={field.state.meta.errors.length > 0}>
+						<Field.Label htmlFor={field.name}>{label}</Field.Label>
+						<Field.Control
+							id={field.name}
+							name={field.name}
+							onBlur={field.handleBlur}
+							onChange={(event) => field.handleChange(event.target.value)}
+							placeholder={placeholder}
+							type={name === "sourceUrl" ? "url" : "text"}
+							value={field.state.value}
+						/>
+						<Field.Error>{field.state.meta.errors[0]}</Field.Error>
+					</Field.Root>
+				)}
+			</form.Field>
+		);
 	}
 
 	return (
@@ -114,120 +172,107 @@ function QuotesLibrary() {
 				</p>
 			</div>
 
-			<section className="mt-8 max-w-3xl rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-				<div className="flex flex-wrap items-center justify-between gap-3">
-					<div>
-						<h2 className="text-lg font-semibold tracking-tight text-slate-950">
-							{editingQuote ? "Edit quote" : "Add a quote"}
-						</h2>
-						<p className="mt-1 text-sm text-slate-600">
-							The quote itself is required. Everything else is optional.
-						</p>
-					</div>
-					{editingQuote ? (
-						<Button onClick={cancelEditing} type="button">
-							Cancel edit
-						</Button>
-					) : null}
-				</div>
+			<div className="mt-8 flex max-w-3xl flex-col gap-3 sm:flex-row sm:items-end">
+				<label className="grid flex-1 gap-2 text-sm font-medium text-slate-700">
+					Search quotes
+					<input
+						className="min-h-10 rounded-lg border border-slate-300 bg-white px-3 text-slate-950 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-slate-500 focus:ring-4 focus:ring-slate-200"
+						onChange={(event) => setQuery(event.target.value)}
+						placeholder="Search quote text, attribution, or notes"
+						value={query}
+					/>
+				</label>
+				<Button onClick={startAdding} type="button">
+					Add quote
+				</Button>
+			</div>
 
-				<Form
-					className="mt-6"
-					onSubmit={(event) => {
-						event.preventDefault();
-						void form.handleSubmit();
-					}}
-				>
-					<form.Field
-						name="text"
-						validators={{
-							onSubmit: ({ value }) =>
-								value.trim() ? undefined : "Enter the quote you want to save.",
-						}}
-					>
-						{(field) => (
-							<Field.Root invalid={field.state.meta.errors.length > 0}>
-								<Field.Label htmlFor={field.name}>Quote</Field.Label>
-								<textarea
-									className="min-h-32 rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-950 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-slate-500 focus:ring-4 focus:ring-slate-200"
-									id={field.name}
-									name={field.name}
-									onBlur={field.handleBlur}
-									onChange={(event) => field.handleChange(event.target.value)}
-									placeholder="Write the line you want to remember."
-									value={field.state.value}
-								/>
-								<Field.Error>{field.state.meta.errors[0]}</Field.Error>
-							</Field.Root>
-						)}
-					</form.Field>
+			<Dialog.Root onOpenChange={handleDialogOpenChange} open={isDialogOpen}>
+				<Dialog.Portal>
+					<Dialog.Backdrop className="fixed inset-0 z-40 bg-slate-950/55 backdrop-blur-sm" />
+					<Dialog.Viewport className="fixed inset-0 z-50 grid place-items-center overflow-y-auto p-4 sm:p-8">
+						<Dialog.Popup className="w-full max-w-2xl rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl sm:p-6">
+							<div className="flex items-start justify-between gap-4">
+								<div>
+									<Dialog.Title className="text-lg font-semibold tracking-tight text-slate-950">
+										{editingQuote ? "Edit quote" : "Add a quote"}
+									</Dialog.Title>
+									<Dialog.Description className="mt-1 text-sm text-slate-600">
+										The quote itself is required. Everything else is optional.
+									</Dialog.Description>
+								</div>
+								<Dialog.Close className="inline-flex min-h-10 items-center justify-center rounded-md bg-slate-100 px-3 text-sm font-medium text-slate-950 transition hover:bg-slate-200">
+									Close
+								</Dialog.Close>
+							</div>
 
-					<div className="grid gap-5 sm:grid-cols-2">
-						<form.Field name="attribution">
-							{(field) => (
-								<Field.Root invalid={field.state.meta.errors.length > 0}>
-									<Field.Label htmlFor={field.name}>Attribution</Field.Label>
-									<Field.Control
-										id={field.name}
-										name={field.name}
-										onBlur={field.handleBlur}
-										onChange={(event) => field.handleChange(event.target.value)}
-										value={field.state.value}
-									/>
-									<Field.Error>{field.state.meta.errors[0]}</Field.Error>
-								</Field.Root>
-							)}
-						</form.Field>
-						<form.Field name="sourceUrl">
-							{(field) => (
-								<Field.Root invalid={field.state.meta.errors.length > 0}>
-									<Field.Label htmlFor={field.name}>Web reference</Field.Label>
-									<Field.Control
-										id={field.name}
-										name={field.name}
-										onBlur={field.handleBlur}
-										onChange={(event) => field.handleChange(event.target.value)}
-										placeholder="https://example.com"
-										type="url"
-										value={field.state.value}
-									/>
-									<Field.Error>{field.state.meta.errors[0]}</Field.Error>
-								</Field.Root>
-							)}
-						</form.Field>
-					</div>
-					<form.Field name="sourceNote">
-						{(field) => (
-							<Field.Root invalid={field.state.meta.errors.length > 0}>
-								<Field.Label htmlFor={field.name}>Source note</Field.Label>
-								<Field.Control
-									id={field.name}
-									name={field.name}
-									onBlur={field.handleBlur}
-									onChange={(event) => field.handleChange(event.target.value)}
-									placeholder="A book, conversation, or your own context"
-									value={field.state.value}
-								/>
-								<Field.Error>{field.state.meta.errors[0]}</Field.Error>
-							</Field.Root>
-						)}
-					</form.Field>
+							<Form
+								className="mt-6"
+								onSubmit={(event) => {
+									event.preventDefault();
+									void form.handleSubmit();
+								}}
+							>
+								<form.Field
+									name="text"
+									validators={{
+										onSubmit: ({ value }) =>
+											value.trim()
+												? undefined
+												: "Enter the quote you want to save.",
+									}}
+								>
+									{(field) => (
+										<Field.Root invalid={field.state.meta.errors.length > 0}>
+											<Field.Label htmlFor={field.name}>Quote</Field.Label>
+											<textarea
+												className="min-h-32 rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-950 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-slate-500 focus:ring-4 focus:ring-slate-200"
+												id={field.name}
+												name={field.name}
+												onBlur={field.handleBlur}
+												onChange={(event) =>
+													field.handleChange(event.target.value)
+												}
+												placeholder="Write the line you want to remember."
+												value={field.state.value}
+											/>
+											<Field.Error>{field.state.meta.errors[0]}</Field.Error>
+										</Field.Root>
+									)}
+								</form.Field>
 
-					<form.Subscribe
-						selector={(state) => [state.canSubmit, state.isSubmitting]}
-					>
-						{([canSubmit, isSubmitting]) => (
-							<Button disabled={!canSubmit || isSubmitting} type="submit">
-								{isSubmitting
-									? "Saving…"
-									: editingQuote
-										? "Save changes"
-										: "Save quote"}
-							</Button>
-						)}
-					</form.Subscribe>
-				</Form>
-			</section>
+								<div className="grid gap-5 sm:grid-cols-2">
+									{renderTextField("attribution", "Attribution")}
+									{renderTextField(
+										"sourceUrl",
+										"Web reference",
+										"https://example.com",
+									)}
+								</div>
+								{renderTextField(
+									"sourceNote",
+									"Source note",
+									"A book, conversation, or your own context",
+								)}
+
+								<form.Subscribe
+									selector={(state) => [state.canSubmit, state.isSubmitting]}
+								>
+									{([canSubmit, isSubmitting]) => (
+										<Button disabled={!canSubmit || isSubmitting} type="submit">
+											{isSubmitting
+												? "Saving…"
+												: editingQuote
+													? "Save changes"
+													: "Save quote"}
+										</Button>
+									)}
+								</form.Subscribe>
+							</Form>
+						</Dialog.Popup>
+					</Dialog.Viewport>
+				</Dialog.Portal>
+			</Dialog.Root>
 
 			{message ? (
 				<p
@@ -241,14 +286,15 @@ function QuotesLibrary() {
 			<section className="mt-8 max-w-3xl">
 				<div className="flex items-baseline justify-between gap-4">
 					<h2 className="text-lg font-semibold tracking-tight text-slate-950">
-						Saved quotes
+						{query.trim() ? "Matching quotes" : "Saved quotes"}
 					</h2>
 					<p className="text-sm text-slate-600">
-						{quotes.length} {quotes.length === 1 ? "quote" : "quotes"}
+						{filteredQuotes.length}{" "}
+						{filteredQuotes.length === 1 ? "quote" : "quotes"}
 					</p>
 				</div>
 				<div className="mt-4 grid gap-4">
-					{quotes.map((quote) => (
+					{filteredQuotes.map((quote) => (
 						<article
 							className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
 							key={quote.id}
@@ -312,7 +358,11 @@ function QuotesLibrary() {
 					))}
 					{quotes.length === 0 ? (
 						<p className="rounded-2xl border border-dashed border-slate-300 px-5 py-8 text-sm leading-6 text-slate-600">
-							No saved quotes yet. Add the first one above.
+							No saved quotes yet. Add the first one with the button above.
+						</p>
+					) : filteredQuotes.length === 0 ? (
+						<p className="rounded-2xl border border-dashed border-slate-300 px-5 py-8 text-sm leading-6 text-slate-600">
+							No saved quotes match that search.
 						</p>
 					) : null}
 				</div>
