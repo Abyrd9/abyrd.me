@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Quotes library plan</title>
+    <style>
+      :root { color-scheme: light dark; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+      body { margin: 0; background: #f8fafc; color: #172033; line-height: 1.55; }
+      main { box-sizing: border-box; max-width: 920px; margin: 0 auto; padding: 56px 24px 88px; }
+      h1, h2 { color: #0f172a; line-height: 1.15; }
+      h1 { font-size: clamp(2rem, 5vw, 3rem); margin: 0 0 12px; }
+      h2 { font-size: 1.25rem; margin-top: 42px; }
+      .lede { max-width: 680px; color: #475569; font-size: 1.1rem; }
+      .note, .open { border-radius: 12px; padding: 18px 20px; margin-top: 18px; }
+      .note { background: #e0f2fe; border: 1px solid #bae6fd; }
+      .open { background: #fef3c7; border: 1px solid #fde68a; }
+      code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+      pre { overflow-x: auto; padding: 16px; background: #172033; color: #e2e8f0; border-radius: 10px; }
+      table { border-collapse: collapse; width: 100%; margin-top: 14px; }
+      th, td { padding: 10px; text-align: left; vertical-align: top; border-bottom: 1px solid #cbd5e1; }
+      th { color: #475569; font-size: .82rem; text-transform: uppercase; letter-spacing: .04em; }
+      ul { padding-left: 1.25rem; }
+      @media (prefers-color-scheme: dark) {
+        body { background: #020617; color: #dbeafe; }
+        h1, h2 { color: #f8fafc; }
+        .lede, th { color: #cbd5e1; }
+        .note { background: #082f49; border-color: #0c4a6e; }
+        .open { background: #422006; border-color: #713f12; }
+        th, td { border-color: #334155; }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section id="overview">
+        <h1>Quotes library</h1>
+        <p class="lede">A private place in the app to save a quote, say who said it, and keep a link or a short note about where it came from.</p>
+        <div class="note">
+          <strong>What I found.</strong> The app already has an authenticated top-level navigation layout, typed TanStack Start server functions, and a SQLite/Drizzle schema with committed migrations. Kindle data has its own feature module; Quotes should follow that shape without being coupled to Kindle.
+        </div>
+      </section>
+
+      <section id="decisions">
+        <h2>What I recommend</h2>
+        <ul>
+          <li>Add a <strong>Quotes</strong> tab and an authenticated <code>/quotes</code> page.</li>
+          <li>Put a small “Add quote” form at the top and show saved quotes beneath it, newest first.</li>
+          <li>Let the same form switch into edit mode. Each saved quote gets Edit and Delete controls.</li>
+          <li>Store each quote in a new <code>quotes</code> table. Do not add tags, search, or archiving in the first pass.</li>
+          <li>Keep database access in a Quotes server module and expose only typed, authenticated server functions to the route.</li>
+        </ul>
+
+        <table>
+          <thead><tr><th>Field</th><th>Purpose</th></tr></thead>
+          <tbody>
+            <tr><td><code>id</code></td><td>Stable numeric identifier.</td></tr>
+            <tr><td><code>text</code></td><td>The quote itself. Required.</td></tr>
+            <tr><td><code>attribution</code></td><td>Who said or wrote it. Optional.</td></tr>
+            <tr><td><code>source_url</code></td><td>Optional web page where you found it.</td></tr>
+            <tr><td><code>source_note</code></td><td>Optional plain-language reference, such as a book title, episode, or personal note.</td></tr>
+            <tr><td><code>created_at</code></td><td>When you saved it; determines default order.</td></tr>
+            <tr><td><code>updated_at</code></td><td>When you last edited it.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="structure">
+        <h2>How the pieces fit</h2>
+        <pre>Authenticated layout
+├── /kindle        existing Kindle library
+├── /quiz          existing study cards
+└── /quotes        new quotes page
+    ├── add/edit quote form (TanStack Form)
+    └── saved quote list
+
+Quotes server functions → quotes feature module → Drizzle SQLite client → quotes table</pre>
+      </section>
+
+      <section id="files">
+        <h2>Files involved</h2>
+        <ul>
+          <li><code>packages/app/src/routes/_authenticated.tsx</code> — modified; add the Quotes tab.</li>
+          <li><code>packages/app/src/routes/_authenticated.quotes.tsx</code> — proposed; own the page, add/edit form, list, and delete confirmation.</li>
+          <li><code>packages/app/src/server/quotes.ts</code> — proposed; own inserts, updates, hard deletes, and newest-first reads.</li>
+          <li><code>packages/app/src/server/quotes-functions.ts</code> — proposed; own authenticated, validated server-function boundaries for reads and mutations.</li>
+          <li><code>packages/app/src/server/database/schema.ts</code> — modified; declare the new SQLite table.</li>
+          <li><code>packages/app/drizzle/*</code> — modified; generated SQL migration and Drizzle snapshot.</li>
+          <li><code>packages/app/src/server/quotes.test.ts</code> — proposed; exercise storage, edits, deletion, and newest-first reads through the feature module.</li>
+        </ul>
+      </section>
+
+      <section id="questions">
+        <h2>One thing to decide</h2>
+        <div class="open">
+          <strong>Decided:</strong> only quote text is required. Attribution, a web link, and a source note are all optional, so you can save something quickly and fill in context later. Saved quotes can be edited. Deletion permanently removes a quote after a clear confirmation; this first version does not add an archive/trash area.
+        </div>
+      </section>
+
+      <section id="verification">
+        <h2>How we will check it</h2>
+        <ul>
+          <li>Generate the Drizzle SQL migration, review it, and run <code>db:check</code>.</li>
+          <li>Add database-backed tests for creating, editing, deleting, and reading quotes in newest-first order.</li>
+          <li>Run app tests, lint, typecheck, and production build.</li>
+          <li>On the deployed app, add one quote with a URL and one with a source note, then confirm both render correctly.</li>
+        </ul>
+      </section>
+    </main>
+  </body>
+</html>
