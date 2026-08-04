@@ -1,7 +1,7 @@
 import { getPosts } from "../utils/get-posts";
 import { getDomainUrl } from "../utils/helpers/get-domain-url";
 
-export async function sitemap(req: Bun.BunRequest<"/sitemap.xml">) {
+export async function sitemap(req: Request) {
 	const url = getDomainUrl(req);
 	const posts = await getPosts();
 

@@ -10,69 +10,80 @@ import { getPostsList } from "./routes/get-posts-list";
 import { robots } from "./routes/robots";
 import { sitemap } from "./routes/sitemap";
 
-const port = process.env.PORT ? Number(process.env.PORT) : 3000;
+export const routes = {
+	// ------------------------------------------------------------
+	// BLOG ROUTES
+	// ------------------------------------------------------------
+	"/posts/2025-12-10-hello-world": blog_post_2025_12_10_hello_world,
+	"/posts/2025-12-18-on-intellectual-humility":
+		blog_post_2025_12_18_on_intellectual_humility,
+	"/posts/2026-02-08-the-old-internet-isnt-dead-yet":
+		blog_post_2026_02_08_the_old_internet_isnt_dead_yet,
 
-export const server = serve({
-	port,
-	routes: {
-		// ------------------------------------------------------------
-		// BLOG ROUTES
-		// ------------------------------------------------------------
-		"/posts/2025-12-10-hello-world": blog_post_2025_12_10_hello_world,
-		"/posts/2025-12-18-on-intellectual-humility":
-			blog_post_2025_12_18_on_intellectual_humility,
-		"/posts/2026-02-08-the-old-internet-isnt-dead-yet":
-			blog_post_2026_02_08_the_old_internet_isnt_dead_yet,
-
-		// ------------------------------------------------------------
-		// API ROUTES
-		// ------------------------------------------------------------
-		"/api/posts": {
-			async GET(req) {
-				return getPostsList(req);
-			},
+	// ------------------------------------------------------------
+	// API ROUTES
+	// ------------------------------------------------------------
+	"/api/posts": {
+		async GET(req: Request) {
+			return getPostsList(req);
 		},
-		"/robots.txt": {
-			async GET(req) {
-				return robots(req);
-			},
-			async HEAD(req) {
-				return robots(req);
-			},
-		},
-		"/sitemap.xml": {
-			async GET(req) {
-				return sitemap(req);
-			},
-			async HEAD(req) {
-				return sitemap(req);
-			},
-		},
-
-		// ------------------------------------------------------------
-		// PAGES
-		// ------------------------------------------------------------
-		"/": index,
-		"/resume": resume,
 	},
-	async fetch(request) {
-		const asset = await _buildAssetResponse(request);
-
-		if (asset) return asset;
-
-		return new Response(Bun.file(new URL(fourOhFour.index, import.meta.url)), {
-			status: 404,
-			headers: { "Content-Type": "text/html; charset=utf-8" },
-		});
+	"/robots.txt": {
+		async GET(req: Request) {
+			return robots(req);
+		},
+		async HEAD(req: Request) {
+			return robots(req);
+		},
+	},
+	"/sitemap.xml": {
+		async GET(req: Request) {
+			return sitemap(req);
+		},
+		async HEAD(req: Request) {
+			return sitemap(req);
+		},
 	},
 
-	development: process.env.NODE_ENV !== "production" && {
-		hmr: true,
-		console: true,
-	},
-});
+	// ------------------------------------------------------------
+	// PAGES
+	// ------------------------------------------------------------
+	"/": index,
+	"/resume": resume,
+} satisfies Parameters<typeof serve>[0]["routes"];
 
-console.log(`🚀 Server running at ${server.url}`);
+export const createServer = (
+	port = process.env.PORT ? Number(process.env.PORT) : 3000,
+) =>
+	serve({
+		port,
+		routes,
+		async fetch(request) {
+			return handleUnmatchedRequest(request);
+		},
+
+		development: process.env.NODE_ENV !== "production" && {
+			hmr: true,
+			console: true,
+		},
+	});
+
+export const server = import.meta.main ? createServer() : undefined;
+
+if (server) {
+	console.log(`🚀 Server running at ${server.url}`);
+}
+
+export async function handleUnmatchedRequest(request: Request) {
+	const asset = await _buildAssetResponse(request);
+
+	if (asset) return asset;
+
+	return new Response(Bun.file(new URL(fourOhFour.index, import.meta.url)), {
+		status: 404,
+		headers: { "Content-Type": "text/html; charset=utf-8" },
+	});
+}
 
 /** Every file in the production build directory is a public website asset. */
 async function _buildAssetResponse(request: Request) {

@@ -1,6 +1,6 @@
 import { getPosts } from "../utils/get-posts";
 
-export async function getPostsList(req: Bun.BunRequest<"/api/posts">) {
+export async function getPostsList(req: Request) {
 	try {
 		const posts = await getPosts();
 

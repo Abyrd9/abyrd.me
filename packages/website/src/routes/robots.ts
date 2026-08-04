@@ -10,7 +10,7 @@ Allow: /
 Sitemap: ${url}/sitemap.xml
 `;
 
-export async function robots(req: Bun.BunRequest<"/robots.txt">) {
+export async function robots(req: Request) {
 	const url = getDomainUrl(req);
 	return new Response(getRobotsTxt(url), {
 		status: 200,

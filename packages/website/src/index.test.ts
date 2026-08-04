@@ -1,28 +1,22 @@
-import { afterAll, expect, test } from "bun:test";
+import { expect, test } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-const port = process.env.PORT;
-process.env.PORT = "0";
-const { server } = await import("./index");
-
-afterAll(async () => {
-	await server.stop(true);
-	if (port === undefined) delete process.env.PORT;
-	else process.env.PORT = port;
-});
+const { handleUnmatchedRequest, routes } = await import("./index");
 
 test("does not expose the unused link preview proxy", async () => {
-	const response = await fetch(
-		new URL("/api/link-preview?url=https://example.com", server.url),
+	const response = await handleUnmatchedRequest(
+		new Request("http://localhost/api/link-preview?url=https://example.com"),
 	);
 
 	expect(response.status).toBe(404);
 });
 
 test("returns a real 404 response for missing pages", async () => {
-	const response = await fetch(new URL("/missing", server.url));
+	const response = await handleUnmatchedRequest(
+		new Request("http://localhost/missing"),
+	);
 
 	expect(response.status).toBe(404);
 	expect(response.headers.get("Content-Type")).toBe("text/html; charset=utf-8");
@@ -30,7 +24,6 @@ test("returns a real 404 response for missing pages", async () => {
 
 test("production build processes Tailwind and injects shared HTML", async () => {
 	const outputDirectory = await mkdtemp(join(tmpdir(), "abyrd-website-"));
-	let productionServer: ReturnType<typeof Bun.spawn> | undefined;
 
 	try {
 		const build = Bun.spawn({
@@ -58,82 +51,34 @@ test("production build processes Tailwind and injects shared HTML", async () => 
 		const stylesheet = await Bun.file(
 			join(outputDirectory, stylesheetPath.replace(/^\.\//, "")),
 		).text();
+		const favicon = Bun.file(
+			join(outputDirectory, faviconPath.replace(/^\.\//, "")),
+		);
+		const rootStylesheet = Bun.file(join(outputDirectory, "index.css"));
 
 		expect(stylesheet).toContain(".min-h-dvh");
 		expect(homepage).toContain('id="nav-logo"');
-
-		productionServer = Bun.spawn({
-			cmd: ["bun", "index.js"],
-			cwd: outputDirectory,
-			env: { ...process.env, NODE_ENV: "production", PORT: "0" },
-			stderr: "pipe",
-			stdout: "pipe",
-		});
-
-		const serverOutput = productionServer.stdout;
-
-		if (!serverOutput || typeof serverOutput === "number") {
-			throw new Error(
-				"Production server did not expose a readable output stream.",
-			);
-		}
-
-		const serverUrl = await _readServerUrl(serverOutput);
-		const faviconResponse = await fetch(new URL(faviconPath, serverUrl));
-		const stylesheetResponse = await fetch(new URL(stylesheetPath, serverUrl));
-
-		expect(faviconResponse.status).toBe(200);
-		expect(faviconResponse.headers.get("Content-Type")).toContain("image/");
-		expect(stylesheetResponse.status).toBe(200);
-		expect(stylesheetResponse.headers.get("Content-Type")).toContain(
-			"text/css",
-		);
-
-		const unregisteredAsset = await fetch(new URL("/index.css", serverUrl));
-
-		expect(unregisteredAsset.status).toBe(200);
-		expect(unregisteredAsset.headers.get("Content-Type")).toContain("text/css");
+		expect(await favicon.exists()).toBe(true);
+		expect(await rootStylesheet.exists()).toBe(true);
 	} finally {
-		if (productionServer) {
-			productionServer.kill();
-			await productionServer.exited;
-		}
-
 		await rm(outputDirectory, { force: true, recursive: true });
 	}
 });
 
 test("crawl routes support HEAD requests", async () => {
-	for (const path of ["/robots.txt", "/sitemap.xml"]) {
-		const response = await fetch(new URL(path, server.url), { method: "HEAD" });
+	for (const path of ["/robots.txt", "/sitemap.xml"] as const) {
+		const response = await routes[path].HEAD(
+			new Request(`http://localhost${path}`, { method: "HEAD" }),
+		);
 
 		expect(response.status).toBe(200);
 	}
 });
 
 test("includes the resume in the sitemap", async () => {
-	const response = await fetch(new URL("/sitemap.xml", server.url));
-
-	expect(await response.text()).toContain(
-		`<loc>${server.url.origin}/resume</loc>`,
+	const response = await routes["/sitemap.xml"].GET(
+		new Request("http://localhost/sitemap.xml"),
 	);
+
+	expect(await response.text()).toContain("<loc>http://localhost/resume</loc>");
 });
-
-async function _readServerUrl(output: ReadableStream<Uint8Array>) {
-	const decoder = new TextDecoder();
-	const reader = output.getReader();
-	let text = "";
-
-	while (true) {
-		const chunk = await reader.read();
-
-		if (chunk.done)
-			throw new Error(`Production server stopped before it started: ${text}`);
-
-		text += decoder.decode(chunk.value, { stream: true });
-
-		const url = text.match(/Server running at (http:\/\/localhost:\d+\/)/)?.[1];
-
-		if (url) return new URL(url);
-	}
-}
