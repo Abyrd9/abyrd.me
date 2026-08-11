@@ -64,11 +64,11 @@ export function StudyVisual({ visual }: { visual: StudyVisualSpec }) {
 	return (
 		<figure className="study-visual mt-6 overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
 			<header className="flex items-start justify-between gap-4 border-b border-slate-200 px-4 py-3 sm:px-5">
-				<div>
+				<div className="min-w-0">
 					<p className="font-mono text-[0.65rem] font-semibold uppercase tracking-[0.16em] text-amber-700 dark:text-amber-300">
 						Living diagram
 					</p>
-					<h3 className="mt-1 text-sm font-semibold text-slate-950 sm:text-base">
+					<h3 className="mt-1 break-words text-sm font-semibold text-slate-950 sm:text-base">
 						{visual.title}
 					</h3>
 				</div>

@@ -560,7 +560,7 @@ function AlgorithmPathLessons({
 					return (
 						<li key={lesson.id}>
 							<button
-								className="group grid w-full grid-cols-[2.75rem_1fr_auto] items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:border-amber-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600 sm:gap-5 sm:px-5"
+								className="group grid w-full grid-cols-[2.25rem_minmax(0,1fr)] items-center gap-x-3 gap-y-2 rounded-xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:border-amber-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600 sm:grid-cols-[2.75rem_minmax(0,1fr)_auto] sm:gap-5 sm:px-5"
 								onClick={() => onOpen(index)}
 								type="button"
 							>
@@ -578,8 +578,8 @@ function AlgorithmPathLessons({
 								<span
 									className={
 										isComplete
-											? "text-sm font-medium text-emerald-700 dark:text-emerald-300"
-											: "text-slate-400"
+											? "col-start-2 text-sm font-medium text-emerald-700 dark:text-emerald-300 sm:col-start-auto"
+											: "col-start-2 text-slate-400 sm:col-start-auto"
 									}
 								>
 									{isComplete ? "Complete" : "→"}
@@ -629,19 +629,19 @@ function AlgorithmLesson({
 				← {path.title}
 			</Button>
 
-			<nav aria-label="Lesson cards" className="mt-4 overflow-x-auto pb-2">
-				<ol className="grid min-w-[44rem] grid-cols-7 overflow-hidden rounded-xl border border-slate-200 bg-white">
+			<nav aria-label="Lesson cards" className="mt-4">
+				<ol className="grid grid-cols-2 overflow-hidden rounded-xl border border-slate-200 bg-white min-[420px]:grid-cols-3 sm:grid-cols-4 lg:grid-cols-7">
 					{algorithmStages.map((item, index) => (
 						<li
-							className="border-r border-slate-200 last:border-r-0"
+							className="border-b border-r border-slate-200 last:border-b-0 lg:border-b-0 lg:last:border-r-0"
 							key={item.id}
 						>
 							<button
 								aria-current={index === cardIndex ? "step" : undefined}
 								className={
 									index === cardIndex
-										? "w-full bg-amber-400 px-3 py-3 text-left text-slate-950"
-										: "w-full px-3 py-3 text-left text-slate-600 transition hover:bg-slate-50"
+										? "w-full bg-amber-400 px-3 py-2.5 text-left text-slate-950 sm:py-3"
+										: "w-full px-3 py-2.5 text-left text-slate-600 transition hover:bg-slate-50 sm:py-3"
 								}
 								onClick={() => onOpenCard(index)}
 								type="button"
@@ -649,7 +649,7 @@ function AlgorithmLesson({
 								<span className="block font-mono text-[0.65rem] font-semibold uppercase tracking-[0.16em]">
 									{String(index + 1).padStart(2, "0")}
 								</span>
-								<span className="mt-1 block text-sm font-semibold">
+								<span className="mt-1 block text-sm font-semibold leading-5">
 									{item.label}
 								</span>
 							</button>
@@ -668,7 +668,7 @@ function AlgorithmLesson({
 							{stage.prompt}
 						</h2>
 					</div>
-					<span className="font-mono text-sm text-slate-500">
+					<span className="shrink-0 font-mono text-sm text-slate-500">
 						{cardIndex + 1} / {algorithmStages.length}
 					</span>
 				</div>
@@ -876,7 +876,7 @@ function ItemPicker<T extends { id: string; title?: string; term?: string }>({
 			<h2 className="text-sm font-semibold uppercase tracking-wide text-slate-600">
 				{label}
 			</h2>
-			<div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:flex lg:flex-col">
+			<div className="mt-3 grid grid-cols-1 gap-2 min-[400px]:grid-cols-2 sm:grid-cols-3 lg:flex lg:flex-col">
 				{items.map((item, index) => (
 					<Button
 						className={
