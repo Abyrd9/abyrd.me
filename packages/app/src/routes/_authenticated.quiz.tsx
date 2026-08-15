@@ -84,7 +84,7 @@ function StudyFlashcards() {
 	const pattern = decks.architecturePatterns[patternIndex];
 
 	return (
-		<section className="flex flex-1 flex-col py-8 sm:py-14">
+		<section className="flex min-w-0 flex-1 flex-col py-8 sm:py-14">
 			<div className="max-w-3xl">
 				<p className="text-sm font-medium text-amber-700 dark:text-amber-300">
 					Study cards
@@ -183,14 +183,14 @@ function TermsDeck({
 	studyVisuals: StudyVisualCatalog;
 }) {
 	return (
-		<div className="mt-8 grid gap-8 lg:grid-cols-[15rem_1fr]">
+		<div className="mt-8 grid min-w-0 gap-8 lg:grid-cols-[15rem_minmax(0,1fr)]">
 			<ItemPicker
 				items={terms}
 				onChoose={onChoose}
 				selectedIndex={selectedIndex}
 				label="Terms"
 			/>
-			<article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
+			<article className="min-w-0 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
 				<p className="text-sm font-medium text-amber-700 dark:text-amber-300">
 					Term {selectedIndex + 1} of {terms.length}
 				</p>
@@ -277,14 +277,14 @@ function PatternsDeck({
 	studyVisuals: StudyVisualCatalog;
 }) {
 	return (
-		<div className="mt-8 grid gap-8 lg:grid-cols-[15rem_1fr]">
+		<div className="mt-8 grid min-w-0 gap-8 lg:grid-cols-[15rem_minmax(0,1fr)]">
 			<ItemPicker
 				items={patterns}
 				label="Patterns"
 				onChoose={onChoose}
 				selectedIndex={selectedIndex}
 			/>
-			<article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
+			<article className="min-w-0 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
 				<p className="text-sm font-medium text-amber-700 dark:text-amber-300">
 					{formatArchitectureType(pattern.architectureType)} {selectedIndex + 1}{" "}
 					of {patterns.length}

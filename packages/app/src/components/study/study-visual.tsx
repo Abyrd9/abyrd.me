@@ -62,7 +62,7 @@ export function StudyVisual({ visual }: { visual: StudyVisualSpec }) {
 	}
 
 	return (
-		<figure className="study-visual mt-6 overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+		<figure className="study-visual mt-6 min-w-0 max-w-full overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
 			<header className="flex items-start justify-between gap-4 border-b border-slate-200 px-4 py-3 sm:px-5">
 				<div className="min-w-0">
 					<p className="font-mono text-[0.65rem] font-semibold uppercase tracking-[0.16em] text-amber-700 dark:text-amber-300">
@@ -80,10 +80,10 @@ export function StudyVisual({ visual }: { visual: StudyVisualSpec }) {
 			<p className="px-4 pt-3 font-mono text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-slate-500 sm:hidden">
 				Swipe to follow the diagram →
 			</p>
-			<div className="overflow-x-auto px-2 pt-2 sm:px-4">
+			<div className="max-w-full overflow-x-auto px-2 pt-2 sm:px-4">
 				<svg
 					aria-labelledby={titleId}
-					className="h-auto min-w-[36rem] sm:min-w-0 sm:w-full"
+					className="block h-auto min-w-[36rem] sm:min-w-0 sm:w-full"
 					role="img"
 					viewBox="0 0 640 300"
 				>

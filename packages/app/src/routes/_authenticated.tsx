@@ -32,15 +32,18 @@ function AuthenticatedLayout() {
 	}
 
 	return (
-		<main className="mx-auto flex min-h-dvh w-full max-w-5xl flex-col px-4 py-5 sm:px-10 sm:py-8">
+		<main className="mx-auto flex min-h-dvh w-full min-w-0 max-w-5xl flex-col px-4 py-5 sm:px-10 sm:py-8">
 			<header className="flex flex-col gap-4 border-b border-slate-200 pb-5 sm:flex-row sm:items-center sm:justify-between">
-				<div className="flex items-center justify-between gap-4 sm:justify-start sm:gap-6">
-					<Link className="font-semibold tracking-tight text-slate-950" to="/">
+				<div className="flex flex-wrap items-center gap-x-4 gap-y-2 sm:gap-6">
+					<Link
+						className="shrink-0 font-semibold tracking-tight text-slate-950"
+						to="/"
+					>
 						Andrew Byrd
 					</Link>
 					<nav
 						aria-label="Private app"
-						className="flex items-center gap-4 text-sm"
+						className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm"
 					>
 						<Link
 							activeProps={{ className: "font-semibold text-slate-950" }}
