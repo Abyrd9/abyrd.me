@@ -4,6 +4,7 @@ WORKDIR /app
 
 COPY package.json bun.lock ./
 COPY packages/app/package.json packages/app/package.json
+COPY packages/kindle-extension/package.json packages/kindle-extension/package.json
 COPY packages/website/package.json packages/website/package.json
 RUN bun install --frozen-lockfile
 
