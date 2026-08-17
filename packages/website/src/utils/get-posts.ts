@@ -72,34 +72,38 @@ export async function getPosts(): Promise<PostMetadata[]> {
 	const glob = new Bun.Glob("*.html");
 	const posts: PostMetadata[] = [];
 
-	// Scan all HTML files in the posts directory
 	for await (const fileName of glob.scan(postsDir)) {
 		const filePath = `${postsDir}/${fileName}`;
 		const file = Bun.file(filePath);
 		const html = await file.text();
+		const slug = fileName.replace(".html", "");
 
-		const title =
-			_extractMetaTag(html, "og:title") || fileName.replace(".html", "");
+		const title = _extractMetaTag(html, "og:title") || slug;
 		const description = _extractMetaTag(html, "og:description") || "";
 		const tags = _extractMetaTags(html, "article:tag");
 		const timeData = _extractTimeTag(html);
 
 		posts.push({
-			slug: fileName.replace(".html", ""),
+			slug,
 			title,
 			description,
 			date: timeData?.date || "",
 			dateFormatted: timeData?.formatted || "",
-			path: `/posts/${fileName.replace(".html", "")}`,
+			path: `/posts/${slug}`,
 			tag: tags[0],
 			tags: tags.length ? tags : undefined,
 		});
 	}
 
-	// Sort by date (newest first)
 	posts.sort((a, b) => {
-		if (!a.date || !b.date) return 0;
-		return new Date(b.date).getTime() - new Date(a.date).getTime();
+		const aTime = a.date
+			? new Date(a.date).getTime()
+			: Number.NEGATIVE_INFINITY;
+		const bTime = b.date
+			? new Date(b.date).getTime()
+			: Number.NEGATIVE_INFINITY;
+
+		return bTime - aTime;
 	});
 
 	return posts;
