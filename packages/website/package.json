@@ -10,7 +10,7 @@
 		"lint": "bunx @biomejs/biome check .",
 		"typecheck": "bunx tsc --noEmit",
 		"build:verify": "NODE_ENV=production TMPDIR=/tmp bun run build.ts /tmp/abyrd-me-build",
-		"test": "bun test",
+		"test": "bun test --parallel",
 		"check": "bun run test && bun run lint && bun run typecheck && bun run build:verify",
 		"deps:outdated": "TMPDIR=/tmp bun outdated --no-progress",
 		"deps:update": "bun update",
@@ -23,8 +23,8 @@
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.5.5",
-		"@types/bun": "1.3.14",
-		"bun": "1.3.14",
+		"bun": "1.4.0",
+		"bun-types": "1.4.0",
 		"typescript": "^6.0.3"
 	}
 }

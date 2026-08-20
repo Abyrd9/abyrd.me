@@ -3,20 +3,27 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-const { handleUnmatchedRequest, routes } = await import("./index");
+const { createServer, handleUnmatchedRequest, routes } = await import(
+	"./index"
+);
+const testPort = 30_000 + (process.pid % 10_000);
 
 test("does not expose the unused link preview proxy", async () => {
-	const response = await handleUnmatchedRequest(
-		new Request("http://localhost/api/link-preview?url=https://example.com"),
-	);
+	const server = createServer(testPort);
 
-	expect(response.status).toBe(404);
+	try {
+		const response = await fetch(
+			new URL("/api/link-preview?url=https://example.com", server.url),
+		);
+
+		expect(response.status).toBe(404);
+	} finally {
+		server.stop(true);
+	}
 });
 
 test("returns a real 404 response for missing pages", async () => {
-	const response = await handleUnmatchedRequest(
-		new Request("http://localhost/missing"),
-	);
+	const response = handleUnmatchedRequest();
 
 	expect(response.status).toBe(404);
 	expect(response.headers.get("Content-Type")).toBe("text/html; charset=utf-8");
@@ -54,24 +61,28 @@ test("production build processes Tailwind and injects shared HTML", async () => 
 		const favicon = Bun.file(
 			join(outputDirectory, faviconPath.replace(/^\.\//, "")),
 		);
-		const rootStylesheet = Bun.file(join(outputDirectory, "index.css"));
-
 		expect(stylesheet).toContain(".min-h-dvh");
+		expect(stylesheet).toContain("DM Sans Variable");
 		expect(homepage).toContain('id="nav-logo"');
 		expect(await favicon.exists()).toBe(true);
-		expect(await rootStylesheet.exists()).toBe(true);
 	} finally {
 		await rm(outputDirectory, { force: true, recursive: true });
 	}
 });
 
 test("crawl routes support HEAD requests", async () => {
-	for (const path of ["/robots.txt", "/sitemap.xml"] as const) {
-		const response = await routes[path].HEAD(
-			new Request(`http://localhost${path}`, { method: "HEAD" }),
-		);
+	const server = createServer(testPort);
 
-		expect(response.status).toBe(200);
+	try {
+		for (const path of ["/robots.txt", "/sitemap.xml"] as const) {
+			const response = await fetch(new URL(path, server.url), {
+				method: "HEAD",
+			});
+
+			expect(response.status).toBe(200);
+		}
+	} finally {
+		server.stop(true);
 	}
 });
 

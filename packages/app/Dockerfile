@@ -1,4 +1,4 @@
-FROM oven/bun:1.3.14
+FROM oven/bun:1.4.0
 
 WORKDIR /app
 
@@ -11,6 +11,7 @@ RUN bun install --frozen-lockfile
 COPY packages/app packages/app
 WORKDIR /app/packages/app
 RUN bun run build
+RUN bun prune --production
 
 ENV NODE_ENV=production
 ENV PORT=3001

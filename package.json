@@ -10,10 +10,10 @@
 		"dev:app": "bun --filter @abyrd/app dev",
 		"build": "bun --filter @abyrd/website build",
 		"build:app": "bun --filter @abyrd/app build",
-		"test": "bun --filter '*' test",
+		"test": "bun run --parallel --filter '*' test",
 		"lint": "bunx @biomejs/biome check .",
-		"typecheck": "bun --filter '*' typecheck",
-		"check": "bun run test && bun run lint && bun run typecheck && bun --filter '*' build",
+		"typecheck": "bun run --parallel --filter '*' typecheck",
+		"check": "bun run --parallel test lint typecheck build build:app",
 		"deps:outdated": "TMPDIR=/tmp bun outdated --no-progress",
 		"deps:update": "bun update",
 		"deps:update:latest": "bun update --latest"

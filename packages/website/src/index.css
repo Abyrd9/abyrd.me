@@ -1,3 +1,4 @@
+@import "@fontsource-variable/dm-sans";
 @import "tailwindcss";
 
 @custom-variant dark (&:where(.dark, .dark *));

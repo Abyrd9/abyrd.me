@@ -1,5 +1,4 @@
 import { serve } from "bun";
-import "@fontsource-variable/dm-sans";
 import fourOhFour from "./404.html";
 import index from "./index.html";
 import blog_post_2025_12_10_hello_world from "./posts/2025-12-10-hello-world.html";
@@ -28,19 +27,16 @@ export const routes = {
 			return getPostsList(req);
 		},
 	},
+	"/assets/*": {
+		dir: process.env.NODE_ENV === "production" ? "./assets" : "./src/assets",
+	},
 	"/robots.txt": {
 		async GET(req: Request) {
-			return robots(req);
-		},
-		async HEAD(req: Request) {
 			return robots(req);
 		},
 	},
 	"/sitemap.xml": {
 		async GET(req: Request) {
-			return sitemap(req);
-		},
-		async HEAD(req: Request) {
 			return sitemap(req);
 		},
 	},
@@ -58,8 +54,8 @@ export const createServer = (
 	serve({
 		port,
 		routes,
-		async fetch(request) {
-			return handleUnmatchedRequest(request);
+		fetch() {
+			return handleUnmatchedRequest();
 		},
 
 		development: process.env.NODE_ENV !== "production" && {
@@ -74,46 +70,9 @@ if (server) {
 	console.log(`🚀 Server running at ${server.url}`);
 }
 
-export async function handleUnmatchedRequest(request: Request) {
-	const asset = await _buildAssetResponse(request);
-
-	if (asset) return asset;
-
+export function handleUnmatchedRequest() {
 	return new Response(Bun.file(new URL(fourOhFour.index, import.meta.url)), {
 		status: 404,
 		headers: { "Content-Type": "text/html; charset=utf-8" },
 	});
-}
-
-/** Every file in the production build directory is a public website asset. */
-async function _buildAssetResponse(request: Request) {
-	if (request.method !== "GET" && request.method !== "HEAD") return;
-
-	const assetPath = _buildAssetPath(new URL(request.url).pathname);
-
-	if (!assetPath) return;
-
-	const asset = Bun.file(`${process.cwd()}/${assetPath}`);
-
-	if (!(await asset.exists())) return;
-
-	return new Response(asset);
-}
-
-function _buildAssetPath(pathname: string) {
-	let decodedPath: string;
-
-	try {
-		decodedPath = decodeURIComponent(pathname);
-	} catch {
-		return;
-	}
-
-	const pathSegments = decodedPath.split("/").filter(Boolean);
-
-	if (pathSegments.length === 0) return;
-	if (pathSegments.some((segment) => segment === "." || segment === ".."))
-		return;
-
-	return pathSegments.join("/");
 }
