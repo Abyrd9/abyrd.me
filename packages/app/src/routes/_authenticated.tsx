@@ -73,6 +73,13 @@ function AuthenticatedLayout() {
 						>
 							Quotes
 						</Link>
+						<Link
+							activeProps={{ className: "font-semibold text-slate-950" }}
+							className="text-slate-600 transition hover:text-slate-950"
+							to="/fantasy"
+						>
+							Fantasy
+						</Link>
 					</nav>
 				</div>
 				<div className="flex items-center justify-end gap-2">

@@ -13,6 +13,7 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as HealthRouteImport } from './routes/health'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated.index'
+import { Route as AuthenticatedFantasyRouteImport } from './routes/_authenticated.fantasy'
 import { Route as AuthenticatedKindleRouteImport } from './routes/_authenticated.kindle'
 import { Route as AuthenticatedQuizRouteImport } from './routes/_authenticated.quiz'
 import { Route as AuthenticatedQuotesRouteImport } from './routes/_authenticated.quotes'
@@ -37,6 +38,11 @@ const SignInRoute = SignInRouteImport.update({
 const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedFantasyRoute = AuthenticatedFantasyRouteImport.update({
+  id: '/fantasy',
+  path: '/fantasy',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedKindleRoute = AuthenticatedKindleRouteImport.update({
@@ -77,6 +83,7 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/health': typeof HealthRoute
   '/sign-in': typeof SignInRoute
+  '/fantasy': typeof AuthenticatedFantasyRoute
   '/kindle': typeof AuthenticatedKindleRouteWithChildren
   '/quiz': typeof AuthenticatedQuizRoute
   '/quotes': typeof AuthenticatedQuotesRoute
@@ -87,6 +94,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/health': typeof HealthRoute
   '/sign-in': typeof SignInRoute
+  '/fantasy': typeof AuthenticatedFantasyRoute
   '/quiz': typeof AuthenticatedQuizRoute
   '/quotes': typeof AuthenticatedQuotesRoute
   '/': typeof AuthenticatedIndexRoute
@@ -99,6 +107,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/health': typeof HealthRoute
   '/sign-in': typeof SignInRoute
+  '/_authenticated/fantasy': typeof AuthenticatedFantasyRoute
   '/_authenticated/kindle': typeof AuthenticatedKindleRouteWithChildren
   '/_authenticated/quiz': typeof AuthenticatedQuizRoute
   '/_authenticated/quotes': typeof AuthenticatedQuotesRoute
@@ -113,6 +122,7 @@ export interface FileRouteTypes {
     | '/'
     | '/health'
     | '/sign-in'
+    | '/fantasy'
     | '/kindle'
     | '/quiz'
     | '/quotes'
@@ -123,6 +133,7 @@ export interface FileRouteTypes {
   to:
     | '/health'
     | '/sign-in'
+    | '/fantasy'
     | '/quiz'
     | '/quotes'
     | '/'
@@ -134,6 +145,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/health'
     | '/sign-in'
+    | '/_authenticated/fantasy'
     | '/_authenticated/kindle'
     | '/_authenticated/quiz'
     | '/_authenticated/quotes'
@@ -177,6 +189,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/fantasy': {
+      id: '/_authenticated/fantasy'
+      path: '/fantasy'
+      fullPath: '/fantasy'
+      preLoaderRoute: typeof AuthenticatedFantasyRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/kindle': {
@@ -240,6 +259,7 @@ const AuthenticatedKindleRouteWithChildren =
   AuthenticatedKindleRoute._addFileChildren(AuthenticatedKindleRouteChildren)
 
 interface AuthenticatedRouteChildren {
+  AuthenticatedFantasyRoute: typeof AuthenticatedFantasyRoute
   AuthenticatedKindleRoute: typeof AuthenticatedKindleRouteWithChildren
   AuthenticatedQuizRoute: typeof AuthenticatedQuizRoute
   AuthenticatedQuotesRoute: typeof AuthenticatedQuotesRoute
@@ -247,6 +267,7 @@ interface AuthenticatedRouteChildren {
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedFantasyRoute: AuthenticatedFantasyRoute,
   AuthenticatedKindleRoute: AuthenticatedKindleRouteWithChildren,
   AuthenticatedQuizRoute: AuthenticatedQuizRoute,
   AuthenticatedQuotesRoute: AuthenticatedQuotesRoute,
