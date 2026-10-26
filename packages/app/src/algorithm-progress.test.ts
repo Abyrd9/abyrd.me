@@ -57,3 +57,26 @@ test("clears saved progress", () => {
 
 	expect(readAlgorithmProgress(storage)).toEqual(new Set());
 });
+
+test("allows studying when the browser blocks access to localStorage", () => {
+	const descriptor = Object.getOwnPropertyDescriptor(globalThis, "window");
+	Object.defineProperty(globalThis, "window", {
+		configurable: true,
+		value: {
+			get localStorage() {
+				throw new DOMException("Storage is blocked", "SecurityError");
+			},
+		},
+	});
+
+	try {
+		expect(readAlgorithmProgress()).toEqual(new Set());
+		expect(() =>
+			writeAlgorithmProgress(new Set(["two-pointers"])),
+		).not.toThrow();
+		expect(() => clearAlgorithmProgress()).not.toThrow();
+	} finally {
+		if (descriptor) Object.defineProperty(globalThis, "window", descriptor);
+		else Reflect.deleteProperty(globalThis, "window");
+	}
+});

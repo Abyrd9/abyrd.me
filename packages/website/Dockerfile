@@ -1,5 +1,5 @@
 # Build the website with the root workspace available.
-FROM oven/bun:1.4.0 AS base
+FROM oven/bun:1.4.4 AS base
 WORKDIR /app
 
 COPY package.json bun.lock ./

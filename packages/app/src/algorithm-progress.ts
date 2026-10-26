@@ -59,7 +59,12 @@ export function clearAlgorithmProgress(storage = _browserStorage()): void {
 
 function _browserStorage(): ProgressStorage | undefined {
 	if (typeof window === "undefined") return undefined;
-	return window.localStorage;
+
+	try {
+		return window.localStorage;
+	} catch {
+		return undefined;
+	}
 }
 
 function _isProgressDocument(value: unknown): value is ProgressDocument {

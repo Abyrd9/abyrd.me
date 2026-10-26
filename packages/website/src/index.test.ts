@@ -3,23 +3,10 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-const { createServer, handleUnmatchedRequest, routes } = await import(
-	"./index"
-);
-const testPort = 30_000 + (process.pid % 10_000);
+const { handleUnmatchedRequest, routes } = await import("./index");
 
 test("does not expose the unused link preview proxy", async () => {
-	const server = createServer(testPort);
-
-	try {
-		const response = await fetch(
-			new URL("/api/link-preview?url=https://example.com", server.url),
-		);
-
-		expect(response.status).toBe(404);
-	} finally {
-		server.stop(true);
-	}
+	expect(Object.hasOwn(routes, "/api/link-preview")).toBe(false);
 });
 
 test("returns a real 404 response for missing pages", async () => {
@@ -71,18 +58,14 @@ test("production build processes Tailwind and injects shared HTML", async () => 
 });
 
 test("crawl routes support HEAD requests", async () => {
-	const server = createServer(testPort);
-
-	try {
-		for (const path of ["/robots.txt", "/sitemap.xml"] as const) {
-			const response = await fetch(new URL(path, server.url), {
+	for (const path of ["/robots.txt", "/sitemap.xml"] as const) {
+		const response = await routes[path].GET(
+			new Request(`http://localhost${path}`, {
 				method: "HEAD",
-			});
+			}),
+		);
 
-			expect(response.status).toBe(200);
-		}
-	} finally {
-		server.stop(true);
+		expect(response.status).toBe(200);
 	}
 });
 

@@ -14,11 +14,11 @@
 		"lint": "bunx @biomejs/biome check .",
 		"typecheck": "bun run --parallel --filter '*' typecheck",
 		"check": "bun run --parallel test lint typecheck build build:app",
-		"deps:outdated": "TMPDIR=/tmp bun outdated --no-progress",
+		"deps:outdated": "TMPDIR=/tmp bun outdated --recursive --no-progress",
 		"deps:update": "bun update",
 		"deps:update:latest": "bun update --latest"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "2.5.5"
+		"@biomejs/biome": "2.5.13"
 	}
 }
