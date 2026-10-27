@@ -16,7 +16,7 @@ function Home() {
 				</h1>
 				<p className="mt-4 leading-7 text-slate-600 sm:text-lg sm:leading-8">
 					Study interview fundamentals, revisit Kindle highlights, save a quote,
-					or run your fantasy draft.
+					or learn how to build your personal brand.
 				</p>
 			</div>
 			<div className="mt-8 grid gap-4 sm:grid-cols-2">
@@ -39,10 +39,10 @@ function Home() {
 					title="A personal quote library"
 				/>
 				<AppCard
-					description="Track the best available players, mark picks, and keep your draft plan close."
-					label="Fantasy"
-					to="/fantasy"
-					title="Your draft-night board"
+					description="A guide to sharing useful ideas, reaching people, and getting comfortable being seen."
+					label="Marketing"
+					to="/marketing"
+					title="Build your personal brand"
 				/>
 			</div>
 		</section>
@@ -58,7 +58,7 @@ function AppCard({
 	readonly description: string;
 	readonly label: string;
 	readonly title: string;
-	readonly to: "/fantasy" | "/kindle" | "/quiz" | "/quotes";
+	readonly to: "/marketing" | "/kindle" | "/quiz" | "/quotes";
 }) {
 	return (
 		<Link

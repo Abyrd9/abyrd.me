@@ -13,8 +13,8 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as HealthRouteImport } from './routes/health'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated.index'
-import { Route as AuthenticatedFantasyRouteImport } from './routes/_authenticated.fantasy'
 import { Route as AuthenticatedKindleRouteImport } from './routes/_authenticated.kindle'
+import { Route as AuthenticatedMarketingRouteImport } from './routes/_authenticated.marketing'
 import { Route as AuthenticatedQuizRouteImport } from './routes/_authenticated.quiz'
 import { Route as AuthenticatedQuotesRouteImport } from './routes/_authenticated.quotes'
 import { Route as AuthenticatedKindleIndexRouteImport } from './routes/_authenticated.kindle.index'
@@ -40,14 +40,14 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedFantasyRoute = AuthenticatedFantasyRouteImport.update({
-  id: '/fantasy',
-  path: '/fantasy',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
 const AuthenticatedKindleRoute = AuthenticatedKindleRouteImport.update({
   id: '/kindle',
   path: '/kindle',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedMarketingRoute = AuthenticatedMarketingRouteImport.update({
+  id: '/marketing',
+  path: '/marketing',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedQuizRoute = AuthenticatedQuizRouteImport.update({
@@ -83,8 +83,8 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/health': typeof HealthRoute
   '/sign-in': typeof SignInRoute
-  '/fantasy': typeof AuthenticatedFantasyRoute
   '/kindle': typeof AuthenticatedKindleRouteWithChildren
+  '/marketing': typeof AuthenticatedMarketingRoute
   '/quiz': typeof AuthenticatedQuizRoute
   '/quotes': typeof AuthenticatedQuotesRoute
   '/kindle/archived': typeof AuthenticatedKindleArchivedRoute
@@ -94,7 +94,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/health': typeof HealthRoute
   '/sign-in': typeof SignInRoute
-  '/fantasy': typeof AuthenticatedFantasyRoute
+  '/marketing': typeof AuthenticatedMarketingRoute
   '/quiz': typeof AuthenticatedQuizRoute
   '/quotes': typeof AuthenticatedQuotesRoute
   '/': typeof AuthenticatedIndexRoute
@@ -107,8 +107,8 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/health': typeof HealthRoute
   '/sign-in': typeof SignInRoute
-  '/_authenticated/fantasy': typeof AuthenticatedFantasyRoute
   '/_authenticated/kindle': typeof AuthenticatedKindleRouteWithChildren
+  '/_authenticated/marketing': typeof AuthenticatedMarketingRoute
   '/_authenticated/quiz': typeof AuthenticatedQuizRoute
   '/_authenticated/quotes': typeof AuthenticatedQuotesRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
@@ -122,8 +122,8 @@ export interface FileRouteTypes {
     | '/'
     | '/health'
     | '/sign-in'
-    | '/fantasy'
     | '/kindle'
+    | '/marketing'
     | '/quiz'
     | '/quotes'
     | '/kindle/archived'
@@ -133,7 +133,7 @@ export interface FileRouteTypes {
   to:
     | '/health'
     | '/sign-in'
-    | '/fantasy'
+    | '/marketing'
     | '/quiz'
     | '/quotes'
     | '/'
@@ -145,8 +145,8 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/health'
     | '/sign-in'
-    | '/_authenticated/fantasy'
     | '/_authenticated/kindle'
+    | '/_authenticated/marketing'
     | '/_authenticated/quiz'
     | '/_authenticated/quotes'
     | '/_authenticated/'
@@ -191,18 +191,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/fantasy': {
-      id: '/_authenticated/fantasy'
-      path: '/fantasy'
-      fullPath: '/fantasy'
-      preLoaderRoute: typeof AuthenticatedFantasyRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
     '/_authenticated/kindle': {
       id: '/_authenticated/kindle'
       path: '/kindle'
       fullPath: '/kindle'
       preLoaderRoute: typeof AuthenticatedKindleRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/marketing': {
+      id: '/_authenticated/marketing'
+      path: '/marketing'
+      fullPath: '/marketing'
+      preLoaderRoute: typeof AuthenticatedMarketingRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/quiz': {
@@ -259,16 +259,16 @@ const AuthenticatedKindleRouteWithChildren =
   AuthenticatedKindleRoute._addFileChildren(AuthenticatedKindleRouteChildren)
 
 interface AuthenticatedRouteChildren {
-  AuthenticatedFantasyRoute: typeof AuthenticatedFantasyRoute
   AuthenticatedKindleRoute: typeof AuthenticatedKindleRouteWithChildren
+  AuthenticatedMarketingRoute: typeof AuthenticatedMarketingRoute
   AuthenticatedQuizRoute: typeof AuthenticatedQuizRoute
   AuthenticatedQuotesRoute: typeof AuthenticatedQuotesRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
-  AuthenticatedFantasyRoute: AuthenticatedFantasyRoute,
   AuthenticatedKindleRoute: AuthenticatedKindleRouteWithChildren,
+  AuthenticatedMarketingRoute: AuthenticatedMarketingRoute,
   AuthenticatedQuizRoute: AuthenticatedQuizRoute,
   AuthenticatedQuotesRoute: AuthenticatedQuotesRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
