@@ -20,10 +20,10 @@ export class DatabaseStartupError extends Data.TaggedError(
 	readonly cause: unknown;
 }> {}
 
-export class AppDatabase extends Context.Tag("AppDatabase")<
+export class AppDatabase extends Context.Service<
 	AppDatabase,
 	AppDatabaseService
->() {}
+>()("AppDatabase") {}
 
 let databaseService: AppDatabaseService | undefined;
 

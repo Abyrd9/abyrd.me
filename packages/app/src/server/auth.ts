@@ -1,23 +1,19 @@
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
-import { Config, Data, Effect, Redacted } from "effect";
+import { Config, Data, Effect, Redacted, Schema } from "effect";
 
 const SESSION_DURATION_SECONDS = 60 * 60 * 24 * 14;
 const SESSION_VERSION = "v1";
 
 const appCredentials = Config.all({
-	username: Config.string("APP_USERNAME"),
-	password: Config.redacted("APP_PASSWORD"),
-	sessionSecret: Config.redacted(
-		Config.string("APP_SESSION_SECRET").pipe(
-			Config.validate({
-				message: "APP_SESSION_SECRET must be at least 32 characters long",
-				validation: (value) => value.length >= 32,
-			}),
-		),
-	),
+	username: Config.String("APP_USERNAME"),
+	password: Config.Redacted("APP_PASSWORD"),
+	sessionSecret: Config.schema(
+		Schema.String.check(Schema.isMinLength(32)),
+		"APP_SESSION_SECRET",
+	).pipe(Config.map(Redacted.make)),
 });
 
-type AppCredentials = Effect.Effect.Success<typeof appCredentials>;
+type AppCredentials = Effect.Success<typeof appCredentials>;
 
 export class InvalidCredentials extends Data.TaggedError(
 	"InvalidCredentials",

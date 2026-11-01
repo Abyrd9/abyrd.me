@@ -13,13 +13,11 @@ export class DatabaseConfigurationError extends Data.TaggedError(
 	readonly message: string;
 }> {}
 
-const appDatabasePath = Config.string("APP_DATABASE_PATH").pipe(
+const appDatabasePath = Config.String("APP_DATABASE_PATH").pipe(
 	Config.withDefault(LOCAL_DATABASE_PATH),
 );
 
-const kindleSyncSecret = Config.redacted(
-	Config.string("APP_KINDLE_SYNC_SECRET"),
-);
+const kindleSyncSecret = Config.Redacted("APP_KINDLE_SYNC_SECRET");
 
 export const loadKindleSyncSecret = Effect.gen(function* () {
 	return Redacted.value(yield* kindleSyncSecret);
