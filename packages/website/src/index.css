@@ -108,7 +108,7 @@
 .tag-highlight {
 	background: url("https://s2.svgbox.net/pen-brushes.svg?ic=brush-1&color=fde047");
 	background-size: 100% 100%;
-	margin: -2px -6px;
+	margin: -2px 0;
 	padding: 2px 8px;
 	font-size: 0.75rem;
 	font-weight: 500;
@@ -143,4 +143,59 @@
 	background: url("https://s2.svgbox.net/pen-brushes.svg?ic=brush-1&color=166534");
 	background-size: 100% 100%;
 	color: #a7f3d0;
+}
+
+@media screen {
+	:root {
+		--letter-accent: #d4320a;
+		--letter-rule: #cbd5e1;
+	}
+
+	:root.dark {
+		--letter-accent: #ff9a7f;
+		--letter-rule: #404040;
+	}
+
+	:where(main > header h1, main > article > header h1) {
+		font-family: Georgia, "Times New Roman", serif;
+		font-weight: 700;
+		letter-spacing: -0.025em;
+		line-height: 1.12;
+		text-wrap: balance;
+	}
+
+	:is(main > header h1, main > article > header h1) {
+		font-size: clamp(2.25rem, 5vw, 3.25rem);
+	}
+
+	.post-list-item + .post-list-item {
+		border-top: 1px solid var(--letter-rule);
+	}
+
+	.post-list-link {
+		padding: 1rem 0;
+		text-decoration: none;
+	}
+
+	.post-list-title {
+		font-weight: 700;
+		text-decoration: underline;
+		text-decoration-color: var(--letter-rule);
+		text-underline-offset: 0.2em;
+	}
+
+	.post-list-description {
+		margin: 0.25rem 0 0;
+		font-size: 0.9rem;
+		line-height: 1.45;
+	}
+
+	.post-list-link:hover .post-list-title {
+		text-decoration-color: #f0cb53;
+	}
+
+	:where(a, button):focus-visible {
+		outline: 2px solid var(--letter-accent);
+		outline-offset: 3px;
+	}
 }

@@ -13,10 +13,9 @@
 			"command": "bun run dev"
 		},
 		{
-			"name": "opencode",
-			"path": ".",
-			"command": "opencode . --continue",
-			"canAccess": ["website", "app"]
+			"name": "studio",
+			"path": "./packages/app",
+			"command": "bun run db:studio"
 		}
 	],
 	"before": [],

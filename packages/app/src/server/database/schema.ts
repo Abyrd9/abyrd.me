@@ -7,6 +7,18 @@ export const kindleBooks = sqliteTable("kindle_books", {
 	coverUrl: text("cover_url"),
 	lastAnnotatedAt: text("last_annotated_at"),
 	lastSyncedAt: integer("last_synced_at").notNull(),
+	synopsis: text("synopsis"),
+	archivedAt: integer("archived_at"),
+});
+
+export const kindleChapters = sqliteTable("kindle_chapters", {
+	id: integer("id").primaryKey({ autoIncrement: true }),
+	bookAsin: text("book_asin")
+		.notNull()
+		.references(() => kindleBooks.asin, { onDelete: "cascade" }),
+	title: text("title").notNull(),
+	position: integer("position").notNull(),
+	synopsis: text("synopsis"),
 });
 
 export const kindleAnnotations = sqliteTable(
@@ -26,6 +38,10 @@ export const kindleAnnotations = sqliteTable(
 		firstSeenAt: integer("first_seen_at").notNull(),
 		lastSeenAt: integer("last_seen_at").notNull(),
 		archivedAt: integer("archived_at"),
+		chapterId: integer("chapter_id").references(() => kindleChapters.id, {
+			onDelete: "set null",
+		}),
+		commentary: text("commentary"),
 	},
 	(table) => [
 		index("kindle_annotations_book_asin_idx").on(table.bookAsin),

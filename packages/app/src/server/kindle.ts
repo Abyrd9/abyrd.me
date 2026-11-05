@@ -1,9 +1,10 @@
 import { createHash } from "node:crypto";
-import { desc, eq, isNotNull, isNull } from "drizzle-orm";
+import { and, desc, eq, isNotNull, isNull, or } from "drizzle-orm";
 import { Data, Effect } from "effect";
 import {
 	kindleAnnotations,
 	kindleBooks,
+	kindleChapters,
 	kindleSyncRuns,
 } from "./database/schema";
 import type { AppDatabaseClient } from "./database/service";
@@ -173,6 +174,12 @@ export function importKindleBooks(
 
 export function loadKindleLibrary(db: AppDatabaseClient, archived = false) {
 	return {
+		books: db.select().from(kindleBooks).all(),
+		chapters: db
+			.select()
+			.from(kindleChapters)
+			.orderBy(kindleChapters.position)
+			.all(),
 		annotations: db
 			.select({
 				id: kindleAnnotations.id,
@@ -183,6 +190,8 @@ export function loadKindleLibrary(db: AppDatabaseClient, archived = false) {
 				page: kindleAnnotations.page,
 				addedAt: kindleAnnotations.addedAt,
 				archivedAt: kindleAnnotations.archivedAt,
+				chapterId: kindleAnnotations.chapterId,
+				commentary: kindleAnnotations.commentary,
 				title: kindleBooks.title,
 				author: kindleBooks.author,
 				coverUrl: kindleBooks.coverUrl,
@@ -191,8 +200,14 @@ export function loadKindleLibrary(db: AppDatabaseClient, archived = false) {
 			.innerJoin(kindleBooks, eq(kindleAnnotations.bookAsin, kindleBooks.asin))
 			.where(
 				archived
-					? isNotNull(kindleAnnotations.archivedAt)
-					: isNull(kindleAnnotations.archivedAt),
+					? or(
+							isNotNull(kindleAnnotations.archivedAt),
+							isNotNull(kindleBooks.archivedAt),
+						)
+					: and(
+							isNull(kindleAnnotations.archivedAt),
+							isNull(kindleBooks.archivedAt),
+						),
 			)
 			.orderBy(desc(kindleAnnotations.lastSeenAt))
 			.all(),
@@ -210,10 +225,20 @@ export function setKindleAnnotationArchived(
 	id: number,
 	archived: boolean,
 ) {
-	db.update(kindleAnnotations)
-		.set({ archivedAt: archived ? Date.now() : null })
-		.where(eq(kindleAnnotations.id, id))
-		.run();
+	db.transaction((tx) => {
+		const annotation = tx
+			.update(kindleAnnotations)
+			.set({ archivedAt: archived ? Date.now() : null })
+			.where(eq(kindleAnnotations.id, id))
+			.returning({ bookAsin: kindleAnnotations.bookAsin })
+			.get();
+		if (!annotation) throw new Error("Highlight not found.");
+		if (!archived)
+			tx.update(kindleBooks)
+				.set({ archivedAt: null })
+				.where(eq(kindleBooks.asin, annotation.bookAsin))
+				.run();
+	});
 }
 
 export function setKindleBookArchived(
@@ -221,10 +246,13 @@ export function setKindleBookArchived(
 	bookAsin: string,
 	archived: boolean,
 ) {
-	db.update(kindleAnnotations)
+	const updated = db
+		.update(kindleBooks)
 		.set({ archivedAt: archived ? Date.now() : null })
-		.where(eq(kindleAnnotations.bookAsin, bookAsin))
-		.run();
+		.where(eq(kindleBooks.asin, bookAsin))
+		.returning({ asin: kindleBooks.asin })
+		.get();
+	if (!updated) throw new Error("Book not found.");
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

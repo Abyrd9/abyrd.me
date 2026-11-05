@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kindle notes and MCP plan</title>
+  <style>
+    body { font: 16px/1.6 system-ui, sans-serif; color: #1e293b; max-width: 850px; padding: 2rem 1.25rem; margin: auto; }
+    h1, h2 { color: #0f172a; line-height: 1.25; } h2 { margin-top: 2rem; }
+    code, pre { font-family: ui-monospace, monospace; } pre { background: #f1f5f9; padding: 1rem; overflow: auto; }
+    li { margin: .45rem 0; } .status { color: #475569; }
+  </style>
+</head>
+<body>
+  <h1>Kindle notes, chapters, and MCP</h1>
+  <section id="overview">
+    <h2>What I found</h2>
+    <p>The app stores Kindle books and annotations in SQLite. Sync identifies highlights by a hash of their source content and updates imported fields; archive choices survive later imports. Your separate quote library is already stored in the same database. The app uses a browser session for its UI; there is no existing MCP server in this app.</p>
+    <p>Kindle’s reader does not consistently group highlights at the chapter level. You will enter chapters and assign highlights yourself.</p>
+  </section>
+  <section id="decisions">
+    <h2>What I recommend</h2>
+    <ul>
+      <li><strong>Decided:</strong> Add your own synopsis to each book, with editable chapters and a synopsis for each chapter. Keep empty chapters visible.</li>
+      <li><strong>Decided:</strong> Let each highlight or note be assigned to a chapter, or remain unassigned. Show your own thoughts on individual highlights as well as the Kindle-provided note.</li>
+      <li><strong>Decided:</strong> Use a Lexical rich-text editor for book synopses, chapter synopses, and your thoughts on individual highlights. Kindle-synced text remains read-only.</li>
+      <li><strong>Decided:</strong> Each book has its own synopsis, each chapter has its own synopsis, and each highlight can have its own commentary note. These are separate entries, not one document for the whole book.</li>
+      <li><strong>Decided:</strong> MCP can read books, chapters, highlights, personal thoughts, and the separate quotes library. It can create and edit manual chapters, edit your own synopses and thoughts, assign or unassign highlights, and archive or restore items. Kindle-synced fields remain read-only.</li>
+      <li>Preserve personal text, chapter order, assignments, and archive choices during sync. Changing an imported highlight can change its current content-based identity; do not silently transfer or erase personal notes when that happens. Investigate retaining Amazon’s stable annotation ID and provide an explicit reconciliation path for existing records.</li>
+    </ul>
+  </section>
+  <section id="structure">
+    <h2>Data and experience</h2>
+    <pre>Kindle book (ASIN)
+├── your book synopsis
+├── chapters (title, order, your synopsis)
+└── highlights (existing Kindle text and note)
+    ├── optional chapter assignment
+    └── your separate thoughts</pre>
+    <p>Keep the book synopsis with the book. Add a chapter table keyed by book and a stable chapter ID; store the chapter assignment and personal thought with each annotation. Check that an assigned chapter belongs to the same book on the server. Deleting a chapter should leave its highlights unassigned, with a clear confirmation explaining what happens to its synopsis.</p>
+    <p>On each Kindle book, add a place to edit the book synopsis and manage ordered chapters. Each chapter expands to show its synopsis and assigned highlights; unassigned highlights remain accessible. Allow moving or clearing an assignment from each highlight. Retain existing search, archive, and restore behavior. An archived highlight keeps its chapter and personal thoughts when restored.</p>
+    <p>Use one shared editor for all three kinds of personal writing. Start with a simple toolbar for bold, italic, headings, lists, and links, plus undo and redo. Save Lexical's structured editor state as JSON, and render it with the same supported nodes. Validate saved content and link destinations on the server; do not render untrusted HTML. Follow the current <a href="https://lexical.dev/docs/concepts/editor-state">editor state</a> and <a href="https://lexical.dev/docs/extensions/react">React extension</a> guidance, checking the installed Lexical version before choosing its APIs.</p>
+    <p>MCP reads should expose the structured document and readable plain text. Define and validate an explicit rich-text write format so an MCP edit cannot silently strip formatting; reject stale edits rather than overwrite newer changes.</p>
+    <p>Make save status, errors, and unsaved changes clear. A book whose highlights are all archived must remain reachable for its synopsis and chapters; today the main library groups from active annotations, so this needs a deliberate book-level query and UI treatment.</p>
+  </section>
+  <section id="files">
+    <h2>Files likely involved</h2>
+    <ul>
+      <li><code>packages/app/src/server/database/schema.ts</code> and <code>packages/app/drizzle/</code> — schema and reviewed additive migration; no production migration during planning.</li>
+      <li><code>packages/app/src/server/kindle.ts</code> and <code>kindle-functions.ts</code> — book-level reads, validated personal edits, chapter assignment, and sync preservation.</li>
+      <li><code>packages/app/src/routes/_authenticated.kindle.index.tsx</code> and <code>_authenticated.kindle.archived.tsx</code> — book and archived views; extract a component only where it keeps the flow clear.</li>
+      <li>App-local shared Lexical editor and renderer — used for book synopses, chapter synopses, and highlight thoughts; add compatible Lexical packages to the app only.</li>
+      <li><code>packages/kindle-extension/notebook.js</code> and import validation — investigate and preserve a stable source ID without breaking older extensions or existing imports.</li>
+      <li><code>packages/app/src/server/quotes.ts</code> — reuse existing quote reads for MCP rather than copy data.</li>
+      <li>Proposed app-local MCP route and server files — use the current official MCP SDK and transport after checking client requirements; reuse app data functions, not browser-only server functions.</li>
+      <li>Tests beside the Kindle server code and MCP boundary; update app documentation for setup and access.</li>
+    </ul>
+  </section>
+  <section id="questions">
+    <h2>Questions and boundaries</h2>
+    <ul>
+      <li>Which client should connect first: ChatGPT, Codex, or both? Confirm its remote MCP authentication requirements before choosing an implementation. A browser session cookie or Kindle sync secret is not an MCP credential. Require appropriate authentication and separate read and write authorization; document exactly what each write tool changes.</li>
+      <li>Confirm whether deleting a chapter should remove its synopsis while leaving highlights unassigned. Chapter reordering and renaming must not alter assignments.</li>
+    </ul>
+  </section>
+  <section id="verification">
+    <h2>How we will check it</h2>
+    <ol>
+      <li>Exercise an additive migration on a copy of the existing database; verify records and archive status survive. Back up production before any future deploy and migration.</li>
+      <li>Test creating, editing, reordering, and deleting chapters; empty chapters; assignment, reassignment, and cross-book rejection; synopses and highlight thoughts.</li>
+      <li>Test rich-text save and reload, safe links, undo and redo, empty content, stale edits, and formatting through MCP. Check keyboard use and the editor on mobile and in both themes.</li>
+      <li>Test repeat imports, changed source text, old extension payloads, archive/restore, and a book with no active highlights. Never silently discard user-authored data.</li>
+      <li>Test MCP authentication, denied requests, search and retrieval, and the agreed read/write boundaries with the intended client.</li>
+      <li>Run app tests, lint, typecheck, and build; inspect the Kindle views on desktop and mobile in both themes.</li>
+    </ol>
+  </section>
+</body>
+</html>

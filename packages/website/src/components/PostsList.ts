@@ -60,25 +60,22 @@ class PostsList extends HTMLElement {
 		}
 
 		this.innerHTML = /* html */ `
-      <section>
-        <div class="flex items-center justify-between mb-4">
-          <h2 class="text-xl font-medium tracking-tight">Recent Posts</h2>
-        </div>
-        <ul class="flex flex-col">
+        <ul class="flex flex-col" aria-label="Posts">
           ${this.posts
 						.map(
 							(post) => `
-            <li class="mb-4">
-              <a href="${post.path}" class="block group">
+            <li class="post-list-item">
+              <a href="${post.path}" class="post-list-link block group">
                 <article class="rounded-lg transition-colors">
-                  <h3 class="text-lg font-medium tracking-tight transition-colors my-0 flex items-center gap-2 group-hover:text-slate-700 dark:group-hover:text-slate-300">
-                    - ${post.title}
-                  </h3>
+                  <h2 class="post-list-title text-lg font-medium tracking-tight transition-colors my-0 flex items-center gap-2 group-hover:text-slate-700 dark:group-hover:text-slate-300">
+                    ${post.title}
+                  </h2>
+                  <p class="post-list-description">${post.description}</p>
                   <div class="flex items-center gap-2 mt-0.5">
                     <time class="text-sm text-slate-500 dark:text-slate-400 mt-1 block" datetime="${post.date}">
                       ${post.dateFormatted}
                     </time>
-                    <div class="flex flex-wrap items-center gap-0.5">
+                    <div class="flex flex-wrap items-center gap-1">
                       ${this.getPostTags(post)
 												.map(
 													(tag) => `
@@ -95,7 +92,6 @@ class PostsList extends HTMLElement {
 						)
 						.join("")}
         </ul>
-      </section>
     `;
 	}
 }

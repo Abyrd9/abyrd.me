@@ -42,7 +42,7 @@ function KindleSetup() {
 			</ol>
 			{token ? (
 				<button
-					className="mt-8 max-w-xs rounded-md bg-slate-100 px-3 py-2 text-sm font-medium text-slate-950"
+					className="mt-8 min-h-9 max-w-xs rounded-md bg-slate-100 px-3 text-sm font-normal text-slate-700 disabled:opacity-60"
 					data-sync-token={token}
 					disabled
 					id="connect-kindle-extension"

@@ -1,5 +1,10 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { createFileRoute, Link, useBlocker } from "@tanstack/react-router";
+import { useContext, useEffect, useMemo, useRef, useState } from "react";
+import { BookDescription } from "#/components/BookDescription";
+import { KindleBookNotes } from "#/components/KindleBookNotes";
+import { KindleDraftContext } from "#/components/KindleDraftContext";
+import { findDisplacedKindleDrafts } from "#/components/kindle-draft-changes";
+import { restoreKindleLibraryPosition } from "#/components/kindle-library-position";
 import { Button } from "#/components/primitives/button";
 import {
 	loadKindleLibrary,
@@ -17,6 +22,21 @@ function KindleLibrary() {
 	> | null>(null);
 	const [query, setQuery] = useState("");
 	const [message, setMessage] = useState<string | null>(null);
+	const [archiving, setArchiving] = useState<string | null>(null);
+	const restoredPosition = useRef(false);
+	const draftContext = useContext(KindleDraftContext);
+	if (!draftContext) throw new Error("Kindle draft context is missing.");
+	const dirtyNotes = draftContext;
+	useBlocker({
+		shouldBlockFn: () => {
+			if (!dirtyNotes.current.size) return false;
+			if (!confirm("You have unsaved notes. Leave without saving?"))
+				return true;
+			dirtyNotes.current.clear();
+			return false;
+		},
+		enableBeforeUnload: () => dirtyNotes.current.size > 0,
+	});
 
 	useEffect(() => {
 		void loadKindleLibrary()
@@ -27,41 +47,57 @@ function KindleLibrary() {
 				),
 			);
 	}, []);
+	useEffect(() => {
+		if (
+			!library ||
+			restoredPosition.current ||
+			!location.hash.startsWith("#book-")
+		)
+			return;
+		const saved = restoreKindleLibraryPosition(
+			"/kindle",
+			decodeURIComponent(location.hash.slice(6)),
+		);
+		if (saved) setQuery(saved.query);
+		const frame = requestAnimationFrame(() => {
+			restoredPosition.current = true;
+			for (const panel of document.querySelectorAll<HTMLDetailsElement>(
+				"details[data-kindle-panel]",
+			)) {
+				if (
+					saved?.open.includes(panel.dataset.kindlePanel ?? "") ||
+					(!saved &&
+						panel.dataset.kindlePanel ===
+							`book:${decodeURIComponent(location.hash.slice(6))}`)
+				)
+					panel.open = true;
+			}
+			requestAnimationFrame(() => {
+				if (saved) window.scrollTo(0, saved.scroll);
+				else
+					document
+						.getElementById(decodeURIComponent(location.hash.slice(1)))
+						?.scrollIntoView();
+			});
+		});
+		return () => cancelAnimationFrame(frame);
+	}, [library]);
 
 	const books = useMemo(() => {
 		const annotations = library?.annotations ?? [];
-		const grouped = new Map<
-			string,
-			{
-				asin: string;
-				title: string;
-				author: string;
-				coverUrl: string | null;
-				annotations: typeof annotations;
-			}
-		>();
-
-		for (const annotation of annotations) {
-			const book = grouped.get(annotation.bookAsin);
-
-			if (book) book.annotations.push(annotation);
-			else {
-				grouped.set(annotation.bookAsin, {
-					asin: annotation.bookAsin,
-					title: annotation.title,
-					author: annotation.author,
-					coverUrl: annotation.coverUrl,
-					annotations: [annotation],
-				});
-			}
-		}
-
-		const search = query.trim().toLowerCase();
-
-		return [...grouped.values()].filter((book) =>
-			`${book.title} ${book.author}`.toLowerCase().includes(search),
-		);
-	}, [library, query]);
+		return (library?.books ?? [])
+			.filter((book) => book.archivedAt === null)
+			.map((book) => ({
+				...book,
+				annotations: annotations.filter(
+					(annotation) => annotation.bookAsin === book.asin,
+				),
+			}));
+	}, [library]);
+	const search = query.trim().toLowerCase();
+	const visibleBooks = books.filter((book) =>
+		`${book.title} ${book.author}`.toLowerCase().includes(search),
+	);
 
 	async function archiveAnnotation(id: number) {
 		await updateKindleArchive({ data: { id, archived: true } });
@@ -78,11 +114,29 @@ function KindleLibrary() {
 	}
 
 	async function archiveBook(asin: string) {
-		await updateKindleBookArchive({ data: { asin, archived: true } });
+		const dirty = [...dirtyNotes.current].filter((key) =>
+			key.startsWith(`${asin}:`),
+		);
+		if (
+			dirty.length &&
+			!confirm("Archiving this book will discard unsaved edits. Continue?")
+		)
+			return;
+		setArchiving(asin);
+		try {
+			await updateKindleBookArchive({ data: { asin, archived: true } });
+		} catch {
+			setMessage("Could not archive the book. Please try again.");
+			return;
+		} finally {
+			setArchiving(null);
+		}
+		for (const key of dirty) dirtyNotes.current.delete(key);
 		setLibrary((current) =>
 			current
 				? {
 						...current,
+						books: current.books.filter((book) => book.asin !== asin),
 						annotations: current.annotations.filter(
 							(annotation) => annotation.bookAsin !== asin,
 						),
@@ -109,13 +163,13 @@ function KindleLibrary() {
 					Waiting for Kindle extension
 				</Button>
 				<Link
-					className="inline-flex min-h-10 items-center rounded-md bg-slate-100 px-3 text-sm font-medium text-slate-950 hover:bg-slate-200"
+					className="inline-flex min-h-9 items-center rounded-md bg-slate-100 px-3 text-sm font-normal text-slate-700 hover:bg-slate-200 hover:text-slate-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-500"
 					to="/kindle/setup"
 				>
 					Set up Kindle sync
 				</Link>
 				<Link
-					className="inline-flex min-h-10 items-center rounded-md bg-slate-100 px-3 text-sm font-medium text-slate-950 hover:bg-slate-200"
+					className="inline-flex min-h-9 items-center rounded-md bg-slate-100 px-3 text-sm font-normal text-slate-700 hover:bg-slate-200 hover:text-slate-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-500"
 					to="/kindle/archived"
 				>
 					Archived
@@ -147,6 +201,9 @@ function KindleLibrary() {
 					<div className="mt-8 grid gap-4">
 						{books.map((book) => (
 							<article
+								id={`book-${book.asin}`}
+								inert={archiving === book.asin || undefined}
+								hidden={!visibleBooks.includes(book)}
 								className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
 								key={book.asin}
 							>
@@ -162,6 +219,7 @@ function KindleLibrary() {
 									<div className="min-w-0 flex-1">
 										<h2 className="font-medium text-slate-950">{book.title}</h2>
 										<p className="mt-1 text-sm text-slate-600">{book.author}</p>
+										<BookDescription title={book.title} author={book.author} />
 										<p className="mt-2 text-sm text-slate-600">
 											{book.annotations.length}{" "}
 											{book.annotations.length === 1
@@ -173,49 +231,48 @@ function KindleLibrary() {
 										Archive book
 									</Button>
 								</div>
-								<details className="mt-5 border-t border-slate-200 pt-4">
+								<details
+									data-kindle-panel={`book:${book.asin}`}
+									className="mt-5 border-t border-slate-200 pt-4"
+								>
 									<summary className="cursor-pointer text-sm font-medium text-slate-700">
 										View notes and highlights ({book.annotations.length})
 									</summary>
-									<div className="mt-4 grid gap-4">
-										{book.annotations.map((annotation) => (
-											<div
-												className="rounded-xl bg-slate-50 p-4"
-												key={annotation.id}
-											>
-												{annotation.highlight ? (
-													<blockquote className="border-l-2 border-amber-400 pl-4 leading-7 text-slate-800">
-														{annotation.highlight}
-													</blockquote>
-												) : null}
-												{annotation.note ? (
-													<p className="mt-4 rounded-lg bg-slate-100 p-3 leading-7 text-slate-800">
-														{annotation.note}
-													</p>
-												) : null}
-												<div className="mt-4 flex items-center justify-between gap-3 text-sm text-slate-600">
-													<span>
-														{annotation.location
-															? `Location ${annotation.location}`
-															: annotation.page
-																? `Page ${annotation.page}`
-																: ""}
-													</span>
-													<Button
-														onClick={() =>
-															void archiveAnnotation(annotation.id)
-														}
-													>
-														Archive note
-													</Button>
-												</div>
-											</div>
-										))}
-									</div>
+									<KindleBookNotes
+										onDirtyChange={(key, dirty) => {
+											if (dirty) dirtyNotes.current.add(key);
+											else dirtyNotes.current.delete(key);
+										}}
+										book={book}
+										annotations={book.annotations}
+										chapters={library.chapters.filter(
+											(chapter) => chapter.bookAsin === book.asin,
+										)}
+										refresh={async () => {
+											const next = await loadKindleLibrary();
+											const displaced = findDisplacedKindleDrafts(
+												library,
+												next,
+												dirtyNotes.current,
+												false,
+											);
+											if (
+												displaced.length &&
+												!confirm(
+													"The library changed elsewhere. Refreshing would discard unsaved edits. Continue?",
+												)
+											)
+												throw new Error("Refresh cancelled");
+											for (const key of displaced)
+												dirtyNotes.current.delete(key);
+											setLibrary(next);
+										}}
+										archive={archiveAnnotation}
+									/>
 								</details>
 							</article>
 						))}
-						{books.length === 0 ? (
+						{visibleBooks.length === 0 ? (
 							<p className="text-slate-600">No books match this search.</p>
 						) : null}
 					</div>

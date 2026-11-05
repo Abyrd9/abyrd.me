@@ -7,42 +7,32 @@ export const Route = createFileRoute("/_authenticated/")({
 function Home() {
 	return (
 		<section className="flex flex-1 flex-col py-8 sm:py-14">
-			<div className="max-w-3xl">
-				<p className="text-sm font-medium text-amber-700 dark:text-amber-300">
-					Personal app
-				</p>
-				<h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
-					Choose what you want to work on.
-				</h1>
-				<p className="mt-4 leading-7 text-slate-600 sm:text-lg sm:leading-8">
-					Study interview fundamentals, revisit Kindle highlights, save a quote,
-					or learn how to build your personal brand.
-				</p>
-			</div>
-			<div className="mt-8 grid gap-4 sm:grid-cols-2">
-				<AppCard
-					description="Review system-design terms, architecture patterns, and algorithm patterns."
-					label="Study"
-					to="/quiz"
-					title="Interview practice"
-				/>
+			<h1 className="text-3xl font-medium tracking-tight text-slate-950 sm:text-4xl">
+				Your tools.
+			</h1>
+			<p className="mt-4 text-slate-600">
+				A place for the things you want to keep and work on.
+			</p>
+			<div className="mt-10 border-t border-slate-200">
 				<AppCard
 					description="Search Kindle highlights, keep your notes, and archive the ones you do not need."
 					label="Kindle"
 					to="/kindle"
-					title="Your reading library"
 				/>
 				<AppCard
 					description="Save memorable lines with optional attribution, a web reference, and your own note."
 					label="Quotes"
 					to="/quotes"
-					title="A personal quote library"
 				/>
 				<AppCard
 					description="A guide to sharing useful ideas, reaching people, and getting comfortable being seen."
 					label="Marketing"
 					to="/marketing"
-					title="Build your personal brand"
+				/>
+				<AppCard
+					description="Review system-design terms, architecture patterns, and algorithm patterns."
+					label="Study"
+					to="/quiz"
 				/>
 			</div>
 		</section>
@@ -52,28 +42,28 @@ function Home() {
 function AppCard({
 	description,
 	label,
-	title,
 	to,
 }: {
 	readonly description: string;
 	readonly label: string;
-	readonly title: string;
 	readonly to: "/marketing" | "/kindle" | "/quiz" | "/quotes";
 }) {
 	return (
 		<Link
-			className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 sm:p-6"
+			className="group flex items-start justify-between gap-6 border-b border-slate-200 py-5 no-underline"
 			to={to}
 		>
-			<p className="text-sm font-medium text-amber-700 dark:text-amber-300">
-				{label}
-			</p>
-			<h2 className="mt-3 text-xl font-semibold tracking-tight text-slate-950">
-				{title}
-			</h2>
-			<p className="mt-3 leading-7 text-slate-600">{description}</p>
-			<span className="mt-5 inline-flex text-sm font-medium text-slate-950 group-hover:underline">
-				Open {label}
+			<div>
+				<h2 className="text-lg font-medium text-slate-950 group-hover:underline">
+					{label}
+				</h2>
+				<p className="mt-1 leading-6 text-slate-600">{description}</p>
+			</div>
+			<span
+				aria-hidden="true"
+				className="pt-1 text-slate-500 transition-transform group-hover:translate-x-1"
+			>
+				→
 			</span>
 		</Link>
 	);

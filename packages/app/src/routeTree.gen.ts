@@ -17,9 +17,11 @@ import { Route as AuthenticatedKindleRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedMarketingRouteImport } from './routes/_authenticated.marketing'
 import { Route as AuthenticatedQuizRouteImport } from './routes/_authenticated.quiz'
 import { Route as AuthenticatedQuotesRouteImport } from './routes/_authenticated.quotes'
+import { Route as ApiMcpRouteImport } from './routes/api.mcp'
 import { Route as AuthenticatedKindleIndexRouteImport } from './routes/_authenticated.kindle.index'
 import { Route as AuthenticatedKindleArchivedRouteImport } from './routes/_authenticated.kindle.archived'
 import { Route as AuthenticatedKindleSetupRouteImport } from './routes/_authenticated.kindle.setup'
+import { Route as AuthenticatedKindleSynopsisAsinTargetRouteImport } from './routes/_authenticated.kindle.synopsis.$asin.$target'
 
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
   id: '/_authenticated',
@@ -60,6 +62,11 @@ const AuthenticatedQuotesRoute = AuthenticatedQuotesRouteImport.update({
   path: '/quotes',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const ApiMcpRoute = ApiMcpRouteImport.update({
+  id: '/api/mcp',
+  path: '/api/mcp',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedKindleIndexRoute =
   AuthenticatedKindleIndexRouteImport.update({
     id: '/',
@@ -78,6 +85,12 @@ const AuthenticatedKindleSetupRoute =
     path: '/setup',
     getParentRoute: () => AuthenticatedKindleRoute,
   } as any)
+const AuthenticatedKindleSynopsisAsinTargetRoute =
+  AuthenticatedKindleSynopsisAsinTargetRouteImport.update({
+    id: '/synopsis/$asin/$target',
+    path: '/synopsis/$asin/$target',
+    getParentRoute: () => AuthenticatedKindleRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -87,9 +100,11 @@ export interface FileRoutesByFullPath {
   '/marketing': typeof AuthenticatedMarketingRoute
   '/quiz': typeof AuthenticatedQuizRoute
   '/quotes': typeof AuthenticatedQuotesRoute
+  '/api/mcp': typeof ApiMcpRoute
   '/kindle/archived': typeof AuthenticatedKindleArchivedRoute
   '/kindle/setup': typeof AuthenticatedKindleSetupRoute
   '/kindle/': typeof AuthenticatedKindleIndexRoute
+  '/kindle/synopsis/$asin/$target': typeof AuthenticatedKindleSynopsisAsinTargetRoute
 }
 export interface FileRoutesByTo {
   '/health': typeof HealthRoute
@@ -97,10 +112,12 @@ export interface FileRoutesByTo {
   '/marketing': typeof AuthenticatedMarketingRoute
   '/quiz': typeof AuthenticatedQuizRoute
   '/quotes': typeof AuthenticatedQuotesRoute
+  '/api/mcp': typeof ApiMcpRoute
   '/': typeof AuthenticatedIndexRoute
   '/kindle/archived': typeof AuthenticatedKindleArchivedRoute
   '/kindle/setup': typeof AuthenticatedKindleSetupRoute
   '/kindle': typeof AuthenticatedKindleIndexRoute
+  '/kindle/synopsis/$asin/$target': typeof AuthenticatedKindleSynopsisAsinTargetRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -111,10 +128,12 @@ export interface FileRoutesById {
   '/_authenticated/marketing': typeof AuthenticatedMarketingRoute
   '/_authenticated/quiz': typeof AuthenticatedQuizRoute
   '/_authenticated/quotes': typeof AuthenticatedQuotesRoute
+  '/api/mcp': typeof ApiMcpRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/kindle/archived': typeof AuthenticatedKindleArchivedRoute
   '/_authenticated/kindle/setup': typeof AuthenticatedKindleSetupRoute
   '/_authenticated/kindle/': typeof AuthenticatedKindleIndexRoute
+  '/_authenticated/kindle/synopsis/$asin/$target': typeof AuthenticatedKindleSynopsisAsinTargetRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -126,9 +145,11 @@ export interface FileRouteTypes {
     | '/marketing'
     | '/quiz'
     | '/quotes'
+    | '/api/mcp'
     | '/kindle/archived'
     | '/kindle/setup'
     | '/kindle/'
+    | '/kindle/synopsis/$asin/$target'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/health'
@@ -136,10 +157,12 @@ export interface FileRouteTypes {
     | '/marketing'
     | '/quiz'
     | '/quotes'
+    | '/api/mcp'
     | '/'
     | '/kindle/archived'
     | '/kindle/setup'
     | '/kindle'
+    | '/kindle/synopsis/$asin/$target'
   id:
     | '__root__'
     | '/_authenticated'
@@ -149,16 +172,19 @@ export interface FileRouteTypes {
     | '/_authenticated/marketing'
     | '/_authenticated/quiz'
     | '/_authenticated/quotes'
+    | '/api/mcp'
     | '/_authenticated/'
     | '/_authenticated/kindle/archived'
     | '/_authenticated/kindle/setup'
     | '/_authenticated/kindle/'
+    | '/_authenticated/kindle/synopsis/$asin/$target'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   HealthRoute: typeof HealthRoute
   SignInRoute: typeof SignInRoute
+  ApiMcpRoute: typeof ApiMcpRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -219,6 +245,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedQuotesRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/api/mcp': {
+      id: '/api/mcp'
+      path: '/api/mcp'
+      fullPath: '/api/mcp'
+      preLoaderRoute: typeof ApiMcpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/kindle/': {
       id: '/_authenticated/kindle/'
       path: '/'
@@ -240,6 +273,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedKindleSetupRouteImport
       parentRoute: typeof AuthenticatedKindleRoute
     }
+    '/_authenticated/kindle/synopsis/$asin/$target': {
+      id: '/_authenticated/kindle/synopsis/$asin/$target'
+      path: '/synopsis/$asin/$target'
+      fullPath: '/kindle/synopsis/$asin/$target'
+      preLoaderRoute: typeof AuthenticatedKindleSynopsisAsinTargetRouteImport
+      parentRoute: typeof AuthenticatedKindleRoute
+    }
   }
 }
 
@@ -247,12 +287,15 @@ interface AuthenticatedKindleRouteChildren {
   AuthenticatedKindleArchivedRoute: typeof AuthenticatedKindleArchivedRoute
   AuthenticatedKindleSetupRoute: typeof AuthenticatedKindleSetupRoute
   AuthenticatedKindleIndexRoute: typeof AuthenticatedKindleIndexRoute
+  AuthenticatedKindleSynopsisAsinTargetRoute: typeof AuthenticatedKindleSynopsisAsinTargetRoute
 }
 
 const AuthenticatedKindleRouteChildren: AuthenticatedKindleRouteChildren = {
   AuthenticatedKindleArchivedRoute: AuthenticatedKindleArchivedRoute,
   AuthenticatedKindleSetupRoute: AuthenticatedKindleSetupRoute,
   AuthenticatedKindleIndexRoute: AuthenticatedKindleIndexRoute,
+  AuthenticatedKindleSynopsisAsinTargetRoute:
+    AuthenticatedKindleSynopsisAsinTargetRoute,
 }
 
 const AuthenticatedKindleRouteWithChildren =
@@ -282,6 +325,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   HealthRoute: HealthRoute,
   SignInRoute: SignInRoute,
+  ApiMcpRoute: ApiMcpRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

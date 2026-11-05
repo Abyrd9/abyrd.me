@@ -1,9 +1,10 @@
+@import "@fontsource-variable/dm-sans";
 @import "tailwindcss";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-	--font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+	--font-sans: "DM Sans Variable", ui-sans-serif, system-ui, sans-serif;
 }
 
 * {
@@ -19,7 +20,7 @@ body,
 body {
 	margin: 0;
 	min-width: 320px;
-	background: #f8fafc;
+	background: #fff;
 	color: #0f172a;
 	font-family: var(--font-sans);
 }
@@ -29,35 +30,39 @@ html.dark {
 }
 
 html.dark body {
-	background: #020617;
-	color: #e2e8f0;
+	background: #0a0a0a;
+	color: #f1f5f9;
 }
 
 /* The app uses a deliberately small palette. These theme mappings keep shared
  * primitives and route-level cards consistent without duplicating each style. */
 html.dark .bg-white {
-	background-color: #0f172a;
+	background-color: #171717;
 }
 
 html.dark .bg-slate-50 {
-	background-color: #1e293b;
+	background-color: #262626;
 }
 
 html.dark .bg-slate-100 {
-	background-color: #1e293b;
+	background-color: #262626;
 }
 
 html.dark .bg-slate-200 {
-	background-color: #334155;
+	background-color: #404040;
+}
+
+html.dark .hover\:bg-slate-200:hover {
+	background-color: #404040;
 }
 
 html.dark .hover\:bg-slate-300:hover {
-	background-color: #475569;
+	background-color: #525252;
 }
 
 html.dark .border-slate-200,
 html.dark .border-slate-300 {
-	border-color: #334155;
+	border-color: #404040;
 }
 
 html.dark .text-slate-950,
@@ -71,6 +76,10 @@ html.dark .text-slate-500 {
 	color: #cbd5e1;
 }
 
+html.dark .hover\:text-slate-950:hover {
+	color: #f8fafc;
+}
+
 html.dark .placeholder\:text-slate-500::placeholder,
 html.dark .placeholder\:text-slate-400::placeholder {
 	color: #94a3b8;
@@ -80,9 +89,12 @@ html.dark .focus\:ring-slate-200:focus {
 	--tw-ring-color: #334155;
 }
 
-button,
 input {
 	font: inherit;
+}
+
+button {
+	font-family: inherit;
 }
 
 .study-visual-edge {

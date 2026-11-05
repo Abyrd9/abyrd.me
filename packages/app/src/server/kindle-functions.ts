@@ -13,6 +13,7 @@ import {
 	setKindleAnnotationArchived,
 	setKindleBookArchived,
 } from "./kindle";
+import { applyKindlePersonalEdit, personalEditSchema } from "./kindle-personal";
 
 const archiveSchema = z.object({
 	id: z.number().int().positive(),
@@ -50,13 +51,15 @@ export const loadKindleLibrary = createServerFn({ method: "GET" }).handler(
 export const loadArchivedKindleLibrary = createServerFn({
 	method: "GET",
 }).handler(async () => {
-	return Effect.runPromise(
+	const result = await Effect.runPromise(
 		Effect.gen(function* () {
 			yield* requireSignedIn;
 			const database = yield* AppDatabase;
 			return readKindleLibrary(database.client, true);
 		}).pipe(withDatabase, Effect.orDie),
 	);
+	setResponseHeader("Cache-Control", "no-store");
+	return result;
 });
 
 export const loadKindleSetup = createServerFn({ method: "GET" }).handler(
@@ -94,6 +97,20 @@ export const updateKindleBookArchive = createServerFn({ method: "POST" })
 				yield* requireSignedIn;
 				const database = yield* AppDatabase;
 				setKindleBookArchived(database.client, data.asin, data.archived);
+			}).pipe(withDatabase, Effect.orDie),
+		);
+		setResponseHeader("Cache-Control", "no-store");
+		return { ok: true as const };
+	});
+
+export const updateKindlePersonal = createServerFn({ method: "POST" })
+	.validator((input: unknown) => personalEditSchema.parse(input))
+	.handler(async ({ data }) => {
+		await Effect.runPromise(
+			Effect.gen(function* () {
+				yield* requireSignedIn;
+				const { client } = yield* AppDatabase;
+				applyKindlePersonalEdit(client, data);
 			}).pipe(withDatabase, Effect.orDie),
 		);
 		setResponseHeader("Cache-Control", "no-store");

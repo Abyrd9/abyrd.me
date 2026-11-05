@@ -2,10 +2,10 @@
 
 The source for [abyrd.me](https://abyrd.me) and its private companion app. It is a Bun workspace with two independently deployable packages.
 
-| Package | Purpose | Local command |
-| --- | --- | --- |
-| `@abyrd/website` | Public personal site | `bun run dev` |
-| `@abyrd/app` | Private personal tools | `bun run dev:app` |
+| Package          | Purpose                | Local command     |
+| ---------------- | ---------------------- | ----------------- |
+| `@abyrd/website` | Public personal site   | `bun run dev`     |
+| `@abyrd/app`     | Private personal tools | `bun run dev:app` |
 
 ## Commands
 

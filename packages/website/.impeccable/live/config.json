@@ -1,0 +1,11 @@
+{
+	"files": [
+		"src/index.html",
+		"src/resume.html",
+		"src/404.html",
+		"src/posts/**/*.html"
+	],
+	"insertBefore": "</body>",
+	"commentSyntax": "html",
+	"cspChecked": true
+}

@@ -201,7 +201,7 @@ function QuotesLibrary() {
 										The quote itself is required. Everything else is optional.
 									</Dialog.Description>
 								</div>
-								<Dialog.Close className="inline-flex min-h-10 items-center justify-center rounded-md bg-slate-100 px-3 text-sm font-medium text-slate-950 transition hover:bg-slate-200">
+								<Dialog.Close className="inline-flex min-h-9 items-center justify-center rounded-md bg-slate-100 px-3 text-sm font-normal text-slate-700 transition-colors hover:bg-slate-200 hover:text-slate-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-500">
 									Close
 								</Dialog.Close>
 							</div>

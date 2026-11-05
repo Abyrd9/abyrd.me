@@ -5,6 +5,8 @@ import {
 	redirect,
 	useRouter,
 } from "@tanstack/react-router";
+import { useRef } from "react";
+import { KindleDraftContext } from "#/components/KindleDraftContext";
 import { Button } from "#/components/primitives/button";
 import { ThemeToggle } from "#/components/theme-toggle";
 import { getSession, signOut } from "#/server/auth-functions";
@@ -25,72 +27,81 @@ export const Route = createFileRoute("/_authenticated")({
 
 function AuthenticatedLayout() {
 	const router = useRouter();
+	const dirtyNotes = useRef(new Set<string>());
 
 	async function handleSignOut() {
+		if (
+			dirtyNotes.current.size &&
+			!confirm("You have unsaved notes. Sign out without saving?")
+		)
+			return;
 		await signOut();
+		dirtyNotes.current.clear();
 		await router.navigate({ to: "/sign-in" });
 	}
 
 	return (
-		<main className="mx-auto flex min-h-dvh w-full min-w-0 max-w-5xl flex-col px-4 py-5 sm:px-10 sm:py-8">
-			<header className="flex flex-col gap-4 border-b border-slate-200 pb-5 sm:flex-row sm:items-center sm:justify-between">
-				<div className="flex flex-wrap items-center gap-x-4 gap-y-2 sm:gap-6">
-					<Link
-						className="shrink-0 font-semibold tracking-tight text-slate-950"
-						to="/"
-					>
-						Andrew Byrd
-					</Link>
-					<nav
-						aria-label="Private app"
-						className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm"
-					>
+		<KindleDraftContext.Provider value={dirtyNotes}>
+			<main className="mx-auto flex min-h-dvh w-full min-w-0 max-w-5xl flex-col px-4 py-5 sm:px-10 sm:py-8">
+				<header className="flex flex-col gap-4 border-b border-slate-200 pb-5 sm:flex-row sm:items-center sm:justify-between">
+					<div className="flex flex-wrap items-center gap-x-4 gap-y-2 sm:gap-6">
 						<Link
-							activeProps={{ className: "font-semibold text-slate-950" }}
-							className="text-slate-600 transition hover:text-slate-950"
+							className="shrink-0 font-semibold tracking-tight text-slate-950"
 							to="/"
 						>
-							Home
+							Andrew Byrd
 						</Link>
-						<Link
-							activeProps={{ className: "font-semibold text-slate-950" }}
-							className="text-slate-600 transition hover:text-slate-950"
-							to="/quiz"
+						<nav
+							aria-label="Private app"
+							className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm"
 						>
-							Study
-						</Link>
-						<Link
-							activeProps={{ className: "font-semibold text-slate-950" }}
-							className="text-slate-600 transition hover:text-slate-950"
-							to="/kindle"
-						>
-							Kindle
-						</Link>
-						<Link
-							activeProps={{ className: "font-semibold text-slate-950" }}
-							className="text-slate-600 transition hover:text-slate-950"
-							to="/quotes"
-						>
-							Quotes
-						</Link>
-						<Link
-							activeProps={{ className: "font-semibold text-slate-950" }}
-							className="text-slate-600 transition hover:text-slate-950"
-							to="/marketing"
-						>
-							Marketing
-						</Link>
-					</nav>
-				</div>
-				<div className="flex items-center justify-end gap-2">
-					<ThemeToggle />
-					<Button className="min-h-9 px-3" onClick={handleSignOut}>
-						Sign out
-					</Button>
-				</div>
-			</header>
+							<Link
+								activeProps={{ className: "font-semibold text-slate-950" }}
+								className="text-slate-600 transition hover:text-slate-950"
+								to="/"
+							>
+								Home
+							</Link>
+							<Link
+								activeProps={{ className: "font-semibold text-slate-950" }}
+								className="text-slate-600 transition hover:text-slate-950"
+								to="/kindle"
+							>
+								Kindle
+							</Link>
+							<Link
+								activeProps={{ className: "font-semibold text-slate-950" }}
+								className="text-slate-600 transition hover:text-slate-950"
+								to="/quotes"
+							>
+								Quotes
+							</Link>
+							<Link
+								activeProps={{ className: "font-semibold text-slate-950" }}
+								className="text-slate-600 transition hover:text-slate-950"
+								to="/marketing"
+							>
+								Marketing
+							</Link>
+							<Link
+								activeProps={{ className: "font-semibold text-slate-950" }}
+								className="text-slate-600 transition hover:text-slate-950"
+								to="/quiz"
+							>
+								Study
+							</Link>
+						</nav>
+					</div>
+					<div className="flex items-center justify-end gap-2">
+						<ThemeToggle />
+						<Button className="min-h-9 px-3" onClick={handleSignOut}>
+							Sign out
+						</Button>
+					</div>
+				</header>
 
-			<Outlet />
-		</main>
+				<Outlet />
+			</main>
+		</KindleDraftContext.Provider>
 	);
 }
