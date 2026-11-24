@@ -25,11 +25,6 @@ function Home() {
 					to="/quotes"
 				/>
 				<AppCard
-					description="A guide to sharing useful ideas, reaching people, and getting comfortable being seen."
-					label="Marketing"
-					to="/marketing"
-				/>
-				<AppCard
 					description="Review system-design terms, architecture patterns, and algorithm patterns."
 					label="Study"
 					to="/quiz"
@@ -46,7 +41,7 @@ function AppCard({
 }: {
 	readonly description: string;
 	readonly label: string;
-	readonly to: "/marketing" | "/kindle" | "/quiz" | "/quotes";
+	readonly to: "/kindle" | "/quiz" | "/quotes";
 }) {
 	return (
 		<Link

@@ -14,7 +14,6 @@ import { Route as HealthRouteImport } from './routes/health'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated.index'
 import { Route as AuthenticatedKindleRouteImport } from './routes/_authenticated.kindle'
-import { Route as AuthenticatedMarketingRouteImport } from './routes/_authenticated.marketing'
 import { Route as AuthenticatedQuizRouteImport } from './routes/_authenticated.quiz'
 import { Route as AuthenticatedQuotesRouteImport } from './routes/_authenticated.quotes'
 import { Route as ApiMcpRouteImport } from './routes/api.mcp'
@@ -45,11 +44,6 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
 const AuthenticatedKindleRoute = AuthenticatedKindleRouteImport.update({
   id: '/kindle',
   path: '/kindle',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
-const AuthenticatedMarketingRoute = AuthenticatedMarketingRouteImport.update({
-  id: '/marketing',
-  path: '/marketing',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedQuizRoute = AuthenticatedQuizRouteImport.update({
@@ -97,7 +91,6 @@ export interface FileRoutesByFullPath {
   '/health': typeof HealthRoute
   '/sign-in': typeof SignInRoute
   '/kindle': typeof AuthenticatedKindleRouteWithChildren
-  '/marketing': typeof AuthenticatedMarketingRoute
   '/quiz': typeof AuthenticatedQuizRoute
   '/quotes': typeof AuthenticatedQuotesRoute
   '/api/mcp': typeof ApiMcpRoute
@@ -109,7 +102,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/health': typeof HealthRoute
   '/sign-in': typeof SignInRoute
-  '/marketing': typeof AuthenticatedMarketingRoute
   '/quiz': typeof AuthenticatedQuizRoute
   '/quotes': typeof AuthenticatedQuotesRoute
   '/api/mcp': typeof ApiMcpRoute
@@ -125,7 +117,6 @@ export interface FileRoutesById {
   '/health': typeof HealthRoute
   '/sign-in': typeof SignInRoute
   '/_authenticated/kindle': typeof AuthenticatedKindleRouteWithChildren
-  '/_authenticated/marketing': typeof AuthenticatedMarketingRoute
   '/_authenticated/quiz': typeof AuthenticatedQuizRoute
   '/_authenticated/quotes': typeof AuthenticatedQuotesRoute
   '/api/mcp': typeof ApiMcpRoute
@@ -142,7 +133,6 @@ export interface FileRouteTypes {
     | '/health'
     | '/sign-in'
     | '/kindle'
-    | '/marketing'
     | '/quiz'
     | '/quotes'
     | '/api/mcp'
@@ -154,7 +144,6 @@ export interface FileRouteTypes {
   to:
     | '/health'
     | '/sign-in'
-    | '/marketing'
     | '/quiz'
     | '/quotes'
     | '/api/mcp'
@@ -169,7 +158,6 @@ export interface FileRouteTypes {
     | '/health'
     | '/sign-in'
     | '/_authenticated/kindle'
-    | '/_authenticated/marketing'
     | '/_authenticated/quiz'
     | '/_authenticated/quotes'
     | '/api/mcp'
@@ -222,13 +210,6 @@ declare module '@tanstack/react-router' {
       path: '/kindle'
       fullPath: '/kindle'
       preLoaderRoute: typeof AuthenticatedKindleRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/marketing': {
-      id: '/_authenticated/marketing'
-      path: '/marketing'
-      fullPath: '/marketing'
-      preLoaderRoute: typeof AuthenticatedMarketingRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/quiz': {
@@ -303,7 +284,6 @@ const AuthenticatedKindleRouteWithChildren =
 
 interface AuthenticatedRouteChildren {
   AuthenticatedKindleRoute: typeof AuthenticatedKindleRouteWithChildren
-  AuthenticatedMarketingRoute: typeof AuthenticatedMarketingRoute
   AuthenticatedQuizRoute: typeof AuthenticatedQuizRoute
   AuthenticatedQuotesRoute: typeof AuthenticatedQuotesRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
@@ -311,7 +291,6 @@ interface AuthenticatedRouteChildren {
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedKindleRoute: AuthenticatedKindleRouteWithChildren,
-  AuthenticatedMarketingRoute: AuthenticatedMarketingRoute,
   AuthenticatedQuizRoute: AuthenticatedQuizRoute,
   AuthenticatedQuotesRoute: AuthenticatedQuotesRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
