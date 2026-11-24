@@ -253,11 +253,15 @@ html.dark .study-visual-dot[aria-pressed="true"] {
 
 /* Writing: book-like type on the paged editor. Sizes are in em so they follow
  * the page size's type size. */
+.font-book,
 .writing-paper {
-	color: #1c1917;
 	font-family:
 		"Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia,
 		serif;
+}
+
+.writing-paper {
+	color: #1c1917;
 	line-height: 1.55;
 }
 

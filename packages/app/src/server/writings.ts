@@ -3,7 +3,66 @@ import type { PageSizeId } from "#/writing-page-sizes";
 import { writingChapters, writings } from "./database/schema";
 import type { AppDatabaseClient } from "./database/service";
 
+const PREVIEW_CHARACTERS = 600;
+
+export type PreviewBlock = { kind: "heading" | "paragraph"; text: string };
+
+/** The opening blocks of a saved chapter, as plain text for the library thumbnail. */
+export function previewBlocks(content: string | null) {
+	if (!content) return [];
+	let state: unknown;
+	try {
+		state = JSON.parse(content);
+	} catch {
+		return [];
+	}
+
+	const blocks: PreviewBlock[] = [];
+	let remaining = PREVIEW_CHARACTERS;
+	for (const node of childrenOf(childOf(state, "root"))) {
+		if (remaining <= 0) break;
+		const text = textOf(node).trim();
+		if (!text) continue;
+		blocks.push({
+			kind: typeOf(node) === "heading" ? "heading" : "paragraph",
+			text: text.slice(0, remaining),
+		});
+		remaining -= text.length;
+	}
+	return blocks;
+}
+
+const childOf = (value: unknown, key: string) =>
+	value && typeof value === "object" && key in value
+		? (value as Record<string, unknown>)[key]
+		: undefined;
+
+const childrenOf = (value: unknown) => {
+	const children = childOf(value, "children");
+	return Array.isArray(children) ? children : [];
+};
+
+const typeOf = (value: unknown) => childOf(value, "type");
+
+const textOf = (value: unknown): string => {
+	const text = childOf(value, "text");
+	if (typeof text === "string") return text;
+	return childrenOf(value).map(textOf).join("");
+};
+
 export function listWritings(db: AppDatabaseClient) {
+	const openings = new Map(
+		db
+			.select({
+				writingId: writingChapters.writingId,
+				content: writingChapters.content,
+			})
+			.from(writingChapters)
+			.where(eq(writingChapters.position, 0))
+			.all()
+			.map((chapter) => [chapter.writingId, chapter.content]),
+	);
+
 	return db
 		.select({
 			id: writings.id,
@@ -21,7 +80,11 @@ export function listWritings(db: AppDatabaseClient) {
 		.leftJoin(writingChapters, eq(writingChapters.writingId, writings.id))
 		.groupBy(writings.id)
 		.orderBy(desc(writings.updatedAt), desc(writings.id))
-		.all();
+		.all()
+		.map((writing) => ({
+			...writing,
+			preview: previewBlocks(openings.get(writing.id) ?? null),
+		}));
 }
 
 /** Every writing starts with one chapter so the editor always has a page to show. */

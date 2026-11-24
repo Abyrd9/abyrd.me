@@ -12,6 +12,7 @@ import {
 	listWritings,
 	loadWriting,
 	moveChapter,
+	previewBlocks,
 	updateChapter,
 	updateWriting,
 } from "./writings";
@@ -85,3 +86,34 @@ test("adds, reorders, and deletes chapters but keeps the last one", () =>
 		expect(deleteChapter(db, firstChapterId)).toBe(false);
 		expect(order()).toEqual([firstChapterId]);
 	}));
+
+test("previews the opening blocks of a saved chapter", () => {
+	const block = (type: string, text: string) => ({
+		type,
+		children: [{ type: "text", text }],
+	});
+	const content = JSON.stringify({
+		root: {
+			children: [
+				block("heading", "One"),
+				block("paragraph", "  "),
+				{
+					type: "paragraph",
+					children: [{ text: "It was " }, { text: "late." }],
+				},
+				block("quote", "x".repeat(700)),
+			],
+		},
+	});
+
+	const preview = previewBlocks(content);
+	expect(preview.slice(0, 2)).toEqual([
+		{ kind: "heading", text: "One" },
+		{ kind: "paragraph", text: "It was late." },
+	]);
+	expect(preview[2].text.length).toBe(
+		600 - "One".length - "It was late.".length,
+	);
+	expect(previewBlocks(null)).toEqual([]);
+	expect(previewBlocks("not json")).toEqual([]);
+});
