@@ -1,29 +1,20 @@
+import { CodeHighlightNode, CodeNode } from "@lexical/code-core";
 import { defineExtension } from "@lexical/extension";
+import { LinkNode } from "@lexical/link";
+import { ListItemNode, ListNode } from "@lexical/list";
 import { AutoFocusPlugin } from "@lexical/react/LexicalAutoFocusPlugin";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { ContentEditable } from "@lexical/react/LexicalContentEditable";
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
 import { LexicalExtensionComposer } from "@lexical/react/LexicalExtensionComposer";
 import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
+import { LinkPlugin } from "@lexical/react/LexicalLinkPlugin";
+import { ListPlugin } from "@lexical/react/LexicalListPlugin";
+import { MarkdownShortcutPlugin } from "@lexical/react/LexicalMarkdownShortcutPlugin";
 import { OnChangePlugin } from "@lexical/react/LexicalOnChangePlugin";
 import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
-import {
-	$createHeadingNode,
-	$createQuoteNode,
-	$isHeadingNode,
-	$isQuoteNode,
-	HeadingNode,
-	QuoteNode,
-} from "@lexical/rich-text";
-import { $setBlocksType } from "@lexical/selection";
-import {
-	$createParagraphNode,
-	$getRoot,
-	$getSelection,
-	$isRangeSelection,
-	FORMAT_TEXT_COMMAND,
-	type LexicalEditor,
-} from "lexical";
+import { HeadingNode, QuoteNode } from "@lexical/rich-text";
+import { $getRoot } from "lexical";
 import {
 	type CSSProperties,
 	Fragment,
@@ -33,7 +24,17 @@ import {
 	useRef,
 	useState,
 } from "react";
-import { createPortal } from "react-dom";
+import { WritingSlashMenu } from "#/components/WritingSlashMenu";
+import { WritingToolbar } from "#/components/WritingToolbar";
+import {
+	CalloutNode,
+	EpigraphNode,
+	markdownShortcuts,
+	PageBreakNode,
+	registerVerseLines,
+	SceneBreakNode,
+	VerseNode,
+} from "#/components/writing-nodes";
 import { type PageSizeId, pageSizes } from "#/writing-page-sizes";
 
 const PX_PER_INCH = 96;
@@ -62,13 +63,52 @@ export const PagedEditor = ({
 		defineExtension({
 			name: "PagedWriting",
 			namespace: "PagedWriting",
-			nodes: () => [HeadingNode, QuoteNode],
+			nodes: () => [
+				HeadingNode,
+				QuoteNode,
+				ListNode,
+				ListItemNode,
+				LinkNode,
+				CodeNode,
+				CodeHighlightNode,
+				EpigraphNode,
+				VerseNode,
+				CalloutNode,
+				SceneBreakNode,
+				PageBreakNode,
+			],
 			theme: {
 				paragraph: "writing-paragraph",
-				heading: { h2: "writing-heading" },
+				heading: {
+					h1: "writing-heading",
+					h2: "writing-heading",
+					h3: "writing-subheading",
+				},
 				quote: "writing-quote",
-				text: { bold: "font-bold", italic: "italic" },
+				epigraph: "writing-epigraph",
+				verse: "writing-verse",
+				callout: "writing-callout",
+				sceneBreak: "writing-scene-break",
+				pageBreak: "writing-page-break",
+				code: "writing-code",
+				link: "writing-link",
+				list: {
+					ul: "writing-list list-disc",
+					ol: "writing-list list-decimal",
+					nested: { listitem: "list-none" },
+				},
+				text: {
+					bold: "font-bold",
+					italic: "italic",
+					underline: "underline underline-offset-[0.15em]",
+					strikethrough: "line-through",
+					underlineStrikethrough: "underline line-through",
+					highlight: "writing-highlight",
+					code: "writing-inline-code",
+					superscript: "writing-superscript",
+				},
 			},
+			register: registerVerseLines,
 			$initialEditorState: initialContent,
 		}),
 	);
@@ -88,12 +128,13 @@ export const PagedEditor = ({
 		const text = textRef.current;
 		if (!text) return;
 		const observer = new ResizeObserver(() => {
+			sizePageBreaks(text, stride, textHeight);
 			const used = Math.max(text.offsetHeight - 1, 0);
 			setPageCount(Math.floor(used / stride) + 1);
 		});
 		observer.observe(text);
 		return () => observer.disconnect();
-	}, [stride]);
+	}, [stride, textHeight]);
 
 	useEffect(() => {
 		const fit = () => setScale(Math.min(1, (window.innerWidth - 24) / width));
@@ -133,7 +174,14 @@ export const PagedEditor = ({
 				    page-gap floats need to push lines inside the editor. */}
 				<div
 					className="absolute"
-					style={{ top: margin, left: margin, width: width - 2 * margin }}
+					style={{
+						top: margin,
+						left: margin,
+						width: width - 2 * margin,
+						// Shows only each page's text area, so backgrounds and borders of
+						// blocks that cross a page edge don't paint over the gap.
+						maskImage: `repeating-linear-gradient(to bottom, #000 0 ${textHeight}px, transparent ${textHeight}px ${stride}px)`,
+					}}
 				>
 					{Array.from({ length: pageCount + 1 }, (_, page) => (
 						// biome-ignore lint/suspicious/noArrayIndexKey: spacers are positional.
@@ -173,6 +221,10 @@ export const PagedEditor = ({
 			{/* A new writing or chapter opens ready to type. */}
 			{initialContent ? null : <AutoFocusPlugin />}
 			<HistoryPlugin />
+			<ListPlugin />
+			<LinkPlugin />
+			<MarkdownShortcutPlugin transformers={markdownShortcuts} />
+			<WritingSlashMenu />
 			<OnChangePlugin
 				ignoreSelectionChange
 				onChange={(state) => {
@@ -182,7 +234,7 @@ export const PagedEditor = ({
 					onChange(JSON.stringify(state.toJSON()), words);
 				}}
 			/>
-			<SelectionToolbar />
+			<WritingToolbar />
 		</LexicalExtensionComposer>
 	);
 };
@@ -201,8 +253,8 @@ const PaperSurface = ({
 	return (
 		// biome-ignore lint/a11y/noStaticElementInteractions: a mouse convenience; keyboard users are already in the editor.
 		<div
-			// Clips the spare page-gap floats so they don't extend the scroll area.
-			className="writing-paper relative mx-auto overflow-hidden"
+			// Clips the spare page-gap floats. "clip", unlike "hidden", also stops the browser scrolling this box to follow the cursor.
+			className="writing-paper relative mx-auto overflow-clip"
 			onMouseDown={(event) => {
 				const text = textRef.current?.getBoundingClientRect();
 				if (!text || event.clientY < text.bottom) return;
@@ -217,133 +269,21 @@ const PaperSurface = ({
 	);
 };
 
-type BlockType = "paragraph" | "heading" | "quote";
-
-const SelectionToolbar = () => {
-	const [editor] = useLexicalComposerContext();
-	const [state, setState] = useState<{
-		top: number;
-		left: number;
-		block: BlockType;
-		bold: boolean;
-		italic: boolean;
-	} | null>(null);
-
-	useEffect(
-		() =>
-			editor.registerUpdateListener(({ editorState }) => {
-				editorState.read(() => {
-					const selection = $getSelection();
-					const native = window.getSelection();
-					const root = editor.getRootElement();
-					if (
-						!$isRangeSelection(selection) ||
-						selection.isCollapsed() ||
-						!native?.rangeCount ||
-						!root?.contains(native.anchorNode)
-					)
-						return setState(null);
-
-					const rect = native.getRangeAt(0).getBoundingClientRect();
-					const block = selection.anchor.getNode().getTopLevelElement();
-					setState({
-						top: rect.top + window.scrollY,
-						left: rect.left + rect.width / 2 + window.scrollX,
-						block: $isHeadingNode(block)
-							? "heading"
-							: $isQuoteNode(block)
-								? "quote"
-								: "paragraph",
-						bold: selection.hasFormat("bold"),
-						italic: selection.hasFormat("italic"),
-					});
-				});
-			}),
-		[editor],
-	);
-
-	if (!state) return null;
-
-	return createPortal(
-		<div
-			className="absolute z-50 flex -translate-x-1/2 -translate-y-full items-center gap-0.5 rounded-lg border border-stone-200 bg-white p-1 text-stone-700 shadow-lg dark:border-stone-700 dark:text-stone-200"
-			role="toolbar"
-			aria-label="Format selection"
-			style={{ top: state.top - 8, left: state.left }}
-		>
-			<ToolbarButton
-				active={state.bold}
-				label="Bold"
-				onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, "bold")}
-			>
-				<span className="font-bold">B</span>
-			</ToolbarButton>
-			<ToolbarButton
-				active={state.italic}
-				label="Italic"
-				onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, "italic")}
-			>
-				<span className="font-serif italic">I</span>
-			</ToolbarButton>
-			<span
-				aria-hidden="true"
-				className="mx-0.5 h-4 w-px bg-stone-200 dark:bg-stone-700"
-			/>
-			<ToolbarButton
-				active={state.block === "heading"}
-				label="Heading"
-				onClick={() => toggleBlock(editor, state.block, "heading")}
-			>
-				<span className="font-semibold">H</span>
-			</ToolbarButton>
-			<ToolbarButton
-				active={state.block === "quote"}
-				label="Quote"
-				onClick={() => toggleBlock(editor, state.block, "quote")}
-			>
-				<span className="font-serif text-lg leading-none">“</span>
-			</ToolbarButton>
-		</div>,
-		document.body,
-	);
+/**
+ * Stretches each page break to the bottom of its page so what follows starts
+ * on the next one. Breaks are sized in order because each one moves the rest.
+ */
+const sizePageBreaks = (
+	text: HTMLElement,
+	stride: number,
+	textHeight: number,
+) => {
+	for (const pageBreak of text.querySelectorAll<HTMLElement>(
+		"[data-page-break]",
+	)) {
+		pageBreak.style.height = "0px";
+		const top = pageBreak.offsetTop;
+		const pageEnd = Math.floor(top / stride) * stride + textHeight;
+		pageBreak.style.height = `${Math.max(0, pageEnd - top)}px`;
+	}
 };
-
-const ToolbarButton = ({
-	active,
-	label,
-	onClick,
-	children,
-}: {
-	active: boolean;
-	label: string;
-	onClick: () => void;
-	children: ReactNode;
-}) => (
-	<button
-		aria-label={label}
-		aria-pressed={active}
-		className={`inline-flex size-8 items-center justify-center rounded-md text-sm transition-colors hover:bg-stone-100 hover:text-stone-950 focus-visible:outline-2 focus-visible:outline-stone-400 dark:hover:bg-stone-800 dark:hover:text-white ${active ? "bg-stone-100 text-stone-950 dark:bg-stone-800 dark:text-white" : ""}`}
-		// Keeps the text selected while the button is pressed.
-		onMouseDown={(event) => event.preventDefault()}
-		onClick={onClick}
-		title={label}
-		type="button"
-	>
-		{children}
-	</button>
-);
-
-const toggleBlock = (
-	editor: LexicalEditor,
-	current: BlockType,
-	target: Exclude<BlockType, "paragraph">,
-) =>
-	editor.update(() =>
-		$setBlocksType($getSelection(), () =>
-			current === target
-				? $createParagraphNode()
-				: target === "heading"
-					? $createHeadingNode("h2")
-					: $createQuoteNode(),
-		),
-	);

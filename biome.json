@@ -6,7 +6,8 @@
 			"!**/dist",
 			"!**/.output",
 			"!**/routeTree.gen.ts",
-			"!.harbor"
+			"!.harbor",
+			"!packages/app/public/highlight-brush-*.svg"
 		]
 	},
 	"css": {
