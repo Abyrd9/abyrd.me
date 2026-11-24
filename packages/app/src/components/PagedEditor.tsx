@@ -24,6 +24,8 @@ import {
 	useRef,
 	useState,
 } from "react";
+import { FootnoteNode, FootnotesList } from "#/components/WritingFootnotes";
+import { ImageNode, WritingImagePlugin } from "#/components/WritingImage";
 import { WritingSlashMenu } from "#/components/WritingSlashMenu";
 import { WritingToolbar } from "#/components/WritingToolbar";
 import {
@@ -76,6 +78,8 @@ export const PagedEditor = ({
 				CalloutNode,
 				SceneBreakNode,
 				PageBreakNode,
+				ImageNode,
+				FootnoteNode,
 			],
 			theme: {
 				paragraph: "writing-paragraph",
@@ -178,6 +182,8 @@ export const PagedEditor = ({
 						top: margin,
 						left: margin,
 						width: width - 2 * margin,
+						// Images never grow taller than one page of text.
+						["--page-text-height" as string]: `${textHeight}px`,
 						// Shows only each page's text area, so backgrounds and borders of
 						// blocks that cross a page edge don't paint over the gap.
 						maskImage: `repeating-linear-gradient(to bottom, #000 0 ${textHeight}px, transparent ${textHeight}px ${stride}px)`,
@@ -215,6 +221,7 @@ export const PagedEditor = ({
 							}
 							ErrorBoundary={LexicalErrorBoundary}
 						/>
+						<FootnotesList />
 					</div>
 				</div>
 			</PaperSurface>
@@ -225,6 +232,7 @@ export const PagedEditor = ({
 			<LinkPlugin />
 			<MarkdownShortcutPlugin transformers={markdownShortcuts} />
 			<WritingSlashMenu />
+			<WritingImagePlugin />
 			<OnChangePlugin
 				ignoreSelectionChange
 				onChange={(state) => {

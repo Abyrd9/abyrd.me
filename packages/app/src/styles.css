@@ -409,3 +409,67 @@ html.dark .writing-page-break {
 	top: 0.4em;
 	transform: translateX(-50%);
 }
+
+.writing-image {
+	display: inline-block;
+	text-align: center;
+	width: 100%;
+}
+
+.writing-image img {
+	display: inline-block;
+	height: auto;
+	max-height: var(--page-text-height);
+	max-width: 100%;
+	vertical-align: bottom;
+}
+
+[data-lexical-editor] {
+	counter-reset: footnote;
+}
+
+.writing-footnote-ref {
+	font-size: 0.68em;
+	line-height: 0;
+	position: relative;
+	vertical-align: super;
+}
+
+.writing-footnote-ref::before {
+	color: #57534e;
+	content: counter(footnote);
+	counter-increment: footnote;
+	font-weight: 600;
+	padding-left: 0.05em;
+}
+
+html.dark .writing-footnote-ref::before {
+	color: #d6d3d1;
+}
+
+.writing-footnote-button {
+	cursor: pointer;
+	inset: -0.4em -0.2em;
+	position: absolute;
+}
+
+.writing-footnotes {
+	font-size: 0.82em;
+	list-style: decimal;
+	margin: 1.5em 0 0;
+	padding: 0.75em 0 0 1.4em;
+	position: relative;
+}
+
+.writing-footnotes::before {
+	border-top: 1px solid #d6d3d1;
+	content: "";
+	left: 0;
+	position: absolute;
+	top: 0;
+	width: 30%;
+}
+
+.writing-footnotes li {
+	margin-bottom: 0.4em;
+}

@@ -19,10 +19,12 @@ import { Route as AuthenticatedQuizRouteImport } from './routes/_authenticated.q
 import { Route as AuthenticatedQuotesRouteImport } from './routes/_authenticated.quotes'
 import { Route as AuthenticatedWritingRouteImport } from './routes/_authenticated.writing'
 import { Route as ApiMcpRouteImport } from './routes/api.mcp'
+import { Route as ApiWritingImagesRouteImport } from './routes/api.writing-images'
 import { Route as AuthenticatedKindleIndexRouteImport } from './routes/_authenticated.kindle.index'
 import { Route as AuthenticatedKindleArchivedRouteImport } from './routes/_authenticated.kindle.archived'
 import { Route as AuthenticatedKindleSetupRouteImport } from './routes/_authenticated.kindle.setup'
 import { Route as FocusWritingWritingIdRouteImport } from './routes/_focus.writing.$writingId'
+import { Route as ApiWritingImagesNameRouteImport } from './routes/api.writing-images.$name'
 import { Route as AuthenticatedKindleSynopsisAsinTargetRouteImport } from './routes/_authenticated.kindle.synopsis.$asin.$target'
 
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
@@ -73,6 +75,11 @@ const ApiMcpRoute = ApiMcpRouteImport.update({
   path: '/api/mcp',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiWritingImagesRoute = ApiWritingImagesRouteImport.update({
+  id: '/api/writing-images',
+  path: '/api/writing-images',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedKindleIndexRoute =
   AuthenticatedKindleIndexRouteImport.update({
     id: '/',
@@ -96,6 +103,11 @@ const FocusWritingWritingIdRoute = FocusWritingWritingIdRouteImport.update({
   path: '/writing/$writingId',
   getParentRoute: () => FocusRoute,
 } as any)
+const ApiWritingImagesNameRoute = ApiWritingImagesNameRouteImport.update({
+  id: '/$name',
+  path: '/$name',
+  getParentRoute: () => ApiWritingImagesRoute,
+} as any)
 const AuthenticatedKindleSynopsisAsinTargetRoute =
   AuthenticatedKindleSynopsisAsinTargetRouteImport.update({
     id: '/synopsis/$asin/$target',
@@ -112,9 +124,11 @@ export interface FileRoutesByFullPath {
   '/quotes': typeof AuthenticatedQuotesRoute
   '/writing': typeof AuthenticatedWritingRoute
   '/api/mcp': typeof ApiMcpRoute
+  '/api/writing-images': typeof ApiWritingImagesRouteWithChildren
   '/kindle/archived': typeof AuthenticatedKindleArchivedRoute
   '/kindle/setup': typeof AuthenticatedKindleSetupRoute
   '/writing/$writingId': typeof FocusWritingWritingIdRoute
+  '/api/writing-images/$name': typeof ApiWritingImagesNameRoute
   '/kindle/': typeof AuthenticatedKindleIndexRoute
   '/kindle/synopsis/$asin/$target': typeof AuthenticatedKindleSynopsisAsinTargetRoute
 }
@@ -126,9 +140,11 @@ export interface FileRoutesByTo {
   '/quotes': typeof AuthenticatedQuotesRoute
   '/writing': typeof AuthenticatedWritingRoute
   '/api/mcp': typeof ApiMcpRoute
+  '/api/writing-images': typeof ApiWritingImagesRouteWithChildren
   '/kindle/archived': typeof AuthenticatedKindleArchivedRoute
   '/kindle/setup': typeof AuthenticatedKindleSetupRoute
   '/writing/$writingId': typeof FocusWritingWritingIdRoute
+  '/api/writing-images/$name': typeof ApiWritingImagesNameRoute
   '/kindle': typeof AuthenticatedKindleIndexRoute
   '/kindle/synopsis/$asin/$target': typeof AuthenticatedKindleSynopsisAsinTargetRoute
 }
@@ -143,10 +159,12 @@ export interface FileRoutesById {
   '/_authenticated/quotes': typeof AuthenticatedQuotesRoute
   '/_authenticated/writing': typeof AuthenticatedWritingRoute
   '/api/mcp': typeof ApiMcpRoute
+  '/api/writing-images': typeof ApiWritingImagesRouteWithChildren
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/kindle/archived': typeof AuthenticatedKindleArchivedRoute
   '/_authenticated/kindle/setup': typeof AuthenticatedKindleSetupRoute
   '/_focus/writing/$writingId': typeof FocusWritingWritingIdRoute
+  '/api/writing-images/$name': typeof ApiWritingImagesNameRoute
   '/_authenticated/kindle/': typeof AuthenticatedKindleIndexRoute
   '/_authenticated/kindle/synopsis/$asin/$target': typeof AuthenticatedKindleSynopsisAsinTargetRoute
 }
@@ -161,9 +179,11 @@ export interface FileRouteTypes {
     | '/quotes'
     | '/writing'
     | '/api/mcp'
+    | '/api/writing-images'
     | '/kindle/archived'
     | '/kindle/setup'
     | '/writing/$writingId'
+    | '/api/writing-images/$name'
     | '/kindle/'
     | '/kindle/synopsis/$asin/$target'
   fileRoutesByTo: FileRoutesByTo
@@ -175,9 +195,11 @@ export interface FileRouteTypes {
     | '/quotes'
     | '/writing'
     | '/api/mcp'
+    | '/api/writing-images'
     | '/kindle/archived'
     | '/kindle/setup'
     | '/writing/$writingId'
+    | '/api/writing-images/$name'
     | '/kindle'
     | '/kindle/synopsis/$asin/$target'
   id:
@@ -191,10 +213,12 @@ export interface FileRouteTypes {
     | '/_authenticated/quotes'
     | '/_authenticated/writing'
     | '/api/mcp'
+    | '/api/writing-images'
     | '/_authenticated/'
     | '/_authenticated/kindle/archived'
     | '/_authenticated/kindle/setup'
     | '/_focus/writing/$writingId'
+    | '/api/writing-images/$name'
     | '/_authenticated/kindle/'
     | '/_authenticated/kindle/synopsis/$asin/$target'
   fileRoutesById: FileRoutesById
@@ -205,6 +229,7 @@ export interface RootRouteChildren {
   HealthRoute: typeof HealthRoute
   SignInRoute: typeof SignInRoute
   ApiMcpRoute: typeof ApiMcpRoute
+  ApiWritingImagesRoute: typeof ApiWritingImagesRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -279,6 +304,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiMcpRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/writing-images': {
+      id: '/api/writing-images'
+      path: '/api/writing-images'
+      fullPath: '/api/writing-images'
+      preLoaderRoute: typeof ApiWritingImagesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/kindle/': {
       id: '/_authenticated/kindle/'
       path: '/'
@@ -306,6 +338,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/writing/$writingId'
       preLoaderRoute: typeof FocusWritingWritingIdRouteImport
       parentRoute: typeof FocusRoute
+    }
+    '/api/writing-images/$name': {
+      id: '/api/writing-images/$name'
+      path: '/$name'
+      fullPath: '/api/writing-images/$name'
+      preLoaderRoute: typeof ApiWritingImagesNameRouteImport
+      parentRoute: typeof ApiWritingImagesRoute
     }
     '/_authenticated/kindle/synopsis/$asin/$target': {
       id: '/_authenticated/kindle/synopsis/$asin/$target'
@@ -365,12 +404,24 @@ const FocusRouteChildren: FocusRouteChildren = {
 
 const FocusRouteWithChildren = FocusRoute._addFileChildren(FocusRouteChildren)
 
+interface ApiWritingImagesRouteChildren {
+  ApiWritingImagesNameRoute: typeof ApiWritingImagesNameRoute
+}
+
+const ApiWritingImagesRouteChildren: ApiWritingImagesRouteChildren = {
+  ApiWritingImagesNameRoute: ApiWritingImagesNameRoute,
+}
+
+const ApiWritingImagesRouteWithChildren =
+  ApiWritingImagesRoute._addFileChildren(ApiWritingImagesRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   FocusRoute: FocusRouteWithChildren,
   HealthRoute: HealthRoute,
   SignInRoute: SignInRoute,
   ApiMcpRoute: ApiMcpRoute,
+  ApiWritingImagesRoute: ApiWritingImagesRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

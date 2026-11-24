@@ -14,13 +14,17 @@ import { $setBlocksType } from "@lexical/selection";
 import { $insertNodeToNearestRoot } from "@lexical/utils";
 import {
 	$getSelection,
+	$insertNodes,
 	$isRangeSelection,
+	$isTextNode,
 	type ElementNode,
 	type LexicalEditor,
 	type LexicalNode,
 } from "lexical";
 import { useState } from "react";
 import { createPortal } from "react-dom";
+import { $createFootnoteNode } from "#/components/WritingFootnotes";
+import { OPEN_IMAGE_PICKER_COMMAND } from "#/components/WritingImage";
 import {
 	$createCalloutNode,
 	$createEpigraphNode,
@@ -123,6 +127,33 @@ const options = [
 		"▢",
 		["aside", "note", "box", "tip"],
 		turnInto($createCalloutNode),
+	),
+	new BlockOption(
+		"Image",
+		"Upload a picture",
+		"▣",
+		["picture", "photo", "img", "upload"],
+		(editor) => editor.dispatchCommand(OPEN_IMAGE_PICKER_COMMAND, undefined),
+	),
+	new BlockOption(
+		"Footnote",
+		"A numbered note at the chapter's end",
+		"¹",
+		["note", "citation", "reference", "endnote"],
+		(editor) =>
+			editor.update(() => {
+				// The menu needs a space before "/", but the marker belongs
+				// against the word it annotates.
+				const selection = $getSelection();
+				const anchor = $isRangeSelection(selection) ? selection.anchor : null;
+				const text = anchor?.getNode();
+				if (anchor && $isTextNode(text)) {
+					const before = text.getTextContent().slice(0, anchor.offset);
+					if (before.endsWith(" "))
+						text.spliceText(anchor.offset - 1, 1, "", true);
+				}
+				$insertNodes([$createFootnoteNode()]);
+			}),
 	),
 	new BlockOption(
 		"Code block",
