@@ -24,6 +24,7 @@ export const CopyButton = ({
 			onClick={() =>
 				void navigator.clipboard
 					.writeText(text)
+					.catch(() => copyWithSelection(text))
 					.then(() => setStatus("copied"))
 					.catch(() => setStatus("failed"))
 			}
@@ -36,4 +37,19 @@ export const CopyButton = ({
 					: label}
 		</Button>
 	);
+};
+
+// Some embedded browsers, including the OpenCode desktop app, deny the
+// Clipboard API. Copying a selected textarea still works there.
+const copyWithSelection = (text: string) => {
+	const field = document.createElement("textarea");
+	field.value = text;
+	field.setAttribute("readonly", "");
+	field.style.position = "fixed";
+	field.style.opacity = "0";
+	document.body.append(field);
+	field.select();
+	const copied = document.execCommand("copy");
+	field.remove();
+	if (!copied) throw new Error("Copy failed");
 };
