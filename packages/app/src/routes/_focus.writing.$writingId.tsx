@@ -150,23 +150,17 @@ function WritingEditor() {
 		if (reloaded) setWriting(reloaded);
 	}
 
-	async function rename(value: string) {
+	async function renameChapter(value: string) {
 		if (!writing) return;
 		const title = value.trim();
-		if (isSingle) {
-			if (!title || title === writing.title) return;
-			setWriting({ ...writing, title });
-			await updateWriting({ data: { id: writing.id, title } });
-		} else {
-			if (title === chapter.title) return;
-			setWriting({
-				...writing,
-				chapters: writing.chapters.map((item) =>
-					item.id === chapter.id ? { ...item, title } : item,
-				),
-			});
-			await updateChapter({ data: { id: chapter.id, title } });
-		}
+		if (title === chapter.title) return;
+		setWriting({
+			...writing,
+			chapters: writing.chapters.map((item) =>
+				item.id === chapter.id ? { ...item, title } : item,
+			),
+		});
+		await updateChapter({ data: { id: chapter.id, title } });
 	}
 
 	const arrow =
@@ -179,9 +173,13 @@ function WritingEditor() {
 			<header
 				className={`fixed inset-x-0 top-0 z-40 grid grid-cols-[1fr_auto_1fr] items-center gap-2 bg-stone-100/90 px-3 py-2 text-sm backdrop-blur transition-opacity duration-500 focus-within:opacity-100 dark:bg-[#0a0a0a]/90 motion-reduce:transition-none ${chromeVisible ? "opacity-100" : "pointer-events-none opacity-0"}`}
 			>
-				<div className="flex items-center gap-1">
-					<Link className={quiet} to="/writing">
-						← Writings
+				<div className="flex min-w-0 items-center gap-1">
+					<Link
+						aria-label={`Back to writings from ${writing.title}`}
+						className={`${quiet} min-w-0 truncate`}
+						to="/writing"
+					>
+						← {writing.title}
 					</Link>
 				</div>
 
@@ -208,15 +206,11 @@ function WritingEditor() {
 						</svg>
 					</button>
 					<input
-						aria-label={isSingle ? "Title" : "Chapter title"}
+						aria-label="Chapter title"
 						className="w-[min(50vw,28rem)] truncate rounded-md bg-transparent px-2 py-1 text-center font-serif text-base text-stone-800 outline-none placeholder:text-stone-400 focus:bg-white dark:text-stone-100 dark:focus:bg-stone-900"
-						defaultValue={isSingle ? writing.title : chapter.title}
-						key={`${chapter.id}:${isSingle}`}
-						onBlur={(event) => {
-							if (isSingle && !event.target.value.trim())
-								event.target.value = writing.title;
-							void rename(event.target.value);
-						}}
+						defaultValue={chapter.title}
+						key={chapter.id}
+						onBlur={(event) => void renameChapter(event.target.value)}
 						onKeyDown={(event) => {
 							if (event.key === "Enter") event.currentTarget.blur();
 						}}

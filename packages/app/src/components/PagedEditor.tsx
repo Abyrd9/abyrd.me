@@ -1,4 +1,5 @@
 import { defineExtension } from "@lexical/extension";
+import { AutoFocusPlugin } from "@lexical/react/LexicalAutoFocusPlugin";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { ContentEditable } from "@lexical/react/LexicalContentEditable";
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
@@ -169,6 +170,8 @@ export const PagedEditor = ({
 					</div>
 				</div>
 			</PaperSurface>
+			{/* A new writing or chapter opens ready to type. */}
+			{initialContent ? null : <AutoFocusPlugin />}
 			<HistoryPlugin />
 			<OnChangePlugin
 				ignoreSelectionChange
@@ -263,7 +266,7 @@ const SelectionToolbar = () => {
 
 	return createPortal(
 		<div
-			className="absolute z-50 flex -translate-x-1/2 -translate-y-full items-center gap-0.5 rounded-lg bg-stone-900 p-1 text-stone-100 shadow-lg"
+			className="absolute z-50 flex -translate-x-1/2 -translate-y-full items-center gap-0.5 rounded-lg border border-stone-200 bg-white p-1 text-stone-700 shadow-lg dark:border-stone-700 dark:text-stone-200"
 			role="toolbar"
 			aria-label="Format selection"
 			style={{ top: state.top - 8, left: state.left }}
@@ -282,7 +285,10 @@ const SelectionToolbar = () => {
 			>
 				<span className="font-serif italic">I</span>
 			</ToolbarButton>
-			<span aria-hidden="true" className="mx-0.5 h-4 w-px bg-stone-700" />
+			<span
+				aria-hidden="true"
+				className="mx-0.5 h-4 w-px bg-stone-200 dark:bg-stone-700"
+			/>
 			<ToolbarButton
 				active={state.block === "heading"}
 				label="Heading"
@@ -316,7 +322,7 @@ const ToolbarButton = ({
 	<button
 		aria-label={label}
 		aria-pressed={active}
-		className={`inline-flex size-8 items-center justify-center rounded-md text-sm transition-colors hover:bg-stone-700 focus-visible:outline-2 focus-visible:outline-stone-300 ${active ? "bg-stone-700 text-white" : ""}`}
+		className={`inline-flex size-8 items-center justify-center rounded-md text-sm transition-colors hover:bg-stone-100 hover:text-stone-950 focus-visible:outline-2 focus-visible:outline-stone-400 dark:hover:bg-stone-800 dark:hover:text-white ${active ? "bg-stone-100 text-stone-950 dark:bg-stone-800 dark:text-white" : ""}`}
 		// Keeps the text selected while the button is pressed.
 		onMouseDown={(event) => event.preventDefault()}
 		onClick={onClick}
