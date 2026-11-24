@@ -43,6 +43,13 @@
 			"when": 1793584741294,
 			"tag": "0005_clear_inferred_book_archives",
 			"breakpoints": true
+		},
+		{
+			"idx": 6,
+			"version": "6",
+			"when": 1795551557654,
+			"tag": "0006_quote_source_title",
+			"breakpoints": true
 		}
 	]
 }

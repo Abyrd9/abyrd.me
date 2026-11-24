@@ -17,6 +17,7 @@ import {
 const quoteFieldsSchema = z.object({
 	text: z.string().trim().min(1, "Enter a quote.").max(10_000),
 	attribution: z.string().trim().max(500),
+	sourceTitle: z.string().trim().max(500),
 	sourceUrl: z
 		.string()
 		.trim()
@@ -112,6 +113,7 @@ function _quoteInput(data: z.infer<typeof quoteFieldsSchema>) {
 	return {
 		text: data.text,
 		attribution: data.attribution || null,
+		sourceTitle: data.sourceTitle || null,
 		sourceUrl: data.sourceUrl || null,
 		sourceNote: data.sourceNote || null,
 	};

@@ -2,6 +2,12 @@ import { Dialog } from "@base-ui/react/dialog";
 import { useForm } from "@tanstack/react-form";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { CopyButton } from "#/components/CopyButton";
+import {
+	cleanSourceUrl,
+	formatQuotation,
+	formatQuoteCitation,
+} from "#/components/citation";
 import { Button } from "#/components/primitives/button";
 import { Field } from "#/components/primitives/field";
 import { Form } from "#/components/primitives/form";
@@ -21,6 +27,7 @@ type Quote = Awaited<ReturnType<typeof loadQuotes>>[number];
 type QuoteFields = {
 	text: string;
 	attribution: string;
+	sourceTitle: string;
 	sourceUrl: string;
 	sourceNote: string;
 };
@@ -28,6 +35,7 @@ type QuoteFields = {
 const emptyQuote: QuoteFields = {
 	text: "",
 	attribution: "",
+	sourceTitle: "",
 	sourceUrl: "",
 	sourceNote: "",
 };
@@ -83,13 +91,34 @@ function QuotesLibrary() {
 		if (!search) return quotes;
 
 		return quotes.filter((quote) =>
-			[quote.text, quote.attribution, quote.sourceUrl, quote.sourceNote]
+			[
+				quote.text,
+				quote.attribution,
+				quote.sourceTitle,
+				quote.sourceUrl,
+				quote.sourceNote,
+			]
 				.filter(Boolean)
 				.join(" ")
 				.toLowerCase()
 				.includes(search),
 		);
 	}, [query, quotes]);
+
+	// Quotes from the same page belong together even if their titles differ, so
+	// the link is the strongest grouping key. Groups keep newest-first order.
+	const sourceGroups = useMemo(() => {
+		const groups = new Map<string, Quote[]>();
+		for (const quote of filteredQuotes) {
+			const key = quote.sourceUrl
+				? `url:${cleanSourceUrl(quote.sourceUrl)}`
+				: quote.sourceTitle
+					? `title:${quote.sourceTitle.toLowerCase()}`
+					: `by:${quote.attribution?.toLowerCase() ?? ""}`;
+			groups.set(key, [...(groups.get(key) ?? []), quote]);
+		}
+		return [...groups].map(([key, items]) => ({ key, items }));
+	}, [filteredQuotes]);
 
 	function startAdding() {
 		setEditingQuote(null);
@@ -132,7 +161,7 @@ function QuotesLibrary() {
 	}
 
 	function renderTextField(
-		name: "attribution" | "sourceNote" | "sourceUrl",
+		name: "attribution" | "sourceTitle" | "sourceNote" | "sourceUrl",
 		label: string,
 		placeholder?: string,
 	) {
@@ -168,7 +197,7 @@ function QuotesLibrary() {
 				</h1>
 				<p className="mt-4 leading-7 text-slate-600 sm:text-lg sm:leading-8">
 					Save a line, where it came from, and any context you want to keep with
-					it.
+					it. Quotes are grouped by their source, ready to copy with a citation.
 				</p>
 			</div>
 
@@ -242,13 +271,18 @@ function QuotesLibrary() {
 								</form.Field>
 
 								<div className="grid gap-5 sm:grid-cols-2">
-									{renderTextField("attribution", "Attribution")}
+									{renderTextField("attribution", "Attribution", "Author")}
 									{renderTextField(
-										"sourceUrl",
-										"Web reference",
-										"https://example.com",
+										"sourceTitle",
+										"Source title",
+										"Book, essay, or article",
 									)}
 								</div>
+								{renderTextField(
+									"sourceUrl",
+									"Web reference",
+									"https://example.com",
+								)}
 								{renderTextField(
 									"sourceNote",
 									"Source note",
@@ -293,69 +327,117 @@ function QuotesLibrary() {
 						{filteredQuotes.length === 1 ? "quote" : "quotes"}
 					</p>
 				</div>
-				<div className="mt-4 grid gap-4">
-					{filteredQuotes.map((quote) => (
-						<article
-							className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
-							key={quote.id}
-						>
-							<blockquote className="text-lg leading-8 text-slate-950">
-								“{quote.text}”
-							</blockquote>
-							{quote.attribution ? (
-								<p className="mt-4 text-sm font-medium text-slate-700">
-									— {quote.attribution}
-								</p>
-							) : null}
-							{quote.sourceUrl ? (
-								<a
-									className="mt-3 inline-flex text-sm font-medium text-slate-950 underline underline-offset-4"
-									href={quote.sourceUrl}
-									rel="noreferrer"
-									target="_blank"
-								>
-									Open web reference
-								</a>
-							) : null}
-							{quote.sourceNote ? (
-								<p className="mt-3 text-sm leading-6 text-slate-600">
-									{quote.sourceNote}
-								</p>
-							) : null}
-							<div className="mt-5 flex flex-wrap items-center gap-2 border-t border-slate-200 pt-4">
-								<Button onClick={() => startEditing(quote)} type="button">
-									Edit
-								</Button>
-								{deleteCandidate?.id === quote.id ? (
-									<>
-										<span className="text-sm text-slate-600">
-											Delete this quote permanently?
+				<div className="mt-4 grid gap-8">
+					{sourceGroups.map(({ key, items }) => {
+						const title = items.find((quote) => quote.sourceTitle)?.sourceTitle;
+						const author = items.find(
+							(quote) => quote.attribution,
+						)?.attribution;
+						const url = items.find((quote) => quote.sourceUrl)?.sourceUrl;
+						const heading =
+							title ??
+							(url ? new URL(url).hostname.replace(/^www\./, "") : null) ??
+							author ??
+							"No source";
+
+						return (
+							<section aria-label={heading} className="grid gap-4" key={key}>
+								<header className="border-b border-slate-200 pb-3">
+									<h3 className="text-base font-semibold text-slate-950">
+										{heading}
+									</h3>
+									<p className="mt-1 flex flex-wrap gap-x-3 text-sm text-slate-600">
+										{author && author !== heading ? (
+											<span>{author}</span>
+										) : null}
+										{url ? (
+											<a
+												className="font-medium text-slate-950 underline underline-offset-4"
+												href={url}
+												rel="noreferrer"
+												target="_blank"
+											>
+												Open source
+											</a>
+										) : null}
+										<span>
+											{items.length} {items.length === 1 ? "quote" : "quotes"}
 										</span>
-										<Button
-											className="bg-red-700 text-white hover:bg-red-800"
-											onClick={() => void confirmDelete(quote)}
-											type="button"
-										>
-											Delete quote
-										</Button>
-										<Button
-											onClick={() => setDeleteCandidate(null)}
-											type="button"
-										>
-											Cancel
-										</Button>
-									</>
-								) : (
-									<Button
-										onClick={() => setDeleteCandidate(quote)}
-										type="button"
+									</p>
+									{!title && url ? (
+										<p className="mt-2 text-sm text-slate-500">
+											Add a source title to any quote here to name this group
+											and complete its citation.
+										</p>
+									) : null}
+								</header>
+								{items.map((quote) => (
+									<article
+										className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+										key={quote.id}
 									>
-										Delete
-									</Button>
-								)}
-							</div>
-						</article>
-					))}
+										<blockquote className="text-lg leading-8 text-slate-950">
+											{formatQuotation(quote.text)}
+										</blockquote>
+										{quote.attribution && quote.attribution !== author ? (
+											<p className="mt-4 text-sm font-medium text-slate-700">
+												— {quote.attribution}
+											</p>
+										) : null}
+										{quote.sourceNote ? (
+											<p className="mt-3 text-sm leading-6 text-slate-600">
+												{quote.sourceNote}
+											</p>
+										) : null}
+										<div className="mt-5 flex flex-wrap items-center gap-2 border-t border-slate-200 pt-4">
+											<CopyButton
+												label="Copy quote"
+												text={formatQuotation(quote.text)}
+											/>
+											<CopyButton
+												label="Copy citation"
+												text={formatQuoteCitation({
+													attribution: quote.attribution ?? author ?? null,
+													sourceTitle: quote.sourceTitle ?? title ?? null,
+													sourceUrl: quote.sourceUrl,
+												})}
+											/>
+											<Button onClick={() => startEditing(quote)} type="button">
+												Edit
+											</Button>
+											{deleteCandidate?.id === quote.id ? (
+												<>
+													<span className="text-sm text-slate-600">
+														Delete this quote permanently?
+													</span>
+													<Button
+														className="bg-red-700 text-white hover:bg-red-800"
+														onClick={() => void confirmDelete(quote)}
+														type="button"
+													>
+														Delete quote
+													</Button>
+													<Button
+														onClick={() => setDeleteCandidate(null)}
+														type="button"
+													>
+														Cancel
+													</Button>
+												</>
+											) : (
+												<Button
+													onClick={() => setDeleteCandidate(quote)}
+													type="button"
+												>
+													Delete
+												</Button>
+											)}
+										</div>
+									</article>
+								))}
+							</section>
+						);
+					})}
 					{quotes.length === 0 ? (
 						<p className="rounded-2xl border border-dashed border-slate-300 px-5 py-8 text-sm leading-6 text-slate-600">
 							No saved quotes yet. Add the first one with the button above.
@@ -375,6 +457,7 @@ function toFields(quote: Quote): QuoteFields {
 	return {
 		text: quote.text,
 		attribution: quote.attribution ?? "",
+		sourceTitle: quote.sourceTitle ?? "",
 		sourceUrl: quote.sourceUrl ?? "",
 		sourceNote: quote.sourceNote ?? "",
 	};

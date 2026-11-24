@@ -1,6 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import type { z } from "zod";
+import { CopyButton } from "#/components/CopyButton";
+import { formatKindleCitation, formatQuotation } from "#/components/citation";
 import { KindleEditor } from "#/components/KindleEditor";
 import { saveKindleLibraryPosition } from "#/components/kindle-library-position";
 import { Button } from "#/components/primitives/button";
@@ -93,9 +95,26 @@ export const KindleBookNotes = ({
 	const highlight = (item: Library["annotations"][number]) => (
 		<div className="rounded-xl bg-slate-50 p-4" key={item.id}>
 			{item.highlight && (
-				<blockquote className="border-l-2 border-amber-400 pl-4 leading-7 text-slate-800">
-					{item.highlight}
-				</blockquote>
+				<>
+					<blockquote className="border-l-2 border-amber-400 pl-4 leading-7 text-slate-800">
+						{item.highlight}
+					</blockquote>
+					<div className="mt-3 flex flex-wrap gap-2">
+						<CopyButton
+							label="Copy quote"
+							text={formatQuotation(item.highlight)}
+						/>
+						<CopyButton
+							label="Copy citation"
+							text={formatKindleCitation({
+								author: book.author,
+								title: book.title,
+								location: item.location,
+								page: item.page,
+							})}
+						/>
+					</div>
+				</>
 			)}
 			{item.note && (
 				<p className="mt-4 rounded-lg bg-slate-100 p-3 leading-7 text-slate-800">

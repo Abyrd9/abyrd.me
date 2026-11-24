@@ -65,6 +65,7 @@ export const quotes = sqliteTable(
 		id: integer("id").primaryKey({ autoIncrement: true }),
 		text: text("text").notNull(),
 		attribution: text("attribution"),
+		sourceTitle: text("source_title"),
 		sourceUrl: text("source_url"),
 		sourceNote: text("source_note"),
 		createdAt: integer("created_at").notNull(),

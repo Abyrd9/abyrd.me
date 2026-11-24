@@ -5,6 +5,7 @@ import type { AppDatabaseClient } from "./database/service";
 export type QuoteInput = {
 	readonly text: string;
 	readonly attribution?: string | null;
+	readonly sourceTitle?: string | null;
 	readonly sourceUrl?: string | null;
 	readonly sourceNote?: string | null;
 	readonly createdAt?: number;
@@ -17,6 +18,7 @@ export function loadQuotes(db: AppDatabaseClient) {
 			id: quotes.id,
 			text: quotes.text,
 			attribution: quotes.attribution,
+			sourceTitle: quotes.sourceTitle,
 			sourceUrl: quotes.sourceUrl,
 			sourceNote: quotes.sourceNote,
 			createdAt: quotes.createdAt,
@@ -35,6 +37,7 @@ export function createQuote(db: AppDatabaseClient, input: QuoteInput) {
 		.values({
 			text: input.text,
 			attribution: input.attribution ?? null,
+			sourceTitle: input.sourceTitle ?? null,
 			sourceUrl: input.sourceUrl ?? null,
 			sourceNote: input.sourceNote ?? null,
 			createdAt: now,
@@ -54,6 +57,7 @@ export function updateQuote(
 		.set({
 			text: input.text,
 			attribution: input.attribution ?? null,
+			sourceTitle: input.sourceTitle ?? null,
 			sourceUrl: input.sourceUrl ?? null,
 			sourceNote: input.sourceNote ?? null,
 			updatedAt: input.updatedAt ?? Date.now(),
