@@ -73,3 +73,33 @@ export const quotes = sqliteTable(
 	},
 	(table) => [index("quotes_created_at_idx").on(table.createdAt)],
 );
+
+export const writings = sqliteTable(
+	"writings",
+	{
+		id: integer("id").primaryKey({ autoIncrement: true }),
+		title: text("title").notNull(),
+		pageSize: text("page_size").notNull().default("trade"),
+		createdAt: integer("created_at").notNull(),
+		updatedAt: integer("updated_at").notNull(),
+	},
+	(table) => [index("writings_updated_at_idx").on(table.updatedAt)],
+);
+
+export const writingChapters = sqliteTable(
+	"writing_chapters",
+	{
+		id: integer("id").primaryKey({ autoIncrement: true }),
+		writingId: integer("writing_id")
+			.notNull()
+			.references(() => writings.id, { onDelete: "cascade" }),
+		title: text("title").notNull().default(""),
+		position: integer("position").notNull(),
+		/** Serialized Lexical editor state, or null for a chapter never typed in. */
+		content: text("content"),
+		wordCount: integer("word_count").notNull().default(0),
+		createdAt: integer("created_at").notNull(),
+		updatedAt: integer("updated_at").notNull(),
+	},
+	(table) => [index("writing_chapters_writing_id_idx").on(table.writingId)],
+);

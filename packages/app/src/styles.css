@@ -250,3 +250,35 @@ html.dark .study-visual-dot[aria-pressed="true"] {
 		transition: none;
 	}
 }
+
+/* Writing: book-like type on the paged editor. Sizes are in em so they follow
+ * the page size's type size. */
+.writing-paper {
+	color: #1c1917;
+	font-family:
+		"Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia,
+		serif;
+	line-height: 1.55;
+}
+
+html.dark .writing-paper {
+	color: #e7e5e4;
+}
+
+.writing-paragraph {
+	margin: 0 0 0.75em;
+}
+
+.writing-heading {
+	font-size: 1.35em;
+	font-weight: 600;
+	line-height: 1.3;
+	margin: 0.4em 0 0.6em;
+}
+
+.writing-quote {
+	border-left: 2px solid #d6d3d1;
+	font-style: italic;
+	margin: 0 0 0.75em;
+	padding-left: 1em;
+}

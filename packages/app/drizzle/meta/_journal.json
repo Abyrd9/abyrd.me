@@ -50,6 +50,13 @@
 			"when": 1795551557654,
 			"tag": "0006_quote_source_title",
 			"breakpoints": true
+		},
+		{
+			"idx": 7,
+			"version": "6",
+			"when": 1795554129070,
+			"tag": "0007_writings",
+			"breakpoints": true
 		}
 	]
 }

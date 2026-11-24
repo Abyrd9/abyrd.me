@@ -10,20 +10,27 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
+import { Route as FocusRouteImport } from './routes/_focus'
 import { Route as HealthRouteImport } from './routes/health'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated.index'
 import { Route as AuthenticatedKindleRouteImport } from './routes/_authenticated.kindle'
 import { Route as AuthenticatedQuizRouteImport } from './routes/_authenticated.quiz'
 import { Route as AuthenticatedQuotesRouteImport } from './routes/_authenticated.quotes'
+import { Route as AuthenticatedWritingRouteImport } from './routes/_authenticated.writing'
 import { Route as ApiMcpRouteImport } from './routes/api.mcp'
 import { Route as AuthenticatedKindleIndexRouteImport } from './routes/_authenticated.kindle.index'
 import { Route as AuthenticatedKindleArchivedRouteImport } from './routes/_authenticated.kindle.archived'
 import { Route as AuthenticatedKindleSetupRouteImport } from './routes/_authenticated.kindle.setup'
+import { Route as FocusWritingWritingIdRouteImport } from './routes/_focus.writing.$writingId'
 import { Route as AuthenticatedKindleSynopsisAsinTargetRouteImport } from './routes/_authenticated.kindle.synopsis.$asin.$target'
 
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
   id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FocusRoute = FocusRouteImport.update({
+  id: '/_focus',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HealthRoute = HealthRouteImport.update({
@@ -56,6 +63,11 @@ const AuthenticatedQuotesRoute = AuthenticatedQuotesRouteImport.update({
   path: '/quotes',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedWritingRoute = AuthenticatedWritingRouteImport.update({
+  id: '/writing',
+  path: '/writing',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const ApiMcpRoute = ApiMcpRouteImport.update({
   id: '/api/mcp',
   path: '/api/mcp',
@@ -79,6 +91,11 @@ const AuthenticatedKindleSetupRoute =
     path: '/setup',
     getParentRoute: () => AuthenticatedKindleRoute,
   } as any)
+const FocusWritingWritingIdRoute = FocusWritingWritingIdRouteImport.update({
+  id: '/writing/$writingId',
+  path: '/writing/$writingId',
+  getParentRoute: () => FocusRoute,
+} as any)
 const AuthenticatedKindleSynopsisAsinTargetRoute =
   AuthenticatedKindleSynopsisAsinTargetRouteImport.update({
     id: '/synopsis/$asin/$target',
@@ -93,36 +110,43 @@ export interface FileRoutesByFullPath {
   '/kindle': typeof AuthenticatedKindleRouteWithChildren
   '/quiz': typeof AuthenticatedQuizRoute
   '/quotes': typeof AuthenticatedQuotesRoute
+  '/writing': typeof AuthenticatedWritingRoute
   '/api/mcp': typeof ApiMcpRoute
   '/kindle/archived': typeof AuthenticatedKindleArchivedRoute
   '/kindle/setup': typeof AuthenticatedKindleSetupRoute
+  '/writing/$writingId': typeof FocusWritingWritingIdRoute
   '/kindle/': typeof AuthenticatedKindleIndexRoute
   '/kindle/synopsis/$asin/$target': typeof AuthenticatedKindleSynopsisAsinTargetRoute
 }
 export interface FileRoutesByTo {
+  '/': typeof AuthenticatedIndexRoute
   '/health': typeof HealthRoute
   '/sign-in': typeof SignInRoute
   '/quiz': typeof AuthenticatedQuizRoute
   '/quotes': typeof AuthenticatedQuotesRoute
+  '/writing': typeof AuthenticatedWritingRoute
   '/api/mcp': typeof ApiMcpRoute
-  '/': typeof AuthenticatedIndexRoute
   '/kindle/archived': typeof AuthenticatedKindleArchivedRoute
   '/kindle/setup': typeof AuthenticatedKindleSetupRoute
+  '/writing/$writingId': typeof FocusWritingWritingIdRoute
   '/kindle': typeof AuthenticatedKindleIndexRoute
   '/kindle/synopsis/$asin/$target': typeof AuthenticatedKindleSynopsisAsinTargetRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteWithChildren
+  '/_focus': typeof FocusRouteWithChildren
   '/health': typeof HealthRoute
   '/sign-in': typeof SignInRoute
   '/_authenticated/kindle': typeof AuthenticatedKindleRouteWithChildren
   '/_authenticated/quiz': typeof AuthenticatedQuizRoute
   '/_authenticated/quotes': typeof AuthenticatedQuotesRoute
+  '/_authenticated/writing': typeof AuthenticatedWritingRoute
   '/api/mcp': typeof ApiMcpRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/kindle/archived': typeof AuthenticatedKindleArchivedRoute
   '/_authenticated/kindle/setup': typeof AuthenticatedKindleSetupRoute
+  '/_focus/writing/$writingId': typeof FocusWritingWritingIdRoute
   '/_authenticated/kindle/': typeof AuthenticatedKindleIndexRoute
   '/_authenticated/kindle/synopsis/$asin/$target': typeof AuthenticatedKindleSynopsisAsinTargetRoute
 }
@@ -135,41 +159,49 @@ export interface FileRouteTypes {
     | '/kindle'
     | '/quiz'
     | '/quotes'
+    | '/writing'
     | '/api/mcp'
     | '/kindle/archived'
     | '/kindle/setup'
+    | '/writing/$writingId'
     | '/kindle/'
     | '/kindle/synopsis/$asin/$target'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/'
     | '/health'
     | '/sign-in'
     | '/quiz'
     | '/quotes'
+    | '/writing'
     | '/api/mcp'
-    | '/'
     | '/kindle/archived'
     | '/kindle/setup'
+    | '/writing/$writingId'
     | '/kindle'
     | '/kindle/synopsis/$asin/$target'
   id:
     | '__root__'
     | '/_authenticated'
+    | '/_focus'
     | '/health'
     | '/sign-in'
     | '/_authenticated/kindle'
     | '/_authenticated/quiz'
     | '/_authenticated/quotes'
+    | '/_authenticated/writing'
     | '/api/mcp'
     | '/_authenticated/'
     | '/_authenticated/kindle/archived'
     | '/_authenticated/kindle/setup'
+    | '/_focus/writing/$writingId'
     | '/_authenticated/kindle/'
     | '/_authenticated/kindle/synopsis/$asin/$target'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
+  FocusRoute: typeof FocusRouteWithChildren
   HealthRoute: typeof HealthRoute
   SignInRoute: typeof SignInRoute
   ApiMcpRoute: typeof ApiMcpRoute
@@ -182,6 +214,13 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_focus': {
+      id: '/_focus'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof FocusRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/health': {
@@ -226,6 +265,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedQuotesRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/writing': {
+      id: '/_authenticated/writing'
+      path: '/writing'
+      fullPath: '/writing'
+      preLoaderRoute: typeof AuthenticatedWritingRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/api/mcp': {
       id: '/api/mcp'
       path: '/api/mcp'
@@ -253,6 +299,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/kindle/setup'
       preLoaderRoute: typeof AuthenticatedKindleSetupRouteImport
       parentRoute: typeof AuthenticatedKindleRoute
+    }
+    '/_focus/writing/$writingId': {
+      id: '/_focus/writing/$writingId'
+      path: '/writing/$writingId'
+      fullPath: '/writing/$writingId'
+      preLoaderRoute: typeof FocusWritingWritingIdRouteImport
+      parentRoute: typeof FocusRoute
     }
     '/_authenticated/kindle/synopsis/$asin/$target': {
       id: '/_authenticated/kindle/synopsis/$asin/$target'
@@ -286,6 +339,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedKindleRoute: typeof AuthenticatedKindleRouteWithChildren
   AuthenticatedQuizRoute: typeof AuthenticatedQuizRoute
   AuthenticatedQuotesRoute: typeof AuthenticatedQuotesRoute
+  AuthenticatedWritingRoute: typeof AuthenticatedWritingRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
 }
 
@@ -293,6 +347,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedKindleRoute: AuthenticatedKindleRouteWithChildren,
   AuthenticatedQuizRoute: AuthenticatedQuizRoute,
   AuthenticatedQuotesRoute: AuthenticatedQuotesRoute,
+  AuthenticatedWritingRoute: AuthenticatedWritingRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
 }
 
@@ -300,8 +355,19 @@ const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
   AuthenticatedRouteChildren,
 )
 
+interface FocusRouteChildren {
+  FocusWritingWritingIdRoute: typeof FocusWritingWritingIdRoute
+}
+
+const FocusRouteChildren: FocusRouteChildren = {
+  FocusWritingWritingIdRoute: FocusWritingWritingIdRoute,
+}
+
+const FocusRouteWithChildren = FocusRoute._addFileChildren(FocusRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
+  FocusRoute: FocusRouteWithChildren,
   HealthRoute: HealthRoute,
   SignInRoute: SignInRoute,
   ApiMcpRoute: ApiMcpRoute,
