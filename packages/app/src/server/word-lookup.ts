@@ -13,18 +13,30 @@ type Meaning = {
 	senses: Array<{ text: string; examples: string[] }>;
 };
 
+/** A run of origin text, linked when it names a word that can be looked up. */
+export type OriginPart = {
+	text: string;
+	link?: { word: string; language: string };
+};
+
 export type WordEntry = {
 	word: string;
+	/** The language of this entry, like "English" or "Old French". */
+	language: string;
 	pronunciation: string | null;
 	meanings: Meaning[];
-	origins: string[];
+	/** One origin per etymology Wiktionary lists, each as linked parts. */
+	origins: OriginPart[][];
 	/**
 	 * The word this one is a form of, with its own meanings and origin, like
 	 * "walk" for "walked".
 	 */
-	root: { word: string; meanings: Meaning[]; origins: string[] } | null;
+	root: { word: string; meanings: Meaning[]; origins: OriginPart[][] } | null;
 	similar: string[];
+	/** Sentences and quotations that use the word itself. */
 	examples: string[];
+	/** Sentences using related forms, offered when the word has few of its own. */
+	relatedExamples: string[];
 	fromLibrary: Array<{ text: string; source: string }>;
 	wiktionaryUrl: string | null;
 };
@@ -46,8 +58,8 @@ const entities: Record<string, string> = {
 	nbsp: " ",
 };
 
-/** Wiktionary's HTML as plain text. */
-const toText = (html: string) =>
+/** Wiktionary's HTML as text, with spacing collapsed but not trimmed. */
+const toPlain = (html: string) =>
 	html
 		.replace(/<style[\s\S]*?<\/style>/g, "")
 		.replace(/<sup[^>]*class="[^"]*reference[\s\S]*?<\/sup>/g, "")
@@ -61,68 +73,160 @@ const toText = (html: string) =>
 					)
 				: (entities[code] ?? match),
 		)
-		.replace(/\s+/g, " ")
-		.trim();
+		// Direction marks Wiktionary puts around "+" in compounds.
+		.replace(/[\u200e\u200f]/g, "")
+		.replace(/\s+/g, " ");
 
-type WiktionaryDefinitions = {
-	en?: Array<{
+/** Wiktionary's HTML as plain text. */
+const toText = (html: string) => toPlain(html).trim();
+
+/**
+ * Origin HTML as text parts, keeping links to words that have Wiktionary
+ * entries. Links to Wikipedia, appendices, reconstructed words, and missing
+ * pages stay plain text.
+ */
+const toOriginParts = (html: string) => {
+	const parts: OriginPart[] = [];
+	let last = 0;
+	for (const match of html.matchAll(/<a\b([^>]*)>([\s\S]*?)<\/a>/g)) {
+		parts.push({ text: toPlain(html.slice(last, match.index)) });
+		const text = toPlain(match[2]);
+		const href = match[1].match(/href="\.\/([^"#]+)(?:#([^"]+))?"/);
+		const word = href ? decodeURIComponent(href[1]).replaceAll("_", " ") : "";
+		const linkable =
+			href &&
+			word &&
+			!word.includes(":") &&
+			!/class="[^"]*\bnew\b/.test(match[1]);
+		parts.push(
+			linkable
+				? {
+						text,
+						link: {
+							word,
+							language: href[2]
+								? decodeURIComponent(href[2]).replaceAll("_", " ")
+								: "English",
+						},
+					}
+				: { text },
+		);
+		last = (match.index ?? 0) + match[0].length;
+	}
+	parts.push({ text: toPlain(html.slice(last)) });
+	return parts.filter((part) => part.text);
+};
+
+type WiktionaryDefinitions = Record<
+	string,
+	Array<{
 		partOfSpeech: string;
+		language: string;
 		definitions: Array<{
 			definition: string;
 			examples?: string[];
 			parsedExamples?: Array<{ example: string }>;
 		}>;
-	}>;
-};
+	}>
+>;
 
-/** Finds the English entry, trying the word as written and then in lowercase. */
-const findDefinitions = async (word: string) => {
+/** Finds the entry in a language, trying the word as written and then in lowercase. */
+const findDefinitions = async (word: string, language: string) => {
 	for (const title of new Set([word, word.toLowerCase()])) {
 		const found: WiktionaryDefinitions | null = await getJson(
 			`https://en.wiktionary.org/api/rest_v1/page/definition/${encodeURIComponent(title)}`,
 		).catch(() => null);
-		if (found?.en?.length) return { title, entries: found.en };
+		// English has its own key; other languages can share one, so match by name.
+		const entries =
+			language === "English"
+				? (found?.en ?? [])
+				: Object.values(found ?? {})
+						.flat()
+						.filter((entry) => entry.language === language);
+		if (entries.length) return { title, entries };
 	}
 	return null;
 };
 
-/** Pronunciation and origin from the English section of the full page. */
-const readPage = async (title: string) => {
+/** Pronunciation, origin, and quotations from one language's section of the page. */
+const readPage = async (title: string, language: string) => {
 	const response = await fetch(
 		`https://en.wiktionary.org/api/rest_v1/page/html/${encodeURIComponent(title)}`,
 		{ headers, signal: AbortSignal.timeout(8000) },
 	).catch(() => null);
-	if (!response?.ok) return { pronunciation: null, origins: [] };
+	const empty = { pronunciation: null, origins: [], quotations: [] };
+	if (!response?.ok) return empty;
 	const html = await response.text();
-	const start = html.indexOf('id="English"');
-	if (start === -1) return { pronunciation: null, origins: [] };
-	const next = html.indexOf("<h2", start);
-	const english = html.slice(start, next === -1 ? undefined : next);
+	const heading = html.match(
+		new RegExp(`<h2[^>]*id="${language.replaceAll(" ", "_")}"`),
+	);
+	if (heading?.index === undefined) return empty;
+	const next = html.indexOf("<h2", heading.index + heading[0].length);
+	const english = html.slice(heading.index, next === -1 ? undefined : next);
 
 	const ipa = english.match(/<span class="IPA[^"]*"[^>]*>([^<]+)<\/span>/);
-	const origins: string[] = [];
-	for (const heading of english.matchAll(/<h\d[^>]*id="Etymology[^"]*"/g)) {
-		const from = (heading.index ?? 0) + heading[0].length;
+	const origins: OriginPart[][] = [];
+	for (const etymology of english.matchAll(/<h\d[^>]*id="Etymology[^"]*"/g)) {
+		const from = (etymology.index ?? 0) + etymology[0].length;
 		const end = english.indexOf("<h", from);
-		const section = english.slice(from, end === -1 ? undefined : end);
-		const text = [...section.matchAll(/<p[^>]*>([\s\S]*?)<\/p>/g)]
-			.map((paragraph) => toText(paragraph[1]))
-			.filter(Boolean)
-			.join(" ");
-		if (text) origins.push(text);
+		const section = english
+			.slice(from, end === -1 ? undefined : end)
+			.replace(/<style[\s\S]*?<\/style>/g, "")
+			// Footnote markers like [1] carry links of their own.
+			.replace(/<sup\b[^>]*mw-ref[\s\S]*?<\/sup>/g, "");
+		const parts = [...section.matchAll(/<p[^>]*>([\s\S]*?)<\/p>/g)].flatMap(
+			(paragraph, index) => [
+				...(index ? [{ text: " " }] : []),
+				...toOriginParts(paragraph[1]),
+			],
+		);
+		if (parts.some((part) => part.text.trim())) {
+			parts[0].text = parts[0].text.trimStart();
+			parts[parts.length - 1].text = parts[parts.length - 1].text.trimEnd();
+			origins.push(parts);
+		}
 	}
-	return { pronunciation: ipa ? toText(ipa[1]) : null, origins };
+	// Quotations Wiktionary cites from published writing, under each sense.
+	const quotations = [
+		...english.matchAll(
+			/class="[^"]*e-quotation[^"]*"[^>]*>([\s\S]*?)<\/span><\/div>/g,
+		),
+	]
+		.map((match) => toText(match[1]))
+		.filter((text) => text.length <= 300)
+		.slice(0, 6);
+	return { pronunciation: ipa ? toText(ipa[1]) : null, origins, quotations };
 };
 
-const findExamples = async (word: string) => {
+/** Tatoeba sentences: exact matches only, or any form of the word when loose. */
+const findSentences = async (word: string, loose = false) => {
+	const query = loose ? word : `=${word}`;
 	const found = await getJson(
-		`https://tatoeba.org/en/api_v0/search?from=eng&query=${encodeURIComponent(`=${word}`)}&orphans=no&unapproved=no&sort=random`,
+		`https://tatoeba.org/en/api_v0/search?from=eng&query=${encodeURIComponent(query)}&orphans=no&unapproved=no&sort=random`,
 	).catch(() => null);
 	const results: Array<{ text: string }> = found?.results ?? [];
 	return results
 		.map((result) => result.text)
 		.filter((text) => text.length <= 200)
 		.slice(0, 10);
+};
+
+/** Example sentences from the Free Dictionary API, which Wiktionary often lacks. */
+const findDictionaryExamples = async (word: string) => {
+	const found = await getJson(
+		`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`,
+	).catch(() => null);
+	if (!Array.isArray(found)) return [];
+	return found.flatMap(
+		(entry: {
+			meanings?: Array<{ definitions?: Array<{ example?: string }> }>;
+		}) =>
+			(entry.meanings ?? []).flatMap((meaning) =>
+				(meaning.definitions ?? []).flatMap((sense) =>
+					sense.example ? [sense.example] : [],
+				),
+			),
+	);
 };
 
 const findSimilar = async (word: string) => {
@@ -189,10 +293,10 @@ const findInLibrary = (db: AppDatabaseClient, word: string) => {
 };
 
 /** Wiktionary's meanings, pronunciation, and origin for one word. */
-const readEntry = async (word: string) => {
-	const definitions = await findDefinitions(word);
+const readEntry = async (word: string, language: string) => {
+	const definitions = await findDefinitions(word, language);
 	if (!definitions) return null;
-	const page = await readPage(definitions.title);
+	const page = await readPage(definitions.title, language);
 	let formOf: string | null = null;
 	const meanings = definitions.entries
 		.map((entry) => ({
@@ -218,22 +322,40 @@ const readEntry = async (word: string) => {
 	return { word: definitions.title, formOf, meanings, ...page };
 };
 
+/**
+ * Looks a word up. Words in other languages, reached from an origin, get
+ * Wiktionary's entry alone: the other sources are English only.
+ */
 export const lookUpWord = async (
 	db: AppDatabaseClient,
 	word: string,
+	language = "English",
 ): Promise<WordEntry> => {
-	const [entry, examples] = await Promise.all([
-		readEntry(word),
-		findExamples(word.toLowerCase()),
+	const lower = word.toLowerCase();
+	const english = language === "English";
+	const none = Promise.resolve([] as string[]);
+	const [entry, sentences, dictionary, related] = await Promise.all([
+		readEntry(word, language),
+		english ? findSentences(lower) : none,
+		english ? findDictionaryExamples(lower) : none,
+		english ? findSentences(lower, true) : none,
 	]);
+	const examples = [
+		...new Set([...sentences, ...(entry?.quotations ?? []), ...dictionary]),
+	].slice(0, 12);
+	const relatedExamples =
+		examples.length >= 3
+			? []
+			: related.filter((text) => !examples.includes(text)).slice(0, 5);
 	const formOf = entry?.formOf ?? null;
 	const [root, similar] = await Promise.all([
-		formOf ? readEntry(formOf) : null,
-		findSimilar((formOf ?? word).toLowerCase()),
+		formOf ? readEntry(formOf, language) : null,
+		english ? findSimilar((formOf ?? word).toLowerCase()) : none,
 	]);
 
 	return {
 		word: entry?.word ?? word,
+		language,
 		pronunciation: entry?.pronunciation ?? null,
 		meanings: entry?.meanings ?? [],
 		origins: entry?.origins ?? [],
@@ -242,9 +364,10 @@ export const lookUpWord = async (
 			: null,
 		similar,
 		examples,
-		fromLibrary: findInLibrary(db, word),
+		relatedExamples,
+		fromLibrary: english ? findInLibrary(db, word) : [],
 		wiktionaryUrl: entry
-			? `https://en.wiktionary.org/wiki/${encodeURIComponent(entry.word)}#English`
+			? `https://en.wiktionary.org/wiki/${encodeURIComponent(entry.word)}#${language.replaceAll(" ", "_")}`
 			: null,
 	};
 };

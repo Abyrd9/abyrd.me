@@ -1,5 +1,5 @@
 import { createContext, type ReactNode, useEffect, useState } from "react";
-import type { WordEntry } from "#/server/word-lookup";
+import type { OriginPart, WordEntry } from "#/server/word-lookup";
 import { lookUpWritingWord } from "#/server/word-lookup-functions";
 
 /**
@@ -16,9 +16,13 @@ export const asLookupWord = (text: string) => {
 	return word.length <= 60 && /^\p{L}[\p{L}'’-]*$/u.test(word) ? word : null;
 };
 
+type Lookup = { word: string; language: string };
+type Open = (word: string, language: string) => void;
+
 /**
- * A dictionary entry in the notes column: meanings, origin, similar words,
- * and the word in use. Similar words open in place, with a way back.
+ * A dictionary entry in the notes column: meanings, the word in use, origin,
+ * and similar words. Similar words and the words in an origin open in place,
+ * with a way back.
  */
 export const WordPanel = ({
 	word,
@@ -27,14 +31,15 @@ export const WordPanel = ({
 	word: string;
 	onClose: () => void;
 }) => {
-	const [trail, setTrail] = useState([word]);
+	const [trail, setTrail] = useState<Lookup[]>([{ word, language: "English" }]);
 	const current = trail[trail.length - 1];
+	const previous = trail.length > 1 ? trail[trail.length - 2] : null;
 	const [entry, setEntry] = useState<WordEntry | null | undefined>(undefined);
 
 	useEffect(() => {
 		let active = true;
 		setEntry(undefined);
-		lookUpWritingWord({ data: { word: current } })
+		lookUpWritingWord({ data: current })
 			.then((found) => active && setEntry(found))
 			.catch(() => active && setEntry(null));
 		return () => {
@@ -42,18 +47,20 @@ export const WordPanel = ({
 		};
 	}, [current]);
 
-	const open = (next: string) => setTrail((words) => [...words, next]);
+	const open: Open = (next, language) =>
+		setTrail((words) => [...words, { word: next, language }]);
 	const rail =
 		"inline-flex items-center gap-1.5 rounded px-1 py-0.5 hover:bg-stone-200 hover:text-stone-900 dark:hover:bg-stone-800 dark:hover:text-stone-100";
 
 	return (
 		<section
-			aria-label={`Dictionary: ${current}`}
-			className="flex h-full max-sm:flex-col-reverse"
+			aria-label={`Dictionary: ${current.word}`}
+			// The paper fits its entry, scrolling only once it reaches the bottom.
+			className="flex h-full items-start max-sm:flex-col-reverse max-sm:items-stretch"
 		>
-			<div className="min-h-0 flex-1 overflow-y-auto bg-white px-6 pt-10 pb-12 font-book text-stone-900 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_8px_24px_rgba(0,0,0,0.06)] sm:px-10">
+			<div className="max-h-full min-h-0 min-w-0 overflow-y-auto bg-white px-6 pt-10 pb-12 font-book text-stone-900 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_8px_24px_rgba(0,0,0,0.06)] sm:flex-1 sm:px-10">
 				{entry === undefined ? (
-					<p className="text-stone-400">Looking up “{current}”…</p>
+					<p className="text-stone-400">Looking up “{current.word}”…</p>
 				) : entry === null ? (
 					<p className="text-stone-500">
 						Couldn’t reach the dictionary. Check your connection and try again.
@@ -81,13 +88,13 @@ export const WordPanel = ({
 					</svg>
 					Close
 				</button>
-				{trail.length > 1 ? (
+				{previous ? (
 					<button
 						className={rail}
 						onClick={() => setTrail((words) => words.slice(0, -1))}
 						type="button"
 					>
-						‹ {trail[trail.length - 2]}
+						‹ {previous.word}
 					</button>
 				) : null}
 			</aside>
@@ -95,13 +102,8 @@ export const WordPanel = ({
 	);
 };
 
-const Entry = ({
-	entry,
-	onOpen,
-}: {
-	entry: WordEntry;
-	onOpen: (word: string) => void;
-}) => {
+const Entry = ({ entry, onOpen }: { entry: WordEntry; onOpen: Open }) => {
+	const english = entry.language === "English";
 	const found =
 		entry.meanings.length ||
 		entry.root?.meanings.length ||
@@ -112,6 +114,11 @@ const Entry = ({
 	return (
 		<article className="text-[15px] leading-relaxed">
 			<header className="mb-6">
+				{english ? null : (
+					<p className="mb-1 font-sans text-[11px] font-semibold tracking-[0.12em] text-stone-400 uppercase">
+						{entry.language}
+					</p>
+				)}
 				<h2 className="font-book text-3xl text-stone-950">{entry.word}</h2>
 				{entry.pronunciation ? (
 					<p className="mt-1 text-stone-500">{entry.pronunciation}</p>
@@ -120,18 +127,51 @@ const Entry = ({
 
 			{found ? null : (
 				<p className="mb-6 text-stone-500">
-					No dictionary entry for “{entry.word}”.
+					{english
+						? `No dictionary entry for “${entry.word}”.`
+						: `Wiktionary has no ${entry.language} entry for “${entry.word}”.`}
 				</p>
 			)}
 
 			<Meanings meanings={entry.meanings} />
-			{entry.origins.length ? <Origins origins={entry.origins} /> : null}
+
+			{entry.examples.length || entry.relatedExamples.length ? (
+				<Section title="In use">
+					<ul className="grid gap-2">
+						{entry.examples.map((example) => (
+							<li className="text-stone-700" key={example}>
+								<Marked text={example} words={highlight} />
+							</li>
+						))}
+					</ul>
+					{entry.relatedExamples.length ? (
+						<>
+							<p className="mt-3 mb-1.5 font-sans text-xs text-stone-500">
+								{entry.examples.length
+									? "Related forms in use:"
+									: `No sentences use “${entry.word}” itself. Related forms in use:`}
+							</p>
+							<ul className="grid gap-2">
+								{entry.relatedExamples.map((example) => (
+									<li className="text-stone-700" key={example}>
+										{example}
+									</li>
+								))}
+							</ul>
+						</>
+					) : null}
+				</Section>
+			) : null}
+
+			{entry.origins.length ? (
+				<Origins onOpen={onOpen} origins={entry.origins} />
+			) : null}
 
 			{entry.root ? (
 				<div className="mt-8 border-t border-stone-200 pt-6">
 					<button
 						className="font-book text-2xl text-stone-950 underline decoration-stone-300 underline-offset-4 hover:decoration-stone-600"
-						onClick={() => onOpen(entry.root?.word ?? "")}
+						onClick={() => onOpen(entry.root?.word ?? "", entry.language)}
 						type="button"
 					>
 						{entry.root.word}
@@ -139,7 +179,7 @@ const Entry = ({
 					<div className="mt-4">
 						<Meanings meanings={entry.root.meanings} />
 						{entry.root.origins.length ? (
-							<Origins origins={entry.root.origins} />
+							<Origins onOpen={onOpen} origins={entry.root.origins} />
 						) : null}
 					</div>
 				</div>
@@ -152,25 +192,13 @@ const Entry = ({
 							<button
 								className="rounded-full border border-stone-200 px-2.5 py-0.5 text-sm text-stone-700 hover:border-stone-400 hover:text-stone-950"
 								key={word}
-								onClick={() => onOpen(word)}
+								onClick={() => onOpen(word, "English")}
 								type="button"
 							>
 								{word}
 							</button>
 						))}
 					</div>
-				</Section>
-			) : null}
-
-			{entry.examples.length ? (
-				<Section title="In use">
-					<ul className="grid gap-2">
-						{entry.examples.map((example) => (
-							<li className="text-stone-700" key={example}>
-								<Marked text={example} words={highlight} />
-							</li>
-						))}
-					</ul>
 				</Section>
 			) : null}
 
@@ -207,7 +235,10 @@ const Entry = ({
 				) : (
 					"Wiktionary"
 				)}{" "}
-				(CC BY-SA). Sentences from Tatoeba (CC BY). Similar words from Datamuse.
+				(CC BY-SA).
+				{english
+					? " Sentences from Tatoeba (CC BY) and the Free Dictionary API. Similar words from Datamuse."
+					: null}
 			</footer>
 		</article>
 	);
@@ -235,11 +266,38 @@ const Meanings = ({ meanings }: { meanings: WordEntry["meanings"] }) =>
 		</div>
 	));
 
-const Origins = ({ origins }: { origins: string[] }) => (
+/** Each origin, with the words it names opening their own entries. */
+const Origins = ({
+	origins,
+	onOpen,
+}: {
+	origins: OriginPart[][];
+	onOpen: Open;
+}) => (
 	<Section title="Origin">
 		<div className="grid gap-2 text-stone-700">
-			{origins.map((origin) => (
-				<p key={origin}>{origin}</p>
+			{origins.map((parts, index) => (
+				// biome-ignore lint/suspicious/noArrayIndexKey: origins are positional.
+				<p key={index}>
+					{parts.map((part, at) =>
+						part.link ? (
+							<button
+								className="text-stone-950 underline decoration-stone-300 decoration-dotted underline-offset-[3px] hover:decoration-stone-700"
+								// biome-ignore lint/suspicious/noArrayIndexKey: parts are positional.
+								key={at}
+								onClick={() =>
+									part.link && onOpen(part.link.word, part.link.language)
+								}
+								title={`Look up ${part.link.language} “${part.link.word}”`}
+								type="button"
+							>
+								{part.text}
+							</button>
+						) : (
+							part.text
+						),
+					)}
+				</p>
 			))}
 		</div>
 	</Section>

@@ -16,6 +16,7 @@ import {
 	$isTextNode,
 	$setSelection,
 	type BaseSelection,
+	BLUR_COMMAND,
 	COMMAND_PRIORITY_LOW,
 	FORMAT_TEXT_COMMAND,
 	KEY_MODIFIER_COMMAND,
@@ -151,6 +152,16 @@ export const WritingToolbar = () => {
 						});
 					});
 				}),
+				// Clicking outside the editor hides the toolbar. Its buttons keep
+				// focus in the editor, and the link field sets editingLink first.
+				editor.registerCommand(
+					BLUR_COMMAND,
+					() => {
+						if (!editingLink.current) setState(null);
+						return false;
+					},
+					COMMAND_PRIORITY_LOW,
+				),
 				editor.registerCommand(
 					KEY_MODIFIER_COMMAND,
 					(event) => {
@@ -293,6 +304,7 @@ export const WritingToolbar = () => {
 								label={`Define “${state.word}”`}
 								onClick={() => {
 									if (state.word) lookUp(state.word);
+									setState(null);
 								}}
 							>
 								<svg
