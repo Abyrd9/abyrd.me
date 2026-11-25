@@ -37,7 +37,10 @@ export const WritingGuides = () => {
 			aria-label="Writing guides"
 			className="flex h-full items-start max-sm:items-stretch"
 		>
-			<div className="max-h-full min-h-0 min-w-0 flex-1 overflow-y-auto bg-white px-6 pt-6 pb-10 text-stone-900 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_8px_24px_rgba(0,0,0,0.06)] sm:px-9 dark:bg-stone-900 dark:text-stone-100">
+			<div
+				data-side-paper
+				className="max-h-full min-h-0 min-w-0 flex-1 overflow-y-auto bg-white px-6 pt-6 pb-10 text-stone-900 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_8px_24px_rgba(0,0,0,0.06)] sm:px-9 dark:bg-stone-900 dark:text-stone-100"
+			>
 				<nav
 					aria-label="Guides"
 					className="mb-6 flex flex-wrap gap-x-4 gap-y-1 font-sans text-sm"

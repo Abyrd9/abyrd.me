@@ -5,7 +5,7 @@ import {
 	ChapterSuggestions,
 } from "#/components/ChapterSuggestions";
 import { ChapterWordCount } from "#/components/ChapterWordCount";
-import { NotePane } from "#/components/NotePane";
+import { NotePane, SeamLink } from "#/components/NotePane";
 import {
 	type BinderNote,
 	NotesContents,
@@ -790,10 +790,22 @@ function WritingEditor() {
 						<div className="min-w-0 max-md:fixed max-md:inset-x-0 max-md:top-12 max-md:bottom-0 max-md:z-30 max-md:bg-stone-100 md:flex-1 md:pt-24 md:pb-6 md:pl-8 dark:max-md:bg-[#0a0a0a]">
 							<div className="flex h-full w-full flex-col md:max-w-[var(--side)] md:pr-6">
 								<SideTabs onClose={closeNote} onTab={setTab} tab={tab} />
+								{tab === "notes" && openNoteId !== null ? null : (
+									// An open note draws its own, blue when it's tied to the chapter.
+									<SeamLink
+										faded
+										key={tab}
+										label="Open a note to tie it to this chapter"
+										tied={false}
+									/>
+								)}
 								<div className="min-h-0 flex-1">
-									{tab === "dictionary" ? (
+									{/* Stays mounted while hidden, so the word you were reading is
+									    still there when you come back. */}
+									<div className={tab === "dictionary" ? "contents" : "hidden"}>
 										<WordPanel key={lookup ?? ""} word={lookup} />
-									) : tab === "guides" ? (
+									</div>
+									{tab === "dictionary" ? null : tab === "guides" ? (
 										<WritingGuides />
 									) : openNoteId !== null ? (
 										<NotePane

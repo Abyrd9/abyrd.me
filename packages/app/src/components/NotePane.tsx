@@ -338,11 +338,20 @@ export const NotePane = ({
 };
 
 /**
- * The link icon between the chapter and the note: midway across the gap
- * between the two papers, and level with the middle of the chapter's visible
- * page. Blue when the note is tied to the chapter.
+ * The link icon between the chapter and the side panel's card: midway across
+ * the gap between them, and level with the middle of the chapter's visible
+ * page. Blue when an open note is tied to the chapter; faded when the panel
+ * shows something that can't be tied, like the dictionary.
  */
-const SeamLink = ({ tied, label }: { tied: boolean; label: string }) => {
+export const SeamLink = ({
+	tied,
+	faded = false,
+	label,
+}: {
+	tied: boolean;
+	faded?: boolean;
+	label: string;
+}) => {
 	const [position, setPosition] = useState<{
 		left: number;
 		top: number;
@@ -353,9 +362,10 @@ const SeamLink = ({ tied, label }: { tied: boolean; label: string }) => {
 			const chapter = document
 				.querySelector("[data-chapter-paper]")
 				?.getBoundingClientRect();
-			const note = document
-				.querySelector("[data-note-paper]")
-				?.getBoundingClientRect();
+			// The first card that's showing; hidden tabs can stay mounted.
+			const note = [...document.querySelectorAll("[data-side-paper]")]
+				.map((paper) => paper.getBoundingClientRect())
+				.find((rect) => rect.width > 0);
 			if (!chapter || !note || note.left <= chapter.right) {
 				setPosition(null);
 				return;
@@ -373,7 +383,7 @@ const SeamLink = ({ tied, label }: { tied: boolean; label: string }) => {
 		// The chapter shrinks to fit with CSS zoom, which resizing doesn't report.
 		const zoom = new MutationObserver(place);
 		for (const paper of document.querySelectorAll(
-			"[data-chapter-paper], [data-note-paper]",
+			"[data-chapter-paper], [data-side-paper]",
 		)) {
 			observer.observe(paper);
 			zoom.observe(paper, { attributes: true, attributeFilter: ["style"] });
@@ -392,7 +402,7 @@ const SeamLink = ({ tied, label }: { tied: boolean; label: string }) => {
 	return (
 		<span
 			aria-label={label}
-			className={`fixed z-20 grid size-9 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border shadow-sm ${tied ? "border-blue-200 bg-blue-50 text-blue-600 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-400" : "border-stone-200 bg-white text-stone-400 dark:border-stone-700"}`}
+			className={`fixed z-20 grid size-9 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border shadow-sm ${faded ? "opacity-40" : ""} ${tied ? "border-blue-200 bg-blue-50 text-blue-600 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-400" : "border-stone-200 bg-white text-stone-400 dark:border-stone-700"}`}
 			role="img"
 			style={position}
 			title={label}

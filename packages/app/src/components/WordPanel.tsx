@@ -44,7 +44,12 @@ export const WordPanel = ({
 		let active = true;
 		setEntry(undefined);
 		lookUpWritingWord({ data: current })
-			.then((found) => active && setEntry(found))
+			.then((found) => {
+				if (!active) return;
+				setEntry(found);
+				if (found.language === "English" && found.meanings.length)
+					remember(found.word);
+			})
 			.catch(() => active && setEntry(null));
 		return () => {
 			active = false;
@@ -53,18 +58,18 @@ export const WordPanel = ({
 
 	const open: Open = (next, language) =>
 		setTrail((words) => [...words, { word: next, language }]);
-	const rail =
-		"inline-flex items-center gap-1.5 rounded px-1 py-0.5 hover:bg-stone-200 hover:text-stone-900 dark:hover:bg-stone-800 dark:hover:text-stone-100";
 
 	return (
 		<section
 			aria-label={current ? `Dictionary: ${current.word}` : "Dictionary"}
 			// The paper fits its entry, scrolling only once it reaches the bottom.
-			className="flex h-full items-start max-sm:flex-col-reverse max-sm:items-stretch"
+			className="flex h-full items-start"
 		>
-			<div className="max-h-full min-h-0 min-w-0 overflow-y-auto bg-white px-6 pt-6 pb-12 font-book text-stone-900 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_8px_24px_rgba(0,0,0,0.06)] sm:flex-1 sm:px-10">
+			<div
+				data-side-paper
+				className="max-h-full min-h-0 min-w-0 flex-1 overflow-y-auto bg-white px-6 pt-5 pb-8 text-stone-900 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_8px_24px_rgba(0,0,0,0.06)] sm:px-8"
+			>
 				<form
-					className="mb-8 font-sans"
 					onSubmit={(event) => {
 						event.preventDefault();
 						const next = asLookupWord(query);
@@ -74,50 +79,118 @@ export const WordPanel = ({
 						open(next, "English");
 					}}
 				>
-					<input
-						aria-invalid={invalid}
-						aria-label="Look up a word"
-						className="w-full rounded-md border border-stone-200 bg-stone-50 px-3 py-1.5 text-sm outline-none placeholder:text-stone-400 focus:border-stone-400 focus:bg-white"
-						onChange={(event) => {
-							setQuery(event.target.value);
-							setInvalid(false);
-						}}
-						placeholder={
-							invalid ? "One word, letters only" : "Look up a word, then Enter"
-						}
-						value={query}
-					/>
+					<label className="flex h-9 items-center gap-2 rounded-lg border border-stone-200 bg-stone-50 px-3 text-sm text-stone-400 focus-within:border-stone-400 focus-within:bg-white">
+						<svg
+							aria-hidden="true"
+							fill="none"
+							height="15"
+							stroke="currentColor"
+							strokeLinecap="round"
+							strokeWidth="2"
+							viewBox="0 0 24 24"
+							width="15"
+						>
+							<circle cx="11" cy="11" r="7" />
+							<path d="m20 20-3.5-3.5" />
+						</svg>
+						<input
+							aria-invalid={invalid}
+							aria-label="Look up a word"
+							className="min-w-0 flex-1 bg-transparent text-stone-900 outline-none placeholder:text-stone-400"
+							onChange={(event) => {
+								setQuery(event.target.value);
+								setInvalid(false);
+							}}
+							placeholder={
+								invalid ? "One word, letters only" : "Look up a word"
+							}
+							value={query}
+						/>
+					</label>
 				</form>
-				{!current ? (
-					<p className="text-stone-500">
-						Search for a word above, or select one in your writing and press the
-						book button.
-					</p>
-				) : entry === undefined ? (
-					<p className="text-stone-400">Looking up “{current.word}”…</p>
-				) : entry === null ? (
-					<p className="text-stone-500">
-						Couldn’t reach the dictionary. Check your connection and try again.
-					</p>
-				) : (
-					<Entry entry={entry} onOpen={open} />
-				)}
+
+				<div className="mt-5">
+					{previous ? (
+						<button
+							className="mb-2 text-xs text-stone-500 hover:text-stone-900"
+							onClick={() => setTrail((words) => words.slice(0, -1))}
+							type="button"
+						>
+							‹ Back to {previous.word}
+						</button>
+					) : null}
+					{!current ? (
+						<Empty onOpen={(next) => open(next, "English")} />
+					) : entry === undefined ? (
+						<p className="text-sm text-stone-400">
+							Looking up “{current.word}”…
+						</p>
+					) : entry === null ? (
+						<p className="text-sm text-stone-500">
+							Couldn’t reach the dictionary. Check your connection and try
+							again.
+						</p>
+					) : (
+						<Entry entry={entry} onOpen={open} />
+					)}
+				</div>
 			</div>
-			{previous ? (
-				<aside
-					aria-label="Dictionary controls"
-					className="flex shrink-0 gap-3 text-xs text-stone-500 max-sm:items-center max-sm:px-3 max-sm:py-2 sm:w-36 sm:flex-col sm:items-start sm:pl-4"
-				>
-					<button
-						className={rail}
-						onClick={() => setTrail((words) => words.slice(0, -1))}
-						type="button"
-					>
-						‹ {previous.word}
-					</button>
-				</aside>
-			) : null}
 		</section>
+	);
+};
+
+const RECENT_KEY = "abyrd.dictionary-recent";
+
+/** Remembers a looked-up word for the empty panel's Recent list. */
+const remember = (word: string) => {
+	const recent: unknown = JSON.parse(localStorage.getItem(RECENT_KEY) ?? "[]");
+	const words = Array.isArray(recent)
+		? recent.filter((item): item is string => typeof item === "string")
+		: [];
+	localStorage.setItem(
+		RECENT_KEY,
+		JSON.stringify(
+			[word, ...words.filter((item) => item !== word)].slice(0, 8),
+		),
+	);
+};
+
+/** What the panel shows before any word is open: a hint and recent words. */
+const Empty = ({ onOpen }: { onOpen: (word: string) => void }) => {
+	const [recent, setRecent] = useState<string[]>([]);
+	useEffect(() => {
+		const saved: unknown = JSON.parse(localStorage.getItem(RECENT_KEY) ?? "[]");
+		if (Array.isArray(saved))
+			setRecent(
+				saved.filter((item): item is string => typeof item === "string"),
+			);
+	}, []);
+	return (
+		<div className="text-sm text-stone-500">
+			<p>
+				Look up any word, or select one in your writing and press the book
+				button in the toolbar.
+			</p>
+			{recent.length ? (
+				<>
+					<h3 className="mt-5 mb-2 text-[11px] font-semibold tracking-[0.12em] text-stone-400 uppercase">
+						Recent
+					</h3>
+					<div className="flex flex-wrap gap-1.5">
+						{recent.map((word) => (
+							<button
+								className="font-book rounded-full border border-stone-200 px-2.5 py-0.5 text-[14px] text-stone-700 hover:border-stone-400 hover:text-stone-950"
+								key={word}
+								onClick={() => onOpen(word)}
+								type="button"
+							>
+								{word}
+							</button>
+						))}
+					</div>
+				</>
+			) : null}
+		</div>
 	);
 };
 
@@ -131,16 +204,20 @@ const Entry = ({ entry, onOpen }: { entry: WordEntry; onOpen: Open }) => {
 		(word): word is string => Boolean(word),
 	);
 	return (
-		<article className="text-[15px] leading-relaxed">
-			<header className="mb-6">
+		<article className="font-book text-[14.5px] leading-relaxed">
+			<header className="mb-5">
 				{english ? null : (
 					<p className="mb-1 font-sans text-[11px] font-semibold tracking-[0.12em] text-stone-400 uppercase">
 						{entry.language}
 					</p>
 				)}
-				<h2 className="font-book text-3xl text-stone-950">{entry.word}</h2>
+				<h2 className="font-book text-[26px] leading-tight text-stone-950">
+					{entry.word}
+				</h2>
 				{entry.pronunciation ? (
-					<p className="mt-1 text-stone-500">{entry.pronunciation}</p>
+					<p className="mt-1 font-sans text-sm text-stone-500">
+						{entry.pronunciation}
+					</p>
 				) : null}
 			</header>
 
@@ -189,7 +266,7 @@ const Entry = ({ entry, onOpen }: { entry: WordEntry; onOpen: Open }) => {
 			{entry.root ? (
 				<div className="mt-8 border-t border-stone-200 pt-6">
 					<button
-						className="font-book text-2xl text-stone-950 underline decoration-stone-300 underline-offset-4 hover:decoration-stone-600"
+						className="font-book text-[22px] text-stone-950 underline decoration-stone-300 underline-offset-4 hover:decoration-stone-600"
 						onClick={() => onOpen(entry.root?.word ?? "", entry.language)}
 						type="button"
 					>
@@ -240,7 +317,7 @@ const Entry = ({ entry, onOpen }: { entry: WordEntry; onOpen: Open }) => {
 				</Section>
 			) : null}
 
-			<footer className="mt-10 font-sans text-[11px] leading-normal text-stone-400">
+			<footer className="mt-8 font-sans text-[11px] leading-normal text-stone-400">
 				Meanings and origin from{" "}
 				{entry.wiktionaryUrl ? (
 					<a
@@ -329,7 +406,7 @@ const Section = ({
 	title: string;
 	children: ReactNode;
 }) => (
-	<section className="mt-7">
+	<section className="mt-6">
 		<h3 className="mb-2 font-sans text-[11px] font-semibold tracking-[0.12em] text-stone-400 uppercase">
 			{title}
 		</h3>

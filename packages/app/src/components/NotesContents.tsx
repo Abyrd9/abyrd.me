@@ -159,9 +159,10 @@ export const NotesContents = ({
 	return (
 		<aside
 			aria-label="Notes"
+			data-side-paper
 			className="flex h-full flex-col bg-stone-100 font-sans text-stone-700 dark:bg-[#0a0a0a] dark:text-stone-300"
 		>
-			<div className="flex items-baseline justify-between gap-3 px-6">
+			<div className="flex items-baseline justify-between gap-3 max-md:px-3">
 				<h2 className="font-book text-[22px] text-stone-900 dark:text-stone-100">
 					Notes
 				</h2>
@@ -169,7 +170,7 @@ export const NotesContents = ({
 					{notes.length} {notes.length === 1 ? "note" : "notes"}
 				</span>
 			</div>
-			<label className="mx-6 mt-3 flex items-center gap-2 border-b border-stone-300 pb-1 text-sm text-stone-500 focus-within:border-stone-600 dark:border-stone-700">
+			<label className="mt-3 max-md:mx-3 flex items-center gap-2 border-b border-stone-300 pb-1 text-sm text-stone-500 focus-within:border-stone-600 dark:border-stone-700">
 				<svg
 					aria-hidden="true"
 					fill="none"
@@ -194,7 +195,7 @@ export const NotesContents = ({
 
 			<nav
 				aria-label="Contents"
-				className="min-h-0 flex-1 overflow-y-auto px-6 pb-8"
+				className="min-h-0 flex-1 overflow-y-auto pb-8 max-md:px-3"
 			>
 				{search ? (
 					matches.length ? (
@@ -252,7 +253,7 @@ export const NotesContents = ({
 					</>
 				)}
 			</nav>
-			<p className="px-6 py-2 text-[11px] text-stone-400">
+			<p className="py-2 text-[11px] max-md:px-3 text-stone-400">
 				Double-click an entry to rename it.
 			</p>
 

@@ -38,6 +38,7 @@ export const NoteEditor = ({
 			<div
 				className={`writing-paper mx-auto w-full max-w-[40rem] bg-white px-5 pt-12 pb-12 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_8px_24px_rgba(0,0,0,0.06)] sm:px-10 ${height ? "overflow-y-auto" : "min-h-[calc(100dvh-6.5rem)]"}`}
 				data-note-paper
+				data-side-paper
 				style={{
 					fontSize: "11.5pt",
 					height,
