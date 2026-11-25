@@ -1,6 +1,6 @@
 import { Dialog } from "@base-ui/react/dialog";
 import { Menu } from "@base-ui/react/menu";
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useState } from "react";
 import { chapterLabel } from "#/components/NotePane";
 import type { listWritingNotes } from "#/server/writing-notes-functions";
 
@@ -42,26 +42,21 @@ export const subtreeIds = (notes: BinderNote[], id: number) => {
 	return ids;
 };
 
-const ancestorIds = (notes: BinderNote[], id: number | null) => {
-	const byId = new Map(notes.map((note) => [note.id, note]));
-	const ids: number[] = [];
-	let current = id === null ? undefined : byId.get(id)?.parentId;
-	while (current !== null && current !== undefined) {
-		ids.push(current);
-		current = byId.get(current)?.parentId;
-	}
-	return ids;
-};
+const formatEdited = (time: number) =>
+	new Date(time).toLocaleDateString("en-US", {
+		month: "short",
+		day: "numeric",
+	});
 
 /**
- * The writing's notes as a tree: notes for the whole book first, then each
- * chapter with its own. Slides in from the left and stays out of the way.
+ * The writing's notes set like a book's contents page: the whole book first,
+ * then each chapter, every level showing, with dotted leaders to a count or
+ * date. Sits beside the paper; opening an entry replaces it with the note.
  */
-export const WritingBinder = ({
+export const NotesContents = ({
 	chapters,
 	notes,
 	currentChapterId,
-	openNoteId,
 	onClose,
 	onOpenChapter,
 	onOpenNote,
@@ -74,7 +69,6 @@ export const WritingBinder = ({
 	chapters: Chapter[];
 	notes: BinderNote[];
 	currentChapterId: number;
-	openNoteId: number | null;
 	onClose: () => void;
 	onOpenChapter: (id: number) => void;
 	onOpenNote: (id: number) => void;
@@ -85,55 +79,27 @@ export const WritingBinder = ({
 	onDelete: (note: BinderNote) => void;
 }) => {
 	const [query, setQuery] = useState("");
-	const [expanded, setExpanded] = useState(() => new Set<string>());
 	const [renaming, setRenaming] = useState<number | null>(null);
 	const [moving, setMoving] = useState<BinderNote | null>(null);
 	const groups = groupNotes(notes);
 
-	// Keeps the current chapter and the open note's ancestors unfolded.
-	useEffect(() => {
-		setExpanded((current) => {
-			const next = new Set(current);
-			next.add(`chapter:${currentChapterId}`);
-			for (const id of ancestorIds(notes, openNoteId)) next.add(`note:${id}`);
-			const open = notes.find((note) => note.id === openNoteId);
-			if (open?.chapterId) next.add(`chapter:${open.chapterId}`);
-			return next.size === current.size ? current : next;
-		});
-	}, [currentChapterId, openNoteId, notes]);
-
-	const toggle = (key: string) =>
-		setExpanded((current) => {
-			const next = new Set(current);
-			if (next.has(key)) next.delete(key);
-			else next.add(key);
-			return next;
-		});
-
-	const renderNotes = (place: Placement, depth: number): ReactNode =>
+	const renderEntries = (place: Placement, depth: number): ReactNode =>
 		childrenOf(groups, place).map((note, index, siblings) => {
 			const children = childrenOf(groups, {
 				chapterId: note.chapterId,
 				parentId: note.id,
 			});
-			const key = `note:${note.id}`;
-			const isOpen = expanded.has(key);
+			const inside = subtreeIds(notes, note.id).size - 1;
 			return (
 				<li key={note.id}>
-					<Row
-						active={note.id === openNoteId}
-						depth={depth}
-						expandable={children.length > 0}
-						expanded={isOpen}
-						onToggle={() => toggle(key)}
+					<Entry
 						actions={
 							<>
 								<AddButton
 									label={`Add a note inside ${note.title || "Untitled"}`}
-									onClick={() => {
-										setExpanded((current) => new Set(current).add(key));
-										onCreate({ chapterId: note.chapterId, parentId: note.id });
-									}}
+									onClick={() =>
+										onCreate({ chapterId: note.chapterId, parentId: note.id })
+									}
 								/>
 								<NoteMenu
 									canMoveEarlier={index > 0}
@@ -146,11 +112,18 @@ export const WritingBinder = ({
 								/>
 							</>
 						}
+						depth={depth}
+						meta={inside ? String(inside) : formatEdited(note.updatedAt)}
+						metaLabel={
+							inside
+								? `${inside} ${inside === 1 ? "note" : "notes"} inside`
+								: "Last edited"
+						}
 					>
 						{renaming === note.id ? (
 							<input
 								aria-label="Note title"
-								className="min-w-0 flex-1 rounded bg-white px-1 py-0.5 text-stone-900 outline-none ring-1 ring-stone-300"
+								className="min-w-0 flex-1 rounded bg-white px-1 text-stone-900 outline-none ring-1 ring-stone-300"
 								defaultValue={note.title}
 								onBlur={(event) => {
 									setRenaming(null);
@@ -165,7 +138,7 @@ export const WritingBinder = ({
 							/>
 						) : (
 							<button
-								className="min-w-0 flex-1 truncate text-left"
+								className="min-w-0 truncate text-left hover:underline hover:decoration-stone-300 hover:underline-offset-4"
 								onClick={() => onOpenNote(note.id)}
 								onDoubleClick={() => setRenaming(note.id)}
 								type="button"
@@ -173,10 +146,10 @@ export const WritingBinder = ({
 								{note.title || <span className="text-stone-400">Untitled</span>}
 							</button>
 						)}
-					</Row>
-					{isOpen && children.length ? (
+					</Entry>
+					{children.length ? (
 						<ul>
-							{renderNotes(
+							{renderEntries(
 								{ chapterId: note.chapterId, parentId: note.id },
 								depth + 1,
 							)}
@@ -192,40 +165,44 @@ export const WritingBinder = ({
 		: [];
 	const placeLabel = (note: BinderNote) => {
 		const chapter = chapters.find((item) => item.id === note.chapterId);
-		return chapter ? chapterLabel(chapter) : "Book notes";
+		return chapter ? chapterLabel(chapter) : "The whole book";
 	};
+	const bookNotes = childrenOf(groups, { chapterId: null, parentId: null });
 
 	return (
 		<aside
 			aria-label="Notes"
-			className="fixed inset-y-0 left-0 z-50 flex w-[min(20rem,88vw)] flex-col border-r border-stone-200 bg-stone-50 font-sans text-sm text-stone-700 shadow-2xl dark:border-stone-800 dark:bg-[#111] dark:text-stone-300"
+			className="flex h-full flex-col bg-stone-100 font-sans text-stone-700 dark:bg-[#0a0a0a] dark:text-stone-300"
 		>
-			<div className="flex items-center justify-between px-4 pt-4">
-				<h2 className="font-book text-lg text-stone-900 dark:text-stone-100">
+			<div className="flex items-baseline justify-between gap-3 px-6 pt-5">
+				<h2 className="font-book text-[22px] text-stone-900 dark:text-stone-100">
 					Notes
 				</h2>
+				<span className="ml-auto text-xs text-stone-400 tabular-nums">
+					{notes.length} {notes.length === 1 ? "note" : "notes"}
+				</span>
 				<button
-					aria-label="Close notes (⌘\)"
-					className="inline-flex size-8 items-center justify-center rounded-md text-stone-500 hover:bg-stone-200 hover:text-stone-900 dark:hover:bg-stone-800"
+					aria-label="Hide notes (⌘\)"
+					className="inline-flex size-7 items-center justify-center self-center rounded-md text-stone-400 hover:bg-stone-200 hover:text-stone-900 dark:hover:bg-stone-800"
 					onClick={onClose}
-					title="Close (⌘\)"
+					title="Hide notes (⌘\)"
 					type="button"
 				>
 					<svg
 						aria-hidden="true"
 						fill="none"
-						height="16"
+						height="15"
 						stroke="currentColor"
 						strokeLinecap="round"
 						strokeWidth="2"
 						viewBox="0 0 24 24"
-						width="16"
+						width="15"
 					>
 						<path d="M18 6 6 18M6 6l12 12" />
 					</svg>
 				</button>
 			</div>
-			<label className="mx-3 mt-3 flex items-center gap-2 rounded-md border border-stone-200 bg-white px-2 py-1.5 text-stone-500 focus-within:border-stone-400 dark:border-stone-800">
+			<label className="mx-6 mt-3 flex items-center gap-2 border-b border-stone-300 pb-1 text-sm text-stone-500 focus-within:border-stone-600 dark:border-stone-700">
 				<svg
 					aria-hidden="true"
 					fill="none"
@@ -248,21 +225,21 @@ export const WritingBinder = ({
 				/>
 			</label>
 
-			<nav className="mt-3 flex-1 overflow-y-auto px-2 pb-6">
+			<nav aria-label="Contents" className="flex-1 overflow-y-auto px-6 pb-8">
 				{search ? (
 					matches.length ? (
-						<ul>
+						<ul className="mt-4">
 							{matches.map((note) => (
 								<li key={note.id}>
 									<button
-										className={`w-full rounded-md px-2 py-1.5 text-left hover:bg-stone-200/70 dark:hover:bg-stone-800 ${note.id === openNoteId ? "bg-stone-200/70 dark:bg-stone-800" : ""}`}
+										className="font-book w-full py-1.5 text-left"
 										onClick={() => onOpenNote(note.id)}
 										type="button"
 									>
-										<span className="block truncate text-stone-900 dark:text-stone-100">
+										<span className="block truncate text-[15px] text-stone-900 dark:text-stone-100">
 											{note.title || "Untitled"}
 										</span>
-										<span className="block truncate text-xs text-stone-500">
+										<span className="block truncate font-sans text-xs text-stone-500">
 											{placeLabel(note)}
 										</span>
 									</button>
@@ -270,77 +247,43 @@ export const WritingBinder = ({
 							))}
 						</ul>
 					) : (
-						<p className="px-2 py-3 text-stone-500">No note titles match.</p>
+						<p className="mt-4 text-sm text-stone-500">No note titles match.</p>
 					)
 				) : (
 					<>
-						<SectionHeading
-							label="Book notes"
-							onAdd={() => onCreate({ chapterId: null, parentId: null })}
+						<Section
 							addLabel="Add a note for the whole book"
+							label="The whole book"
+							onAdd={() => onCreate({ chapterId: null, parentId: null })}
 						/>
-						<ul>{renderNotes({ chapterId: null, parentId: null }, 0)}</ul>
-						{childrenOf(groups, { chapterId: null, parentId: null }).length ===
-						0 ? (
-							<p className="px-2 pb-2 text-xs text-stone-400">
+						{bookNotes.length ? (
+							<ul>{renderEntries({ chapterId: null, parentId: null }, 0)}</ul>
+						) : (
+							<p className="font-book text-sm text-stone-400 italic">
 								Characters, places, themes: anything for the whole book.
 							</p>
-						) : null}
-
-						<SectionHeading label="Chapters" />
-						<ul>
-							{chapters.map((chapter) => {
-								const key = `chapter:${chapter.id}`;
-								const chapterNotes = childrenOf(groups, {
-									chapterId: chapter.id,
-									parentId: null,
-								});
-								return (
-									<li key={chapter.id}>
-										<Row
-											active={
-												chapter.id === currentChapterId && openNoteId === null
-											}
-											current={chapter.id === currentChapterId}
-											depth={0}
-											expandable={chapterNotes.length > 0}
-											expanded={expanded.has(key)}
-											onToggle={() => toggle(key)}
-											actions={
-												<AddButton
-													label={`Add a note to ${chapterLabel(chapter)}`}
-													onClick={() => {
-														setExpanded((current) => new Set(current).add(key));
-														onCreate({ chapterId: chapter.id, parentId: null });
-													}}
-												/>
-											}
-										>
-											<button
-												className="min-w-0 flex-1 truncate text-left font-medium"
-												onClick={() => onOpenChapter(chapter.id)}
-												type="button"
-											>
-												{chapterLabel(chapter)}
-											</button>
-										</Row>
-										{expanded.has(key) && chapterNotes.length ? (
-											<ul>
-												{renderNotes(
-													{ chapterId: chapter.id, parentId: null },
-													1,
-												)}
-											</ul>
-										) : null}
-									</li>
-								);
-							})}
-						</ul>
+						)}
+						{chapters.map((chapter) => (
+							<div key={chapter.id}>
+								<Section
+									addLabel={`Add a note to ${chapterLabel(chapter)}`}
+									current={chapter.id === currentChapterId}
+									label={chapterLabel(chapter)}
+									onAdd={() =>
+										onCreate({ chapterId: chapter.id, parentId: null })
+									}
+									onOpen={() => onOpenChapter(chapter.id)}
+								/>
+								<ul>
+									{renderEntries({ chapterId: chapter.id, parentId: null }, 0)}
+								</ul>
+							</div>
+						))}
 					</>
 				)}
 			</nav>
-			<p className="border-t border-stone-200 px-4 py-2 text-xs text-stone-400 dark:border-stone-800">
-				⌘\ opens and closes notes · double-click to rename
+			<p className="px-6 py-2 text-[11px] text-stone-400">
+				⌘\ hides notes · double-click an entry to rename
 			</p>
 
 			<MoveDialog
@@ -358,74 +301,81 @@ export const WritingBinder = ({
 	);
 };
 
-const Row = ({
-	active,
-	current = false,
+/** One line of the contents: title, dotted leader, and a count or date. */
+const Entry = ({
 	depth,
-	expandable,
-	expanded,
-	onToggle,
+	meta,
+	metaLabel,
 	actions,
 	children,
 }: {
-	active: boolean;
-	/** The chapter on the page, marked even while a note is open beside it. */
-	current?: boolean;
 	depth: number;
-	expandable: boolean;
-	expanded: boolean;
-	onToggle: () => void;
+	meta: string;
+	metaLabel: string;
 	actions: ReactNode;
 	children: ReactNode;
 }) => (
 	<div
-		className={`group flex items-center gap-1 rounded-md py-0.5 pr-1 hover:bg-stone-200/70 dark:hover:bg-stone-800 ${active ? "bg-stone-200/70 text-stone-950 dark:bg-stone-800 dark:text-white" : current ? "text-stone-950 dark:text-white" : ""}`}
-		style={{ paddingLeft: depth * 14 + 2 }}
+		className={`group font-book flex items-baseline gap-2 py-[3px] ${depth === 0 ? "text-[15.5px] text-stone-900 dark:text-stone-100" : depth === 1 ? "text-[14.5px] text-stone-800 dark:text-stone-200" : "text-[14px] text-stone-600 dark:text-stone-400"}`}
+		style={{ paddingLeft: depth * 20 }}
 	>
-		<button
-			aria-expanded={expandable ? expanded : undefined}
-			aria-label={expanded ? "Collapse" : "Expand"}
-			className={`inline-flex size-5 shrink-0 items-center justify-center rounded text-stone-400 hover:text-stone-800 ${expandable ? "" : "invisible"}`}
-			onClick={onToggle}
-			tabIndex={expandable ? 0 : -1}
-			type="button"
-		>
-			<svg
-				aria-hidden="true"
-				className={`transition-transform ${expanded ? "rotate-90" : ""}`}
-				fill="none"
-				height="12"
-				stroke="currentColor"
-				strokeLinecap="round"
-				strokeLinejoin="round"
-				strokeWidth="2.5"
-				viewBox="0 0 24 24"
-				width="12"
-			>
-				<path d="m9 18 6-6-6-6" />
-			</svg>
-		</button>
 		{children}
-		<span className="flex shrink-0 items-center opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 max-sm:opacity-100">
-			{actions}
+		<span
+			aria-hidden="true"
+			className="min-w-4 flex-1 translate-y-[-4px] border-b-[1.5px] border-dotted border-stone-300 dark:border-stone-700"
+		/>
+		<span className="relative shrink-0">
+			<span
+				className="font-mono text-[11px] text-stone-400 tabular-nums group-focus-within:invisible group-hover:invisible max-sm:hidden"
+				title={metaLabel}
+			>
+				{meta}
+			</span>
+			<span className="absolute top-1/2 right-0 flex -translate-y-1/2 items-center opacity-0 group-focus-within:opacity-100 group-hover:opacity-100 max-sm:static max-sm:translate-y-0 max-sm:opacity-100">
+				{actions}
+			</span>
 		</span>
 	</div>
 );
 
-const SectionHeading = ({
+const Section = ({
 	label,
-	onAdd,
 	addLabel,
+	onAdd,
+	onOpen,
+	current = false,
 }: {
 	label: string;
-	onAdd?: () => void;
-	addLabel?: string;
+	addLabel: string;
+	onAdd: () => void;
+	/** Chapter sections open their chapter on the page. */
+	onOpen?: () => void;
+	/** Marks the chapter on the page. */
+	current?: boolean;
 }) => (
-	<div className="group mt-3 flex items-center justify-between px-2 pb-1">
-		<h3 className="text-[11px] font-medium tracking-wide text-stone-400 uppercase">
-			{label}
-		</h3>
-		{onAdd && addLabel ? <AddButton label={addLabel} onClick={onAdd} /> : null}
+	<div className="group mt-6 mb-1.5 flex items-center gap-2">
+		{onOpen ? (
+			<button
+				aria-current={current ? "page" : undefined}
+				className={`min-w-0 truncate text-[11px] font-medium tracking-[0.08em] uppercase hover:text-stone-900 dark:hover:text-stone-100 ${current ? "text-stone-900 dark:text-stone-100" : "text-stone-400"}`}
+				onClick={onOpen}
+				type="button"
+			>
+				{current ? (
+					<span aria-hidden="true" className="mr-1">
+						▸
+					</span>
+				) : null}
+				{label}
+			</button>
+		) : (
+			<h3 className="text-[11px] font-medium tracking-[0.08em] text-stone-400 uppercase">
+				{label}
+			</h3>
+		)}
+		<span className="opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 max-sm:opacity-100">
+			<AddButton label={addLabel} onClick={onAdd} />
+		</span>
 	</div>
 );
 

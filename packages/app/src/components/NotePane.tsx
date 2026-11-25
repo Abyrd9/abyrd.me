@@ -21,16 +21,22 @@ export const chapterLabel = (chapter: { title: string; position: number }) =>
  */
 export const NotePane = ({
 	noteId,
+	currentChapter,
 	canGoBack,
 	onBack,
+	onShowContents,
 	onClose,
 	onOpenNote,
 	onOpenChapter,
 	onTitleChange,
 }: {
 	noteId: number;
+	/** The chapter on the page, to show whether this note is tied to it. */
+	currentChapter: { id: number; title: string; position: number };
 	canGoBack: boolean;
 	onBack: () => void;
+	/** Returns to the notes contents. */
+	onShowContents: () => void;
 	onClose: () => void;
 	onOpenNote: (id: number) => void;
 	onOpenChapter: (chapterId: number) => void;
@@ -88,18 +94,30 @@ export const NotePane = ({
 	const crumb =
 		"min-w-0 truncate rounded px-1 text-stone-500 hover:bg-stone-200 hover:text-stone-900 dark:hover:bg-stone-800 dark:hover:text-stone-100";
 
+	// Tied when the note is one of this chapter's own, or the chapter links to it.
+	const tie = !note
+		? null
+		: note.chapterId === currentChapter.id
+			? `Belongs to ${chapterLabel(currentChapter)}`
+			: note.backlinks.some(
+						(link) => link.kind === "chapter" && link.id === currentChapter.id,
+					)
+				? `${chapterLabel(currentChapter)} links here`
+				: null;
+	const tieLabel = tie ?? `Not tied to ${chapterLabel(currentChapter)}`;
+
 	return (
 		<section
 			aria-label="Note"
-			className="flex h-full flex-col bg-stone-100 dark:bg-[#0a0a0a]"
+			className="relative flex h-full flex-col bg-stone-100 dark:bg-[#0a0a0a]"
 		>
-			<header className="flex items-center gap-1 border-b border-stone-200 px-2 py-1.5 text-sm dark:border-stone-800">
-				<button
-					aria-label="Back to the previous note"
-					className={control}
-					disabled={!canGoBack}
-					onClick={onBack}
-					type="button"
+			{note ? (
+				// Sits on the seam between the chapter and the note.
+				<span
+					aria-label={tieLabel}
+					className={`absolute top-16 -left-[19px] z-10 grid size-9 place-items-center rounded-full border shadow-sm ${tie ? "border-blue-200 bg-blue-50 text-blue-600 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-400" : "border-stone-200 bg-white text-stone-400 dark:border-stone-700"}`}
+					role="img"
+					title={tieLabel}
 				>
 					<svg
 						aria-hidden="true"
@@ -107,26 +125,66 @@ export const NotePane = ({
 						height="16"
 						stroke="currentColor"
 						strokeLinecap="round"
-						strokeLinejoin="round"
 						strokeWidth="2"
 						viewBox="0 0 24 24"
 						width="16"
 					>
+						<path d="M10 13a5 5 0 0 0 7.07 0l2-2A5 5 0 0 0 12 3.93l-1.15 1.15" />
+						<path d="M14 11a5 5 0 0 0-7.07 0l-2 2A5 5 0 0 0 12 20.07l1.14-1.14" />
+					</svg>
+				</span>
+			) : null}
+			<header className="flex items-center gap-1 border-b border-stone-200 py-1.5 pr-2 pl-6 text-sm dark:border-stone-800">
+				<button
+					className="inline-flex shrink-0 items-center gap-1 rounded-full bg-stone-200/80 py-1 pr-3 pl-1.5 text-xs text-stone-800 hover:bg-stone-300/80 dark:bg-stone-800 dark:text-stone-200 dark:hover:bg-stone-700"
+					onClick={onShowContents}
+					type="button"
+				>
+					<svg
+						aria-hidden="true"
+						fill="none"
+						height="14"
+						stroke="currentColor"
+						strokeLinecap="round"
+						strokeLinejoin="round"
+						strokeWidth="2"
+						viewBox="0 0 24 24"
+						width="14"
+					>
 						<path d="m15 18-6-6 6-6" />
 					</svg>
+					Contents
 				</button>
+				{canGoBack ? (
+					<button
+						aria-label="Back to the previous note"
+						className={control}
+						onClick={onBack}
+						title="Previous note"
+						type="button"
+					>
+						<svg
+							aria-hidden="true"
+							fill="none"
+							height="16"
+							stroke="currentColor"
+							strokeLinecap="round"
+							strokeLinejoin="round"
+							strokeWidth="2"
+							viewBox="0 0 24 24"
+							width="16"
+						>
+							<path d="M9 14 4 9l5-5" />
+							<path d="M4 9h11a5 5 0 0 1 0 10h-3" />
+						</svg>
+					</button>
+				) : null}
 				<nav
 					aria-label="Where this note sits"
 					className="flex min-w-0 flex-1 items-center gap-0.5 text-xs"
 				>
 					{note ? (
 						<>
-							<span className="min-w-0 truncate px-1 text-stone-400">
-								{note.writing.title}
-							</span>
-							<span aria-hidden="true" className="text-stone-300">
-								›
-							</span>
 							{note.chapter ? (
 								<button
 									className={crumb}
@@ -136,7 +194,9 @@ export const NotePane = ({
 									{chapterLabel(note.chapter)}
 								</button>
 							) : (
-								<span className="truncate px-1 text-stone-400">Book notes</span>
+								<span className="truncate px-1 text-stone-400">
+									The whole book
+								</span>
 							)}
 							{note.ancestors.map((ancestor) => (
 								<span
@@ -170,9 +230,10 @@ export const NotePane = ({
 									: ""}
 				</span>
 				<button
-					aria-label="Close note"
+					aria-label="Hide notes (⌘\)"
 					className={control}
 					onClick={onClose}
+					title="Hide notes (⌘\)"
 					type="button"
 				>
 					<svg

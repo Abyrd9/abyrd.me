@@ -1,12 +1,12 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { NotePane } from "#/components/NotePane";
-import { PagedEditor } from "#/components/PagedEditor";
 import {
 	type BinderNote,
+	NotesContents,
 	subtreeIds,
-	WritingBinder,
-} from "#/components/WritingBinder";
+} from "#/components/NotesContents";
+import { PagedEditor } from "#/components/PagedEditor";
 import {
 	createWritingNote,
 	deleteWritingNote,
@@ -53,7 +53,8 @@ function WritingEditor() {
 	const [status, setStatus] = useState<SaveStatus>("saved");
 	const [chromeVisible, setChromeVisible] = useState(true);
 	const [notes, setNotes] = useState<BinderNote[]>([]);
-	const [binderOpen, setBinderOpen] = useState(false);
+	// Whether the notes column is showing; remembered for each writing.
+	const [notesOpen, setNotesOpenState] = useState(false);
 	// Notes opened before the current one in the pane, for its back button.
 	const [noteHistory, setNoteHistory] = useState<number[]>([]);
 
@@ -72,15 +73,30 @@ function WritingEditor() {
 		);
 	}, [writingId]);
 
+	const notesOpenKey = `abyrd.writing-notes-open.${writingId}`;
+	const setNotesOpen = (next: boolean | ((open: boolean) => boolean)) =>
+		setNotesOpenState((open) => {
+			const value = typeof next === "function" ? next(open) : next;
+			localStorage.setItem(notesOpenKey, value ? "1" : "0");
+			return value;
+		});
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: the key follows writingId.
+	useEffect(() => {
+		setNotesOpenState(localStorage.getItem(notesOpenKey) === "1");
+	}, [writingId]);
+
 	const refreshNotes = () =>
 		listWritingNotes({ data: { writingId: Number(writingId) } }).then(setNotes);
 
-	// ⌘\ (Ctrl+\ elsewhere) opens and closes the notes binder.
+	// ⌘\ (Ctrl+\ elsewhere) does what the top-bar notes button does. The
+	// listener is added once, so it calls the latest version through a ref.
+	const toggleNotes = useRef<() => void>(() => {});
 	useEffect(() => {
 		const toggle = (event: KeyboardEvent) => {
 			if (event.key === "\\" && (event.metaKey || event.ctrlKey)) {
 				event.preventDefault();
-				setBinderOpen((open) => !open);
+				toggleNotes.current();
 			}
 		};
 		window.addEventListener("keydown", toggle);
@@ -168,12 +184,20 @@ function WritingEditor() {
 	function openNote(id: number, { keepHistory = true } = {}) {
 		if (openNoteId !== null && openNoteId !== id && keepHistory)
 			setNoteHistory((history) => [...history, openNoteId]);
+		setNotesOpen(true);
 		void navigate({ search: { chapter: chapter.id, note: id }, replace: true });
 	}
 
-	function closeNote() {
+	/** Back to the notes contents, leaving the column open. */
+	function showContents() {
 		setNoteHistory([]);
 		void navigate({ search: { chapter: chapter.id }, replace: true });
+	}
+
+	/** Hides the notes column entirely. */
+	function closeNote() {
+		setNotesOpen(false);
+		showContents();
 	}
 
 	function backNote() {
@@ -207,7 +231,7 @@ function WritingEditor() {
 		)
 			return;
 		if (openNoteId !== null && subtreeIds(notes, note.id).has(openNoteId))
-			closeNote();
+			showContents();
 		await deleteWritingNote({ data: { id: note.id } });
 		await refreshNotes();
 	}
@@ -266,28 +290,27 @@ function WritingEditor() {
 	const quiet =
 		"rounded-md px-2 py-1 text-stone-500 transition hover:bg-stone-200 hover:text-stone-900 dark:hover:bg-stone-800 dark:hover:text-stone-100";
 
+	// The notes column: the contents, or a note once one is open.
+	const sideOpen = notesOpen || openNoteId !== null;
+	toggleNotes.current = () => (sideOpen ? closeNote() : setNotesOpen(true));
+
 	return (
 		<main
-			className={`min-h-dvh bg-stone-100 pb-24 dark:bg-[#0a0a0a] ${openNoteId !== null ? "md:pr-[var(--note-pane)]" : ""}`}
-			style={{ ["--note-pane" as string]: "min(46vw, 44rem)" }}
+			className={`min-h-dvh bg-stone-100 pb-24 dark:bg-[#0a0a0a] ${sideOpen ? "md:pr-[var(--side)]" : ""}`}
+			style={{
+				["--side" as string]:
+					openNoteId !== null ? "min(46vw, 44rem)" : "min(30vw, 23rem)",
+			}}
 		>
-			{/* A thin strip at the left edge opens the notes binder. */}
-			<button
-				aria-label="Open notes (⌘\)"
-				className="fixed inset-y-0 left-0 z-30 w-2 cursor-pointer transition-colors hover:bg-stone-300/50 max-md:hidden dark:hover:bg-stone-700/50"
-				onClick={() => setBinderOpen(true)}
-				title="Notes (⌘\)"
-				type="button"
-			/>
 			<header
-				className={`fixed inset-x-0 top-0 z-40 ${openNoteId !== null ? "md:right-[var(--note-pane)]" : ""} grid grid-cols-[1fr_auto_1fr] items-center gap-2 bg-stone-100/90 px-3 py-2 text-sm backdrop-blur transition-opacity duration-500 focus-within:opacity-100 dark:bg-[#0a0a0a]/90 motion-reduce:transition-none ${chromeVisible ? "opacity-100" : "pointer-events-none opacity-0"}`}
+				className={`fixed inset-x-0 top-0 z-40 ${sideOpen ? "md:right-[var(--side)]" : ""} grid grid-cols-[1fr_auto_1fr] items-center gap-2 bg-stone-100/90 px-3 py-2 text-sm backdrop-blur transition-opacity duration-500 focus-within:opacity-100 dark:bg-[#0a0a0a]/90 motion-reduce:transition-none ${chromeVisible ? "opacity-100" : "pointer-events-none opacity-0"}`}
 			>
 				<div className="flex min-w-0 items-center gap-1">
 					<button
-						aria-expanded={binderOpen}
+						aria-expanded={sideOpen}
 						aria-label="Notes (⌘\)"
 						className="inline-flex size-8 shrink-0 items-center justify-center rounded-md text-stone-500 transition hover:bg-stone-200 hover:text-stone-900 dark:hover:bg-stone-800 dark:hover:text-stone-100"
-						onClick={() => setBinderOpen((open) => !open)}
+						onClick={() => toggleNotes.current()}
 						title="Notes (⌘\)"
 						type="button"
 					>
@@ -482,9 +505,11 @@ function WritingEditor() {
 			</div>
 
 			{openNoteId !== null ? (
-				<div className="fixed inset-y-0 right-0 z-40 w-full border-l border-stone-200 md:w-[var(--note-pane)] dark:border-stone-800">
+				<div className="fixed inset-y-0 right-0 z-40 w-full border-l border-stone-200 md:w-[var(--side)] dark:border-stone-800">
 					<NotePane
 						canGoBack={noteHistory.length > 0}
+						currentChapter={chapter}
+						onShowContents={showContents}
 						key={openNoteId}
 						noteId={openNoteId}
 						onBack={backNote}
@@ -502,34 +527,35 @@ function WritingEditor() {
 				</div>
 			) : null}
 
-			{binderOpen ? (
-				<WritingBinder
-					chapters={chapters}
-					currentChapterId={chapter.id}
-					notes={notes}
-					onClose={() => setBinderOpen(false)}
-					onCreate={(place) => void addNote(place)}
-					onDelete={(note) => void removeNote(note)}
-					onMove={(id, to) =>
-						void moveWritingNote({ data: { id, ...to } }).then(refreshNotes)
-					}
-					onOpenChapter={goTo}
-					onOpenNote={(id) => openNote(id)}
-					onRename={(id, title) => {
-						setNotes((current) =>
-							current.map((note) =>
-								note.id === id ? { ...note, title } : note,
-							),
-						);
-						void updateWritingNote({ data: { id, title } });
-					}}
-					onReorder={(id, direction) =>
-						void reorderWritingNote({ data: { id, direction } }).then(
-							refreshNotes,
-						)
-					}
-					openNoteId={openNoteId}
-				/>
+			{sideOpen && openNoteId === null ? (
+				<div className="fixed inset-y-0 right-0 z-40 w-full md:w-[var(--side)]">
+					<NotesContents
+						chapters={chapters}
+						currentChapterId={chapter.id}
+						notes={notes}
+						onClose={closeNote}
+						onCreate={(place) => void addNote(place)}
+						onDelete={(note) => void removeNote(note)}
+						onMove={(id, to) =>
+							void moveWritingNote({ data: { id, ...to } }).then(refreshNotes)
+						}
+						onOpenChapter={goTo}
+						onOpenNote={(id) => openNote(id)}
+						onRename={(id, title) => {
+							setNotes((current) =>
+								current.map((note) =>
+									note.id === id ? { ...note, title } : note,
+								),
+							);
+							void updateWritingNote({ data: { id, title } });
+						}}
+						onReorder={(id, direction) =>
+							void reorderWritingNote({ data: { id, direction } }).then(
+								refreshNotes,
+							)
+						}
+					/>
+				</div>
 			) : null}
 		</main>
 	);
