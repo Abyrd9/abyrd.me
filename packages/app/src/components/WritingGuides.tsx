@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNarrowScreen } from "#/components/use-narrow-screen";
 import { type Guide, guides } from "#/components/writing-guides";
 
 const GUIDE_KEY = "abyrd.writing-guide";
@@ -119,15 +120,21 @@ const CircleDiagram = ({ guide, selected, onSelect }: DiagramProps) => {
 	const small = count > 8;
 	const node = small ? 13 : 16;
 	const margin = 110;
+	const narrow = useNarrowScreen();
 
 	return (
 		<div>
 			<svg
 				aria-label={`${guide.name} diagram`}
-				className="mx-auto block w-full max-w-[36rem] font-sans"
+				className="mx-auto block w-full max-w-[36rem] font-sans max-sm:max-w-[16rem]"
 				role="img"
-				// Extra room left and right for long step names.
-				viewBox={`${-margin} 0 ${size + 2 * margin} ${size}`}
+				// Extra room left and right for long step names; phones list them
+				// below instead, so the circle can fill the width.
+				viewBox={
+					narrow
+						? `20 20 ${size - 40} ${size - 40}`
+						: `${-margin} 0 ${size + 2 * margin} ${size}`
+				}
 			>
 				{guide.halves ? (
 					<>
@@ -223,7 +230,7 @@ const CircleDiagram = ({ guide, selected, onSelect }: DiagramProps) => {
 								{index + 1}
 							</text>
 							<text
-								className={`${small ? "text-[10px]" : "text-[12px]"} ${active ? "fill-stone-950 font-semibold dark:fill-white" : "fill-stone-700 dark:fill-stone-300"}`}
+								className={`max-sm:hidden ${small ? "text-[10px]" : "text-[12px]"} ${active ? "fill-stone-950 font-semibold dark:fill-white" : "fill-stone-700 dark:fill-stone-300"}`}
 								dominantBaseline="central"
 								textAnchor={anchor}
 								x={lx}
@@ -233,7 +240,7 @@ const CircleDiagram = ({ guide, selected, onSelect }: DiagramProps) => {
 							</text>
 							{small ? null : (
 								<text
-									className="fill-stone-400 text-[9.5px]"
+									className="fill-stone-400 text-[9.5px] max-sm:hidden"
 									dominantBaseline="central"
 									textAnchor={anchor}
 									x={lx}
@@ -246,6 +253,12 @@ const CircleDiagram = ({ guide, selected, onSelect }: DiagramProps) => {
 					);
 				})}
 			</svg>
+			<StepList
+				className="mt-4 grid-cols-2 sm:hidden"
+				guide={guide}
+				onSelect={onSelect}
+				selected={selected}
+			/>
 			{guide.groups ? (
 				<ul className="mt-2 flex justify-center gap-4 font-sans text-xs text-stone-500">
 					{guide.groups.map((group, index) => (
@@ -271,8 +284,14 @@ const TimelineDiagram = ({ guide, selected, onSelect }: DiagramProps) => {
 		{ name: "Act III · Resolution", from: 75, to: 100 },
 	];
 	return (
-		<div className="px-4 font-sans">
-			<div className="relative h-44">
+		<div className="font-sans">
+			<StepList
+				className="sm:hidden"
+				guide={guide}
+				onSelect={onSelect}
+				selected={selected}
+			/>
+			<div className="relative h-44 px-4 max-sm:hidden">
 				<div className="absolute inset-x-0 top-[4.5rem] flex h-3 overflow-hidden rounded-full">
 					{acts.map((act, index) => (
 						<div
@@ -327,6 +346,35 @@ const TimelineDiagram = ({ guide, selected, onSelect }: DiagramProps) => {
 		</div>
 	);
 };
+
+/**
+ * The steps as a tappable list, for phones, where the diagram's own labels
+ * would be too small to read.
+ */
+const StepList = ({
+	guide,
+	selected,
+	onSelect,
+	className,
+}: DiagramProps & { className: string }) => (
+	<ol className={`grid gap-1.5 font-sans ${className}`}>
+		{guide.steps.map((step, index) => (
+			<li key={step.name}>
+				<button
+					className={`flex w-full items-baseline gap-2 rounded-lg border px-2.5 py-1.5 text-left text-sm ${index === selected ? "border-stone-900 bg-stone-900 text-white dark:border-stone-100 dark:bg-stone-100 dark:text-stone-900" : "border-stone-200 text-stone-700 dark:border-stone-700 dark:text-stone-300"}`}
+					onClick={() => onSelect(index)}
+					type="button"
+				>
+					<span className="text-xs tabular-nums opacity-60">{index + 1}</span>
+					<span className="min-w-0 flex-1 truncate">{step.name}</span>
+					{step.at !== undefined ? (
+						<span className="text-xs tabular-nums opacity-60">{step.at}%</span>
+					) : null}
+				</button>
+			</li>
+		))}
+	</ol>
+);
 
 /** Steps in order, top to bottom, with the last one turning back to the first. */
 const FlowDiagram = ({ guide, selected, onSelect }: DiagramProps) => (

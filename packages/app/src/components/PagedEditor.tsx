@@ -13,6 +13,7 @@ import {
 	useRef,
 	useState,
 } from "react";
+import { useNarrowScreen } from "#/components/use-narrow-screen";
 import { FootnotesList } from "#/components/WritingFootnotes";
 import {
 	createWritingExtension,
@@ -61,10 +62,12 @@ export const PagedEditor = ({
 	const textRef = useRef<HTMLDivElement>(null);
 	const [pageCount, setPageCount] = useState(1);
 	const [scale, setScale] = useState(1);
+	// Phones show one continuous sheet: shrunken pages are too small to read.
+	const flow = useNarrowScreen();
 
 	useEffect(() => {
 		const text = textRef.current;
-		if (!text) return;
+		if (!text || flow) return;
 		const observer = new ResizeObserver(() => {
 			sizePageBreaks(text, stride, textHeight);
 			const used = Math.max(text.offsetHeight - 1, 0);
@@ -72,10 +75,11 @@ export const PagedEditor = ({
 		});
 		observer.observe(text);
 		return () => observer.disconnect();
-	}, [stride, textHeight]);
+	}, [stride, textHeight, flow]);
 
 	// Pages shrink to fit the space they're given, which is narrower beside a
 	// note than on their own.
+	// biome-ignore lint/correctness/useExhaustiveDependencies: flow swaps the frame element, which needs observing again.
 	useEffect(() => {
 		const frame = frameRef.current;
 		if (!frame) return;
@@ -84,89 +88,109 @@ export const PagedEditor = ({
 		);
 		observer.observe(frame);
 		return () => observer.disconnect();
-	}, [width]);
+	}, [width, flow]);
+
+	const text = (
+		<div className="relative" ref={textRef}>
+			<RichTextPlugin
+				contentEditable={
+					<ContentEditable
+						aria-label="Chapter text"
+						className="outline-none"
+						onKeyDown={onTyping}
+						spellCheck
+					/>
+				}
+				placeholder={
+					<p className="pointer-events-none absolute top-0 left-0 text-stone-400">
+						Start writing…
+					</p>
+				}
+				ErrorBoundary={LexicalErrorBoundary}
+			/>
+			<FootnotesList />
+		</div>
+	);
 
 	return (
 		<LexicalExtensionComposer extension={extension} contentEditable={null}>
-			<div className="w-full" ref={frameRef}>
+			{flow ? (
 				<PaperSurface
+					className="bg-white px-6 pt-10 pb-16 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_8px_24px_rgba(0,0,0,0.06)]"
 					textRef={textRef}
 					style={{
-						width,
-						height: pageCount * stride - PAGE_GAP,
-						fontSize: `${size.fontPt}pt`,
-						zoom: scale,
+						width: "100%",
+						minHeight: "calc(100dvh - 6rem)",
+						fontSize: "17px",
+						// Images cap at most of the screen, as in notes.
+						["--page-text-height" as string]: "70vh",
 					}}
 				>
-					{Array.from({ length: pageCount }, (_, page) => (
-						<div
-							aria-hidden="true"
-							className="absolute inset-x-0 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.08),0_8px_24px_rgba(0,0,0,0.06)]"
-							data-chapter-page
-							// biome-ignore lint/suspicious/noArrayIndexKey: pages are positional.
-							key={page}
-							style={{ top: page * stride, height }}
-						>
-							<span
-								className="absolute inset-x-0 text-center text-[0.75em] text-stone-400"
-								style={{ bottom: margin / 2 - 8 }}
-							>
-								{page + 1}
-							</span>
-						</div>
-					))}
-					{/* Positioned so it forms its own block formatting context, which the
-				    page-gap floats need to push lines inside the editor. */}
-					<div
-						className="absolute"
+					{text}
+				</PaperSurface>
+			) : (
+				<div className="w-full" ref={frameRef}>
+					<PaperSurface
+						textRef={textRef}
 						style={{
-							top: margin,
-							left: margin,
-							width: width - 2 * margin,
-							// Images never grow taller than one page of text.
-							["--page-text-height" as string]: `${textHeight}px`,
-							// Shows only each page's text area, so backgrounds and borders of
-							// blocks that cross a page edge don't paint over the gap.
-							maskImage: `repeating-linear-gradient(to bottom, #000 0 ${textHeight}px, transparent ${textHeight}px ${stride}px)`,
+							width,
+							height: pageCount * stride - PAGE_GAP,
+							fontSize: `${size.fontPt}pt`,
+							zoom: scale,
 						}}
 					>
-						{Array.from({ length: pageCount + 1 }, (_, page) => (
-							// biome-ignore lint/suspicious/noArrayIndexKey: spacers are positional.
-							<Fragment key={page}>
-								<div
-									aria-hidden="true"
-									className="float-left clear-left w-0"
-									style={{ height: textHeight }}
-								/>
-								<div
-									aria-hidden="true"
-									className="float-left clear-left w-full"
-									style={{ height: 2 * margin + PAGE_GAP }}
-								/>
-							</Fragment>
+						{Array.from({ length: pageCount }, (_, page) => (
+							<div
+								aria-hidden="true"
+								className="absolute inset-x-0 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.08),0_8px_24px_rgba(0,0,0,0.06)]"
+								data-chapter-page
+								// biome-ignore lint/suspicious/noArrayIndexKey: pages are positional.
+								key={page}
+								style={{ top: page * stride, height }}
+							>
+								<span
+									className="absolute inset-x-0 text-center text-[0.75em] text-stone-400"
+									style={{ bottom: margin / 2 - 8 }}
+								>
+									{page + 1}
+								</span>
+							</div>
 						))}
-						<div className="relative" ref={textRef}>
-							<RichTextPlugin
-								contentEditable={
-									<ContentEditable
-										aria-label="Chapter text"
-										className="outline-none"
-										onKeyDown={onTyping}
-										spellCheck
+						{/* Positioned so it forms its own block formatting context, which the
+				    page-gap floats need to push lines inside the editor. */}
+						<div
+							className="absolute"
+							style={{
+								top: margin,
+								left: margin,
+								width: width - 2 * margin,
+								// Images never grow taller than one page of text.
+								["--page-text-height" as string]: `${textHeight}px`,
+								// Shows only each page's text area, so backgrounds and borders of
+								// blocks that cross a page edge don't paint over the gap.
+								maskImage: `repeating-linear-gradient(to bottom, #000 0 ${textHeight}px, transparent ${textHeight}px ${stride}px)`,
+							}}
+						>
+							{Array.from({ length: pageCount + 1 }, (_, page) => (
+								// biome-ignore lint/suspicious/noArrayIndexKey: spacers are positional.
+								<Fragment key={page}>
+									<div
+										aria-hidden="true"
+										className="float-left clear-left w-0"
+										style={{ height: textHeight }}
 									/>
-								}
-								placeholder={
-									<p className="pointer-events-none absolute top-0 left-0 text-stone-400">
-										Start writing…
-									</p>
-								}
-								ErrorBoundary={LexicalErrorBoundary}
-							/>
-							<FootnotesList />
+									<div
+										aria-hidden="true"
+										className="float-left clear-left w-full"
+										style={{ height: 2 * margin + PAGE_GAP }}
+									/>
+								</Fragment>
+							))}
+							{text}
 						</div>
-					</div>
-				</PaperSurface>
-			</div>
+					</PaperSurface>
+				</div>
+			)}
 			{/* A new writing or chapter opens ready to type. */}
 			<WritingEditorPlugins
 				autoFocus={!initialContent}
@@ -182,10 +206,12 @@ export const PagedEditor = ({
 const PaperSurface = ({
 	textRef,
 	style,
+	className = "",
 	children,
 }: {
 	textRef: RefObject<HTMLDivElement | null>;
 	style: CSSProperties;
+	className?: string;
 	children: ReactNode;
 }) => {
 	const [editor] = useLexicalComposerContext();
@@ -193,7 +219,7 @@ const PaperSurface = ({
 		// biome-ignore lint/a11y/noStaticElementInteractions: a mouse convenience; keyboard users are already in the editor.
 		<div
 			// Clips the spare page-gap floats. "clip", unlike "hidden", also stops the browser scrolling this box to follow the cursor.
-			className="writing-paper relative mx-auto overflow-clip"
+			className={`writing-paper relative mx-auto overflow-clip ${className}`}
 			data-chapter-paper
 			onMouseDown={(event) => {
 				const text = textRef.current?.getBoundingClientRect();

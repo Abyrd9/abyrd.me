@@ -349,9 +349,14 @@ function WritingEditor() {
 
 	// Controls fade out while typing and return when the mouse moves.
 	useEffect(() => {
+		// Phones have no mouse to move, so a tap anywhere brings them back.
 		const show = () => setChromeVisible(true);
 		window.addEventListener("mousemove", show);
-		return () => window.removeEventListener("mousemove", show);
+		window.addEventListener("touchstart", show, { passive: true });
+		return () => {
+			window.removeEventListener("mousemove", show);
+			window.removeEventListener("touchstart", show);
+		};
 	}, []);
 
 	if (loadError)
@@ -524,19 +529,19 @@ function WritingEditor() {
 			}}
 		>
 			<header
-				className={`fixed inset-x-0 top-0 z-40 grid grid-cols-[1fr_auto_1fr] items-center gap-2 bg-stone-100/90 px-3 py-2 text-sm backdrop-blur transition-opacity duration-500 focus-within:opacity-100 dark:bg-[#0a0a0a]/90 motion-reduce:transition-none ${chromeVisible ? "opacity-100" : "pointer-events-none opacity-0"}`}
+				className={`fixed inset-x-0 top-0 z-40 grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-1 bg-stone-100/90 px-2 py-2 sm:grid-cols-[1fr_auto_1fr] sm:gap-2 sm:px-3 text-sm backdrop-blur transition-opacity duration-500 focus-within:opacity-100 dark:bg-[#0a0a0a]/90 motion-reduce:transition-none ${chromeVisible ? "opacity-100" : "pointer-events-none opacity-0"}`}
 			>
 				<div className="flex min-w-0 items-center gap-1">
 					<Link
 						aria-label={`Back to writings from ${writing.title}`}
-						className={`${quiet} min-w-0 truncate`}
+						className={`${quiet} min-w-0 truncate max-sm:grid max-sm:size-9 max-sm:place-items-center max-sm:px-0`}
 						to="/writing"
 					>
-						← {writing.title}
+						←<span className="max-sm:hidden"> {writing.title}</span>
 					</Link>
 				</div>
 
-				<div className="flex min-w-0 items-center gap-1">
+				<div className="flex min-w-0 items-center justify-center gap-0.5 sm:gap-1">
 					<button
 						aria-label="Previous chapter"
 						className={arrow}
@@ -560,7 +565,7 @@ function WritingEditor() {
 					</button>
 					<input
 						aria-label="Chapter title"
-						className={`w-[min(50vw,28rem)] truncate rounded-md bg-transparent px-2 py-1 text-center font-serif text-base text-stone-800 outline-none placeholder:text-stone-400 focus:bg-white dark:text-stone-100 dark:focus:bg-stone-900`}
+						className={`w-[min(50vw,28rem)] min-w-0 truncate rounded-md max-sm:w-auto max-sm:flex-1 bg-transparent px-2 py-1 text-center font-serif text-base text-stone-800 outline-none placeholder:text-stone-400 focus:bg-white dark:text-stone-100 dark:focus:bg-stone-900`}
 						defaultValue={chapter.title}
 						// Follows renames made elsewhere.
 						key={`${chapter.id}:${chapter.title}`}
@@ -601,7 +606,10 @@ function WritingEditor() {
 					/>
 					{kept ? (
 						<span className="flex items-center gap-1 rounded-md bg-amber-50 px-2 py-1 text-amber-900 dark:bg-amber-950 dark:text-amber-200">
-							{kept.chapter} changed elsewhere. Your edits are in a note.
+							<span className="max-sm:hidden">
+								{kept.chapter} changed elsewhere. Your edits are in a note.
+							</span>
+							<span className="sm:hidden">Edits kept</span>
 							<button
 								className="underline"
 								onClick={() => {
@@ -622,7 +630,10 @@ function WritingEditor() {
 							</button>
 						</span>
 					) : null}
-					<span className="px-2 text-stone-400" role="status">
+					<span
+						className={`px-2 text-stone-400 ${status === "saved" ? "max-sm:sr-only" : "max-sm:px-1 max-sm:text-xs"}`}
+						role="status"
+					>
 						{status === "saving"
 							? "Saving…"
 							: status === "unsaved"
@@ -632,8 +643,23 @@ function WritingEditor() {
 									: "Saved"}
 					</span>
 					<details className="relative">
-						<summary className={`${quiet} cursor-pointer list-none`}>
-							Options
+						<summary
+							aria-label="Options"
+							className={`${quiet} cursor-pointer list-none max-sm:grid max-sm:size-9 max-sm:place-items-center max-sm:px-0`}
+						>
+							<span className="max-sm:hidden">Options</span>
+							<svg
+								aria-hidden="true"
+								className="sm:hidden"
+								fill="currentColor"
+								height="18"
+								viewBox="0 0 24 24"
+								width="18"
+							>
+								<circle cx="5" cy="12" r="1.8" />
+								<circle cx="12" cy="12" r="1.8" />
+								<circle cx="19" cy="12" r="1.8" />
+							</svg>
 						</summary>
 						{/* biome-ignore lint/a11y/noStaticElementInteractions: closes the menu after its buttons run. */}
 						{/* biome-ignore lint/a11y/useKeyWithClickEvents: keyboard-activated buttons fire click too. */}
@@ -705,6 +731,27 @@ function WritingEditor() {
 							) : null}
 						</div>
 					</details>
+					{/* On phones the panel opens from the top bar; there's no room beside the page. */}
+					<button
+						aria-label={sideOpen ? "Close side panel" : "Show side panel"}
+						aria-pressed={sideOpen}
+						className={`grid size-9 place-items-center rounded-md text-stone-600 transition hover:bg-stone-200 sm:hidden dark:text-stone-300 dark:hover:bg-stone-800 ${sideOpen ? "bg-stone-200 dark:bg-stone-800" : ""}`}
+						onClick={() => toggleNotes.current()}
+						type="button"
+					>
+						<svg
+							aria-hidden="true"
+							fill="none"
+							height="18"
+							stroke="currentColor"
+							strokeLinecap="round"
+							strokeWidth="2"
+							viewBox="0 0 24 24"
+							width="18"
+						>
+							<path d="M4 6h16M4 12h16M4 18h16" />
+						</svg>
+					</button>
 				</div>
 			</header>
 
@@ -715,7 +762,7 @@ function WritingEditor() {
 				<div className="flex h-full">
 					<div className="min-w-0 flex-1 overflow-y-auto">
 						<div
-							className={`flex px-3 pt-24 pb-24 sm:px-6 ${sideOpen ? "md:justify-end md:pr-8" : "justify-center"}`}
+							className={`flex px-2 pt-16 pb-24 sm:px-6 sm:pt-24 ${sideOpen ? "md:justify-end md:pr-8" : "justify-center"}`}
 						>
 							<div
 								className="relative min-w-0"
@@ -787,7 +834,7 @@ function WritingEditor() {
 					</div>
 
 					{sideOpen ? (
-						<div className="min-w-0 max-md:fixed max-md:inset-x-0 max-md:top-12 max-md:bottom-0 max-md:z-30 max-md:bg-stone-100 md:flex-1 md:pt-24 md:pb-6 md:pl-8 dark:max-md:bg-[#0a0a0a]">
+						<div className="min-w-0 max-md:fixed max-md:inset-x-0 max-md:top-[52px] max-md:bottom-0 max-md:z-30 max-md:bg-stone-100 md:flex-1 md:pt-24 md:pb-6 md:pl-8 dark:max-md:bg-[#0a0a0a]">
 							<div className="flex h-full w-full flex-col md:max-w-[var(--side)] md:pr-6">
 								<SideTabs onClose={closeNote} onTab={setTab} tab={tab} />
 								{tab === "notes" && openNoteId !== null ? null : (

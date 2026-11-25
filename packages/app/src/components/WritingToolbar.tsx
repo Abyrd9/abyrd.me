@@ -183,6 +183,21 @@ export const WritingToolbar = () => {
 		[editor],
 	);
 
+	// On phones the toolbar rides the top of the keyboard, so it follows the
+	// visible area as the keyboard opens and the page pans.
+	const [, setViewportMoves] = useState(0);
+	useEffect(() => {
+		const visible = window.visualViewport;
+		if (!state || !visible || window.innerWidth >= 640) return;
+		const follow = () => setViewportMoves((count) => count + 1);
+		visible.addEventListener("resize", follow);
+		visible.addEventListener("scroll", follow);
+		return () => {
+			visible.removeEventListener("resize", follow);
+			visible.removeEventListener("scroll", follow);
+		};
+	}, [state]);
+
 	// The toolbar is placed against the viewport, so any scroll (the page or a
 	// note pane) would leave it behind; it hides until the selection changes.
 	useEffect(() => {
@@ -205,12 +220,34 @@ export const WritingToolbar = () => {
 		editor.focus();
 	};
 
+	// Phones: a full-width strip docked at the bottom of the visible screen,
+	// just above the keyboard, clear of both the text and the system's
+	// copy-and-paste menu; it scrolls sideways if the tools don't fit.
+	// Wider screens: centered above the selection, kept inside the window.
+	const narrow = window.innerWidth < 640;
+	const half = 250;
+	const visible = window.visualViewport;
 	return createPortal(
 		<div
 			aria-label="Format selection"
-			className="fixed z-50 flex -translate-x-1/2 -translate-y-full items-center gap-0.5 rounded-lg border border-stone-200 bg-white p-1 text-stone-700 shadow-lg dark:border-stone-700 dark:text-stone-200"
+			className={`fixed z-50 flex items-center gap-0.5 rounded-lg border border-stone-200 bg-white p-1 text-stone-700 shadow-lg dark:border-stone-700 dark:text-stone-200 ${narrow ? "inset-x-2 overflow-x-auto [scrollbar-width:none]" : "-translate-x-1/2 -translate-y-full"}`}
 			role="toolbar"
-			style={{ top: state.top - 8, left: state.left }}
+			style={
+				narrow
+					? {
+							top:
+								(visible?.offsetTop ?? 0) +
+								(visible?.height ?? window.innerHeight) -
+								52,
+						}
+					: {
+							top: state.top - 8,
+							left: Math.min(
+								Math.max(state.left, half + 8),
+								window.innerWidth - half - 8,
+							),
+						}
+			}
 		>
 			{linkDraft !== null ? (
 				<form
@@ -355,7 +392,7 @@ export const WritingToolbar = () => {
 const Divider = () => (
 	<span
 		aria-hidden="true"
-		className="mx-0.5 h-4 w-px bg-stone-200 dark:bg-stone-700"
+		className="mx-0.5 h-4 w-px shrink-0 bg-stone-200 dark:bg-stone-700"
 	/>
 );
 
@@ -373,7 +410,7 @@ const ToolbarButton = ({
 	<button
 		aria-label={label}
 		aria-pressed={active}
-		className={`inline-flex size-8 items-center justify-center rounded-md text-sm transition-colors hover:bg-stone-100 hover:text-stone-950 focus-visible:outline-2 focus-visible:outline-stone-400 dark:hover:bg-stone-800 dark:hover:text-white ${active ? "bg-stone-100 text-stone-950 dark:bg-stone-800 dark:text-white" : ""}`}
+		className={`inline-flex size-8 shrink-0 items-center justify-center rounded-md text-sm transition-colors max-sm:size-9 hover:bg-stone-100 hover:text-stone-950 focus-visible:outline-2 focus-visible:outline-stone-400 dark:hover:bg-stone-800 dark:hover:text-white ${active ? "bg-stone-100 text-stone-950 dark:bg-stone-800 dark:text-white" : ""}`}
 		// Keeps the text selected while the button is pressed.
 		onMouseDown={(event) => event.preventDefault()}
 		onClick={onClick}

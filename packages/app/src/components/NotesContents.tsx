@@ -253,7 +253,7 @@ export const NotesContents = ({
 					</>
 				)}
 			</nav>
-			<p className="py-2 text-[11px] max-md:px-3 text-stone-400">
+			<p className="py-2 text-[11px] max-md:px-3 max-sm:hidden text-stone-400">
 				Double-click an entry to rename it.
 			</p>
 
