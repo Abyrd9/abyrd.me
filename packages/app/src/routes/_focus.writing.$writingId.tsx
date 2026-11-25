@@ -1,6 +1,20 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import { NotePane } from "#/components/NotePane";
 import { PagedEditor } from "#/components/PagedEditor";
+import {
+	type BinderNote,
+	subtreeIds,
+	WritingBinder,
+} from "#/components/WritingBinder";
+import {
+	createWritingNote,
+	deleteWritingNote,
+	listWritingNotes,
+	moveWritingNote,
+	reorderWritingNote,
+	updateWritingNote,
+} from "#/server/writing-notes-functions";
 import {
 	createChapter,
 	deleteChapter,
@@ -12,8 +26,12 @@ import {
 import { pageSizeIds, pageSizes, toPageSizeId } from "#/writing-page-sizes";
 
 export const Route = createFileRoute("/_focus/writing/$writingId")({
-	validateSearch: (search: Record<string, unknown>) => ({
+	validateSearch: (
+		search: Record<string, unknown>,
+	): { chapter?: number; note?: number } => ({
 		chapter: typeof search.chapter === "number" ? search.chapter : undefined,
+		/** The note open beside the chapter, if any. */
+		note: typeof search.note === "number" ? search.note : undefined,
 	}),
 	head: () => ({ meta: [{ title: "Writing - Andrew Byrd" }] }),
 	component: WritingEditor,
@@ -34,6 +52,10 @@ function WritingEditor() {
 	const [loadError, setLoadError] = useState(false);
 	const [status, setStatus] = useState<SaveStatus>("saved");
 	const [chromeVisible, setChromeVisible] = useState(true);
+	const [notes, setNotes] = useState<BinderNote[]>([]);
+	const [binderOpen, setBinderOpen] = useState(false);
+	// Notes opened before the current one in the pane, for its back button.
+	const [noteHistory, setNoteHistory] = useState<number[]>([]);
 
 	// Unsaved text lives in refs so typing never re-renders this page.
 	const pending = useRef(new Map<number, PendingSave>());
@@ -45,7 +67,25 @@ function WritingEditor() {
 		void loadWriting({ data: { id: Number(writingId) } })
 			.then((loaded) => (loaded ? setWriting(loaded) : setLoadError(true)))
 			.catch(() => setLoadError(true));
+		void listWritingNotes({ data: { writingId: Number(writingId) } }).then(
+			setNotes,
+		);
 	}, [writingId]);
+
+	const refreshNotes = () =>
+		listWritingNotes({ data: { writingId: Number(writingId) } }).then(setNotes);
+
+	// ⌘\ (Ctrl+\ elsewhere) opens and closes the notes binder.
+	useEffect(() => {
+		const toggle = (event: KeyboardEvent) => {
+			if (event.key === "\\" && (event.metaKey || event.ctrlKey)) {
+				event.preventDefault();
+				setBinderOpen((open) => !open);
+			}
+		};
+		window.addEventListener("keydown", toggle);
+		return () => window.removeEventListener("keydown", toggle);
+	}, []);
 
 	// Saves queued chapters one at a time. Edits made during a save queue up
 	// behind it, and a failed save stays queued for a retry.
@@ -115,9 +155,61 @@ function WritingEditor() {
 	const isSingle = chapters.length === 1;
 	const pageSize = toPageSizeId(writing.pageSize);
 
+	const openNoteId = search.note ?? null;
+
 	function goTo(chapterId: number) {
 		void save();
-		void navigate({ search: { chapter: chapterId }, replace: true });
+		void navigate({
+			search: { chapter: chapterId, note: search.note },
+			replace: true,
+		});
+	}
+
+	function openNote(id: number, { keepHistory = true } = {}) {
+		if (openNoteId !== null && openNoteId !== id && keepHistory)
+			setNoteHistory((history) => [...history, openNoteId]);
+		void navigate({ search: { chapter: chapter.id, note: id }, replace: true });
+	}
+
+	function closeNote() {
+		setNoteHistory([]);
+		void navigate({ search: { chapter: chapter.id }, replace: true });
+	}
+
+	function backNote() {
+		const previous = noteHistory.at(-1);
+		if (previous === undefined) return;
+		setNoteHistory((history) => history.slice(0, -1));
+		openNote(previous, { keepHistory: false });
+	}
+
+	async function addNote(place: {
+		chapterId: number | null;
+		parentId: number | null;
+	}) {
+		if (!writing) return;
+		const created = await createWritingNote({
+			data: { writingId: writing.id, ...place, title: "" },
+		});
+		await refreshNotes();
+		openNote(created.id);
+	}
+
+	async function removeNote(note: BinderNote) {
+		const beneath = subtreeIds(notes, note.id).size - 1;
+		const name = note.title || "Untitled";
+		if (
+			!confirm(
+				beneath
+					? `Delete “${name}” and the ${beneath} ${beneath === 1 ? "note" : "notes"} beneath it? This can't be undone.`
+					: `Delete “${name}”? This can't be undone.`,
+			)
+		)
+			return;
+		if (openNoteId !== null && subtreeIds(notes, note.id).has(openNoteId))
+			closeNote();
+		await deleteWritingNote({ data: { id: note.id } });
+		await refreshNotes();
 	}
 
 	async function addChapter() {
@@ -129,9 +221,14 @@ function WritingEditor() {
 
 	async function removeChapter() {
 		if (!writing || isSingle) return;
+		const chapterNotes = notes.filter(
+			(note) => note.chapterId === chapter.id,
+		).length;
 		if (
 			!confirm(
-				"Delete this chapter and everything in it? This can't be undone.",
+				chapterNotes
+					? `Delete this chapter, its ${chapterNotes} ${chapterNotes === 1 ? "note" : "notes"}, and everything in it? This can't be undone.`
+					: "Delete this chapter and everything in it? This can't be undone.",
 			)
 		)
 			return;
@@ -140,6 +237,7 @@ function WritingEditor() {
 		const rest = writing.chapters.filter((item) => item.id !== chapter.id);
 		setWriting({ ...writing, chapters: rest });
 		goTo(rest[Math.max(0, index - 1)].id);
+		void refreshNotes();
 	}
 
 	async function reorder(direction: "earlier" | "later") {
@@ -169,11 +267,45 @@ function WritingEditor() {
 		"rounded-md px-2 py-1 text-stone-500 transition hover:bg-stone-200 hover:text-stone-900 dark:hover:bg-stone-800 dark:hover:text-stone-100";
 
 	return (
-		<main className="min-h-dvh bg-stone-100 pb-24 dark:bg-[#0a0a0a]">
+		<main
+			className={`min-h-dvh bg-stone-100 pb-24 dark:bg-[#0a0a0a] ${openNoteId !== null ? "md:pr-[var(--note-pane)]" : ""}`}
+			style={{ ["--note-pane" as string]: "min(46vw, 44rem)" }}
+		>
+			{/* A thin strip at the left edge opens the notes binder. */}
+			<button
+				aria-label="Open notes (⌘\)"
+				className="fixed inset-y-0 left-0 z-30 w-2 cursor-pointer transition-colors hover:bg-stone-300/50 max-md:hidden dark:hover:bg-stone-700/50"
+				onClick={() => setBinderOpen(true)}
+				title="Notes (⌘\)"
+				type="button"
+			/>
 			<header
-				className={`fixed inset-x-0 top-0 z-40 grid grid-cols-[1fr_auto_1fr] items-center gap-2 bg-stone-100/90 px-3 py-2 text-sm backdrop-blur transition-opacity duration-500 focus-within:opacity-100 dark:bg-[#0a0a0a]/90 motion-reduce:transition-none ${chromeVisible ? "opacity-100" : "pointer-events-none opacity-0"}`}
+				className={`fixed inset-x-0 top-0 z-40 ${openNoteId !== null ? "md:right-[var(--note-pane)]" : ""} grid grid-cols-[1fr_auto_1fr] items-center gap-2 bg-stone-100/90 px-3 py-2 text-sm backdrop-blur transition-opacity duration-500 focus-within:opacity-100 dark:bg-[#0a0a0a]/90 motion-reduce:transition-none ${chromeVisible ? "opacity-100" : "pointer-events-none opacity-0"}`}
 			>
 				<div className="flex min-w-0 items-center gap-1">
+					<button
+						aria-expanded={binderOpen}
+						aria-label="Notes (⌘\)"
+						className="inline-flex size-8 shrink-0 items-center justify-center rounded-md text-stone-500 transition hover:bg-stone-200 hover:text-stone-900 dark:hover:bg-stone-800 dark:hover:text-stone-100"
+						onClick={() => setBinderOpen((open) => !open)}
+						title="Notes (⌘\)"
+						type="button"
+					>
+						<svg
+							aria-hidden="true"
+							fill="none"
+							height="17"
+							stroke="currentColor"
+							strokeLinecap="round"
+							strokeLinejoin="round"
+							strokeWidth="1.8"
+							viewBox="0 0 24 24"
+							width="17"
+						>
+							<rect height="16" rx="2" width="18" x="3" y="4" />
+							<path d="M9 4v16" />
+						</svg>
+					</button>
 					<Link
 						aria-label={`Back to writings from ${writing.title}`}
 						className={`${quiet} min-w-0 truncate`}
@@ -207,7 +339,7 @@ function WritingEditor() {
 					</button>
 					<input
 						aria-label="Chapter title"
-						className="w-[min(50vw,28rem)] truncate rounded-md bg-transparent px-2 py-1 text-center font-serif text-base text-stone-800 outline-none placeholder:text-stone-400 focus:bg-white dark:text-stone-100 dark:focus:bg-stone-900"
+						className={`${openNoteId !== null ? "w-[min(22vw,14rem)]" : "w-[min(50vw,28rem)]"} truncate rounded-md bg-transparent px-2 py-1 text-center font-serif text-base text-stone-800 outline-none placeholder:text-stone-400 focus:bg-white dark:text-stone-100 dark:focus:bg-stone-900`}
 						defaultValue={chapter.title}
 						key={chapter.id}
 						onBlur={(event) => void renameChapter(event.target.value)}
@@ -348,6 +480,57 @@ function WritingEditor() {
 					pageSize={pageSize}
 				/>
 			</div>
+
+			{openNoteId !== null ? (
+				<div className="fixed inset-y-0 right-0 z-40 w-full border-l border-stone-200 md:w-[var(--note-pane)] dark:border-stone-800">
+					<NotePane
+						canGoBack={noteHistory.length > 0}
+						key={openNoteId}
+						noteId={openNoteId}
+						onBack={backNote}
+						onClose={closeNote}
+						onOpenChapter={goTo}
+						onOpenNote={(id) => openNote(id)}
+						onTitleChange={(id, title) =>
+							setNotes((current) =>
+								current.map((note) =>
+									note.id === id ? { ...note, title } : note,
+								),
+							)
+						}
+					/>
+				</div>
+			) : null}
+
+			{binderOpen ? (
+				<WritingBinder
+					chapters={chapters}
+					currentChapterId={chapter.id}
+					notes={notes}
+					onClose={() => setBinderOpen(false)}
+					onCreate={(place) => void addNote(place)}
+					onDelete={(note) => void removeNote(note)}
+					onMove={(id, to) =>
+						void moveWritingNote({ data: { id, ...to } }).then(refreshNotes)
+					}
+					onOpenChapter={goTo}
+					onOpenNote={(id) => openNote(id)}
+					onRename={(id, title) => {
+						setNotes((current) =>
+							current.map((note) =>
+								note.id === id ? { ...note, title } : note,
+							),
+						);
+						void updateWritingNote({ data: { id, title } });
+					}}
+					onReorder={(id, direction) =>
+						void reorderWritingNote({ data: { id, direction } }).then(
+							refreshNotes,
+						)
+					}
+					openNoteId={openNoteId}
+				/>
+			) : null}
 		</main>
 	);
 }

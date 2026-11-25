@@ -1,19 +1,8 @@
-import { CodeHighlightNode, CodeNode } from "@lexical/code-core";
-import { defineExtension } from "@lexical/extension";
-import { LinkNode } from "@lexical/link";
-import { ListItemNode, ListNode } from "@lexical/list";
-import { AutoFocusPlugin } from "@lexical/react/LexicalAutoFocusPlugin";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { ContentEditable } from "@lexical/react/LexicalContentEditable";
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
 import { LexicalExtensionComposer } from "@lexical/react/LexicalExtensionComposer";
-import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
-import { LinkPlugin } from "@lexical/react/LexicalLinkPlugin";
-import { ListPlugin } from "@lexical/react/LexicalListPlugin";
-import { MarkdownShortcutPlugin } from "@lexical/react/LexicalMarkdownShortcutPlugin";
-import { OnChangePlugin } from "@lexical/react/LexicalOnChangePlugin";
 import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
-import { HeadingNode, QuoteNode } from "@lexical/rich-text";
 import { $getRoot } from "lexical";
 import {
 	type CSSProperties,
@@ -24,20 +13,11 @@ import {
 	useRef,
 	useState,
 } from "react";
-import { LibraryQuotePicker } from "#/components/LibraryQuotePicker";
-import { FootnoteNode, FootnotesList } from "#/components/WritingFootnotes";
-import { ImageNode, WritingImagePlugin } from "#/components/WritingImage";
-import { WritingSlashMenu } from "#/components/WritingSlashMenu";
-import { WritingToolbar } from "#/components/WritingToolbar";
+import { FootnotesList } from "#/components/WritingFootnotes";
 import {
-	CalloutNode,
-	EpigraphNode,
-	markdownShortcuts,
-	PageBreakNode,
-	registerVerseLines,
-	SceneBreakNode,
-	VerseNode,
-} from "#/components/writing-nodes";
+	createWritingExtension,
+	WritingEditorPlugins,
+} from "#/components/writing-editor-setup";
 import { type PageSizeId, pageSizes } from "#/writing-page-sizes";
 
 const PX_PER_INCH = 96;
@@ -63,59 +43,7 @@ export const PagedEditor = ({
 	onTyping?: () => void;
 }) => {
 	const [extension] = useState(() =>
-		defineExtension({
-			name: "PagedWriting",
-			namespace: "PagedWriting",
-			nodes: () => [
-				HeadingNode,
-				QuoteNode,
-				ListNode,
-				ListItemNode,
-				LinkNode,
-				CodeNode,
-				CodeHighlightNode,
-				EpigraphNode,
-				VerseNode,
-				CalloutNode,
-				SceneBreakNode,
-				PageBreakNode,
-				ImageNode,
-				FootnoteNode,
-			],
-			theme: {
-				paragraph: "writing-paragraph",
-				heading: {
-					h1: "writing-heading",
-					h2: "writing-heading",
-					h3: "writing-subheading",
-				},
-				quote: "writing-quote",
-				epigraph: "writing-epigraph",
-				verse: "writing-verse",
-				callout: "writing-callout",
-				sceneBreak: "writing-scene-break",
-				pageBreak: "writing-page-break",
-				code: "writing-code",
-				link: "writing-link",
-				list: {
-					ul: "writing-list list-disc",
-					ol: "writing-list list-decimal",
-					nested: { listitem: "list-none" },
-				},
-				text: {
-					bold: "font-bold",
-					italic: "italic",
-					underline: "underline underline-offset-[0.15em]",
-					strikethrough: "line-through",
-					underlineStrikethrough: "underline line-through",
-					highlight: "writing-highlight",
-					code: "writing-inline-code",
-					superscript: "writing-superscript",
-				},
-			},
-			register: registerVerseLines,
-			$initialEditorState: initialContent,
-		}),
+		createWritingExtension("PagedWriting", initialContent),
 	);
 
 	const size = pageSizes[pageSize];
@@ -125,6 +53,7 @@ export const PagedEditor = ({
 	const textHeight = height - 2 * margin;
 	const stride = height + PAGE_GAP;
 
+	const frameRef = useRef<HTMLDivElement>(null);
 	const textRef = useRef<HTMLDivElement>(null);
 	const [pageCount, setPageCount] = useState(1);
 	const [scale, setScale] = useState(1);
@@ -141,110 +70,104 @@ export const PagedEditor = ({
 		return () => observer.disconnect();
 	}, [stride, textHeight]);
 
+	// Pages shrink to fit the space they're given, which is narrower beside a
+	// note than on their own.
 	useEffect(() => {
-		const fit = () => setScale(Math.min(1, (window.innerWidth - 24) / width));
-		fit();
-		window.addEventListener("resize", fit);
-		return () => window.removeEventListener("resize", fit);
+		const frame = frameRef.current;
+		if (!frame) return;
+		const observer = new ResizeObserver(() =>
+			setScale(Math.min(1, (frame.clientWidth - 24) / width)),
+		);
+		observer.observe(frame);
+		return () => observer.disconnect();
 	}, [width]);
 
 	return (
 		<LexicalExtensionComposer extension={extension} contentEditable={null}>
-			<PaperSurface
-				textRef={textRef}
-				style={{
-					width,
-					height: pageCount * stride - PAGE_GAP,
-					fontSize: `${size.fontPt}pt`,
-					zoom: scale,
-				}}
-			>
-				{Array.from({ length: pageCount }, (_, page) => (
-					<div
-						aria-hidden="true"
-						className="absolute inset-x-0 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.08),0_8px_24px_rgba(0,0,0,0.06)]"
-						// biome-ignore lint/suspicious/noArrayIndexKey: pages are positional.
-						key={page}
-						style={{ top: page * stride, height }}
-					>
-						<span
-							className="absolute inset-x-0 text-center text-[0.75em] text-stone-400"
-							style={{ bottom: margin / 2 - 8 }}
-						>
-							{page + 1}
-						</span>
-					</div>
-				))}
-				{/* Positioned so it forms its own block formatting context, which the
-				    page-gap floats need to push lines inside the editor. */}
-				<div
-					className="absolute"
+			<div className="w-full" ref={frameRef}>
+				<PaperSurface
+					textRef={textRef}
 					style={{
-						top: margin,
-						left: margin,
-						width: width - 2 * margin,
-						// Images never grow taller than one page of text.
-						["--page-text-height" as string]: `${textHeight}px`,
-						// Shows only each page's text area, so backgrounds and borders of
-						// blocks that cross a page edge don't paint over the gap.
-						maskImage: `repeating-linear-gradient(to bottom, #000 0 ${textHeight}px, transparent ${textHeight}px ${stride}px)`,
+						width,
+						height: pageCount * stride - PAGE_GAP,
+						fontSize: `${size.fontPt}pt`,
+						zoom: scale,
 					}}
 				>
-					{Array.from({ length: pageCount + 1 }, (_, page) => (
-						// biome-ignore lint/suspicious/noArrayIndexKey: spacers are positional.
-						<Fragment key={page}>
-							<div
-								aria-hidden="true"
-								className="float-left clear-left w-0"
-								style={{ height: textHeight }}
-							/>
-							<div
-								aria-hidden="true"
-								className="float-left clear-left w-full"
-								style={{ height: 2 * margin + PAGE_GAP }}
-							/>
-						</Fragment>
+					{Array.from({ length: pageCount }, (_, page) => (
+						<div
+							aria-hidden="true"
+							className="absolute inset-x-0 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.08),0_8px_24px_rgba(0,0,0,0.06)]"
+							// biome-ignore lint/suspicious/noArrayIndexKey: pages are positional.
+							key={page}
+							style={{ top: page * stride, height }}
+						>
+							<span
+								className="absolute inset-x-0 text-center text-[0.75em] text-stone-400"
+								style={{ bottom: margin / 2 - 8 }}
+							>
+								{page + 1}
+							</span>
+						</div>
 					))}
-					<div className="relative" ref={textRef}>
-						<RichTextPlugin
-							contentEditable={
-								<ContentEditable
-									aria-label="Chapter text"
-									className="outline-none"
-									onKeyDown={onTyping}
-									spellCheck
+					{/* Positioned so it forms its own block formatting context, which the
+				    page-gap floats need to push lines inside the editor. */}
+					<div
+						className="absolute"
+						style={{
+							top: margin,
+							left: margin,
+							width: width - 2 * margin,
+							// Images never grow taller than one page of text.
+							["--page-text-height" as string]: `${textHeight}px`,
+							// Shows only each page's text area, so backgrounds and borders of
+							// blocks that cross a page edge don't paint over the gap.
+							maskImage: `repeating-linear-gradient(to bottom, #000 0 ${textHeight}px, transparent ${textHeight}px ${stride}px)`,
+						}}
+					>
+						{Array.from({ length: pageCount + 1 }, (_, page) => (
+							// biome-ignore lint/suspicious/noArrayIndexKey: spacers are positional.
+							<Fragment key={page}>
+								<div
+									aria-hidden="true"
+									className="float-left clear-left w-0"
+									style={{ height: textHeight }}
 								/>
-							}
-							placeholder={
-								<p className="pointer-events-none absolute top-0 left-0 text-stone-400">
-									Start writing…
-								</p>
-							}
-							ErrorBoundary={LexicalErrorBoundary}
-						/>
-						<FootnotesList />
+								<div
+									aria-hidden="true"
+									className="float-left clear-left w-full"
+									style={{ height: 2 * margin + PAGE_GAP }}
+								/>
+							</Fragment>
+						))}
+						<div className="relative" ref={textRef}>
+							<RichTextPlugin
+								contentEditable={
+									<ContentEditable
+										aria-label="Chapter text"
+										className="outline-none"
+										onKeyDown={onTyping}
+										spellCheck
+									/>
+								}
+								placeholder={
+									<p className="pointer-events-none absolute top-0 left-0 text-stone-400">
+										Start writing…
+									</p>
+								}
+								ErrorBoundary={LexicalErrorBoundary}
+							/>
+							<FootnotesList />
+						</div>
 					</div>
-				</div>
-			</PaperSurface>
+				</PaperSurface>
+			</div>
 			{/* A new writing or chapter opens ready to type. */}
-			{initialContent ? null : <AutoFocusPlugin />}
-			<HistoryPlugin />
-			<ListPlugin />
-			<LinkPlugin />
-			<MarkdownShortcutPlugin transformers={markdownShortcuts} />
-			<WritingSlashMenu />
-			<WritingImagePlugin />
-			<LibraryQuotePicker />
-			<OnChangePlugin
-				ignoreSelectionChange
-				onChange={(state) => {
-					const words = state.read(() =>
-						$getRoot().getTextContent().split(/\s+/).filter(Boolean),
-					).length;
-					onChange(JSON.stringify(state.toJSON()), words);
-				}}
+			<WritingEditorPlugins
+				autoFocus={!initialContent}
+				onChange={onChange}
+				paged
 			/>
-			<WritingToolbar />
 		</LexicalExtensionComposer>
 	);
 };

@@ -130,8 +130,8 @@ export const WritingToolbar = () => {
 								.filter((format) => selection.hasFormat(format)),
 						);
 						setState({
-							top: rect.top + window.scrollY,
-							left: rect.left + rect.width / 2 + window.scrollX,
+							top: rect.top,
+							left: rect.left + rect.width / 2,
 							block: $isHeadingNode(block)
 								? block.getTag() === "h3"
 									? "h3"
@@ -167,6 +167,17 @@ export const WritingToolbar = () => {
 		[editor],
 	);
 
+	// The toolbar is placed against the viewport, so any scroll (the page or a
+	// note pane) would leave it behind; it hides until the selection changes.
+	useEffect(() => {
+		if (!state) return;
+		const hide = () => {
+			if (!editingLink.current) setState(null);
+		};
+		window.addEventListener("scroll", hide, { capture: true, passive: true });
+		return () => window.removeEventListener("scroll", hide, { capture: true });
+	}, [state]);
+
 	if (!state) return null;
 
 	const applyLink = (url: string | null) => {
@@ -181,7 +192,7 @@ export const WritingToolbar = () => {
 	return createPortal(
 		<div
 			aria-label="Format selection"
-			className="absolute z-50 flex -translate-x-1/2 -translate-y-full items-center gap-0.5 rounded-lg border border-stone-200 bg-white p-1 text-stone-700 shadow-lg dark:border-stone-700 dark:text-stone-200"
+			className="fixed z-50 flex -translate-x-1/2 -translate-y-full items-center gap-0.5 rounded-lg border border-stone-200 bg-white p-1 text-stone-700 shadow-lg dark:border-stone-700 dark:text-stone-200"
 			role="toolbar"
 			style={{ top: state.top - 8, left: state.left }}
 		>

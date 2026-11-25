@@ -89,13 +89,16 @@ const FootnoteMarker = ({
 		left: number;
 	} | null>(null);
 
+	// Placed against the viewport and moved with the marker as anything scrolls.
 	useEffect(() => {
-		if (!open || !marker.current) return;
-		const rect = marker.current.getBoundingClientRect();
-		setPosition({
-			top: rect.bottom + window.scrollY + 6,
-			left: rect.left + window.scrollX,
-		});
+		if (!open) return;
+		const place = () => {
+			const rect = marker.current?.getBoundingClientRect();
+			if (rect) setPosition({ top: rect.bottom + 6, left: rect.left });
+		};
+		place();
+		window.addEventListener("scroll", place, { capture: true, passive: true });
+		return () => window.removeEventListener("scroll", place, { capture: true });
 	}, [open]);
 
 	const close = () => {
@@ -121,7 +124,7 @@ const FootnoteMarker = ({
 			{open && position
 				? createPortal(
 						<div
-							className="absolute z-50 w-72 rounded-xl border border-stone-200 bg-white p-2 font-sans text-sm shadow-xl dark:border-stone-700"
+							className="fixed z-50 w-72 rounded-xl border border-stone-200 bg-white p-2 font-sans text-sm shadow-xl dark:border-stone-700"
 							style={position}
 						>
 							<label

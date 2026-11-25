@@ -173,7 +173,12 @@ const options = [
 ];
 
 /** Typing "/" opens a menu of blocks; typing more filters it. */
-export const WritingSlashMenu = () => {
+export const WritingSlashMenu = ({
+	paged,
+}: {
+	/** Page breaks only mean something in the paged chapter editor. */
+	paged: boolean;
+}) => {
 	const [editor] = useLexicalComposerContext();
 	const [query, setQuery] = useState<string | null>(null);
 	const triggerFn = useBasicTypeaheadTriggerMatch("/", {
@@ -184,8 +189,9 @@ export const WritingSlashMenu = () => {
 	const search = query?.toLowerCase() ?? "";
 	const matches = options.filter(
 		(option) =>
-			option.title.toLowerCase().includes(search) ||
-			option.keywords.some((keyword) => keyword.includes(search)),
+			(paged || option.title !== "Page break") &&
+			(option.title.toLowerCase().includes(search) ||
+				option.keywords.some((keyword) => keyword.includes(search))),
 	);
 
 	return (
