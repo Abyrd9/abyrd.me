@@ -4,6 +4,7 @@ import {
 	loadWritingNote,
 	updateWritingNote,
 } from "#/server/writing-notes-functions";
+import { shareProjectNote } from "#/server/writing-projects-functions";
 
 type Note = NonNullable<Awaited<ReturnType<typeof loadWritingNote>>>;
 type SaveStatus = "saved" | "unsaved" | "saving" | "error";
@@ -31,16 +32,23 @@ export const NotePane = ({
 	onOpenChapter,
 	onTitleChange,
 	onKeptEdits,
+	projectId,
+	onShared,
+	wikiNoteIds,
 }: {
 	noteId: number;
 	/** The chapter on the page, to show whether this note is tied to it. */
-	currentChapter: { id: number; title: string; position: number };
+	currentChapter?: { id: number; title: string; position: number };
+	projectId?: number | null;
+	onShared?: () => void;
+	/** Restricts wiki navigation to notes explicitly shared with this project. */
+	wikiNoteIds?: ReadonlySet<number>;
 	canGoBack: boolean;
 	onBack: () => void;
 	/** Returns to the notes contents. */
 	onShowContents: () => void;
 	onOpenNote: (id: number) => void;
-	onOpenChapter: (chapterId: number) => void;
+	onOpenChapter?: (chapterId: number) => void;
 	/** Lets the binder show a renamed note right away. */
 	onTitleChange: (id: number, title: string) => void;
 	/**
@@ -51,6 +59,9 @@ export const NotePane = ({
 }) => {
 	const [note, setNote] = useState<Note | null | undefined>(undefined);
 	const [status, setStatus] = useState<SaveStatus>("saved");
+	const [includeSubnotes, setIncludeSubnotes] = useState(false);
+	const [sharing, setSharing] = useState(false);
+	const [shareError, setShareError] = useState(false);
 	const pending = useRef<string | null>(null);
 	const saving = useRef(false);
 	const timer = useRef<number | undefined>(undefined);
@@ -60,6 +71,7 @@ export const NotePane = ({
 	const [reloads, setReloads] = useState(0);
 
 	const show = (loaded: Note | null) => {
+		if (loaded && wikiNoteIds && !wikiNoteIds.has(loaded.id)) loaded = null;
 		revision.current = loaded?.revision;
 		setNote(loaded);
 	};
@@ -159,16 +171,22 @@ export const NotePane = ({
 		"min-w-0 truncate rounded px-1 text-left text-stone-500 hover:bg-stone-200 hover:text-stone-900 dark:hover:bg-stone-800 dark:hover:text-stone-100";
 
 	// Tied when the note is one of this chapter's own, or the chapter links to it.
-	const tie = !note
-		? null
-		: note.chapterId === currentChapter.id
-			? `Belongs to ${chapterLabel(currentChapter)}`
-			: note.backlinks.some(
-						(link) => link.kind === "chapter" && link.id === currentChapter.id,
-					)
-				? `${chapterLabel(currentChapter)} links here`
-				: null;
-	const tieLabel = tie ?? `Not tied to ${chapterLabel(currentChapter)}`;
+	const tie =
+		!note || !currentChapter
+			? null
+			: note.chapterId === currentChapter.id
+				? `Belongs to ${chapterLabel(currentChapter)}`
+				: note.backlinks.some(
+							(link) =>
+								link.kind === "chapter" && link.id === currentChapter.id,
+						)
+					? `${chapterLabel(currentChapter)} links here`
+					: null;
+	const tieLabel =
+		tie ??
+		(currentChapter
+			? `Not tied to ${chapterLabel(currentChapter)}`
+			: "Project wiki");
 
 	// The note's controls run down a slim column to the right of its paper, so
 	// the paper itself starts level with the chapter's page. On phones they
@@ -226,7 +244,7 @@ export const NotePane = ({
 					aria-label="Where this note sits"
 					className="flex min-w-0 flex-col gap-0.5 max-sm:hidden"
 				>
-					{note.chapter ? (
+					{note.chapter && onOpenChapter && !wikiNoteIds ? (
 						<button
 							className={crumb}
 							onClick={() => note.chapter && onOpenChapter(note.chapter.id)}
@@ -235,22 +253,28 @@ export const NotePane = ({
 							{chapterLabel(note.chapter)}
 						</button>
 					) : (
-						<span className="truncate px-1 text-stone-400">The whole book</span>
+						<span className="truncate px-1 text-stone-500">
+							{wikiNoteIds || note.projectId
+								? "Project wiki"
+								: "The whole book"}
+						</span>
 					)}
-					{note.ancestors.map((ancestor, depth) => (
-						<button
-							className={crumb}
-							key={ancestor.id}
-							onClick={() => onOpenNote(ancestor.id)}
-							style={{ marginLeft: (depth + 1) * 8 }}
-							type="button"
-						>
-							<span aria-hidden="true" className="text-stone-300">
-								›{" "}
-							</span>
-							{ancestor.title || "Untitled"}
-						</button>
-					))}
+					{note.ancestors
+						.filter((ancestor) => !wikiNoteIds || wikiNoteIds.has(ancestor.id))
+						.map((ancestor, depth) => (
+							<button
+								className={crumb}
+								key={ancestor.id}
+								onClick={() => onOpenNote(ancestor.id)}
+								style={{ marginLeft: (depth + 1) * 8 }}
+								type="button"
+							>
+								<span aria-hidden="true" className="text-stone-300">
+									›{" "}
+								</span>
+								{ancestor.title || "Untitled"}
+							</button>
+						))}
 				</nav>
 			) : null}
 			<span className="px-1 text-stone-400 max-sm:ml-auto" role="status">
@@ -264,6 +288,51 @@ export const NotePane = ({
 								? "Saved"
 								: ""}
 			</span>
+			{projectId &&
+			note &&
+			(!note.projectId || note.projectId === projectId) ? (
+				<div className="space-y-2 px-1">
+					<label className="flex items-start gap-2">
+						<input
+							type="checkbox"
+							checked={includeSubnotes}
+							onChange={(event) => setIncludeSubnotes(event.target.checked)}
+						/>
+						Include sub-notes
+					</label>
+					<button
+						type="button"
+						disabled={
+							sharing ||
+							status !== "saved" ||
+							(!!note.projectId && !includeSubnotes)
+						}
+						className="text-stone-800 hover:underline disabled:opacity-50 dark:text-stone-200"
+						onClick={async () => {
+							setSharing(true);
+							setShareError(false);
+							try {
+								await shareProjectNote({ data: { noteId, includeSubnotes } });
+								const loaded = await loadWritingNote({ data: { id: noteId } });
+								show(loaded);
+								setIncludeSubnotes(false);
+								onShared?.();
+							} catch {
+								setShareError(true);
+							} finally {
+								setSharing(false);
+							}
+						}}
+					>
+						{sharing
+							? "Sharing…"
+							: note.projectId && !includeSubnotes
+								? "Shared with project"
+								: "Share with project"}
+					</button>
+					{shareError ? <p role="alert">Could not share. Try again.</p> : null}
+				</div>
+			) : null}
 		</aside>
 	);
 
@@ -274,7 +343,9 @@ export const NotePane = ({
 			aria-label="Note"
 			className="relative flex h-full flex-col-reverse bg-stone-100 sm:flex-row dark:bg-[#0a0a0a]"
 		>
-			{note ? <SeamLink label={tieLabel} tied={tie !== null} /> : null}
+			{note && currentChapter ? (
+				<SeamLink label={tieLabel} tied={tie !== null} />
+			) : null}
 
 			<div className="min-h-0 min-w-0 flex-1 overflow-y-auto pb-6">
 				{note === undefined || note === null ? (

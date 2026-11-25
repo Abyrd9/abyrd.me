@@ -22,6 +22,7 @@ import {
 	searchNotes,
 	updateNote,
 } from "./writing-notes";
+import { registerProjectTools } from "./writing-project-mcp";
 import {
 	createSuggestion,
 	listSuggestions,
@@ -125,6 +126,7 @@ export const registerWritingTools = (
 	server: McpServer,
 	db: AppDatabaseClient,
 ) => {
+	registerProjectTools(server, db);
 	server.registerTool(
 		"list_writings",
 		{
@@ -192,14 +194,14 @@ export const registerWritingTools = (
 		"read_note",
 		{
 			description:
-				"A note's text as Markdown (same syntax as read_chapter), with where it sits and what links to it.",
+				"A writing or project wiki note's text as Markdown (same syntax as read_chapter), with where it sits and what links to it.",
 			annotations: { readOnlyHint: true },
 			inputSchema: z.object({ noteId: id }),
 		},
 		({ noteId }) => {
 			const note = loadNote(db, noteId);
 			if (!note) return fail("Note not found.");
-			const { content, revision, ...rest } = note;
+			const { content, ...rest } = note;
 			return json({ ...rest, markdown: toMarkdown(content) });
 		},
 	);
@@ -408,16 +410,23 @@ export const registerWritingTools = (
 		"update_note",
 		{
 			description:
-				'Rename a note or change its text. mode "replace" (default) swaps the whole text for markdown; "append" adds markdown after the existing text. To move a note, use move_note.',
+				'Rename a writing or project wiki note or change its text. mode "replace" (default) swaps the whole text for markdown; "append" adds markdown after the existing text. Shared notes are the same note, so edits appear everywhere. To move a writing note, use move_note.',
 			annotations: { readOnlyHint: false },
 			inputSchema: z.object({
 				noteId: id,
 				title: title.optional(),
 				markdown: markdown.optional(),
 				mode: z.enum(["replace", "append"]).optional(),
+				baseRevision: z
+					.string()
+					.max(64)
+					.optional()
+					.describe(
+						"Pass the revision from read_note to reject a stale text edit.",
+					),
 			}),
 		},
-		({ noteId, title, markdown, mode }) => {
+		({ noteId, title, markdown, mode, baseRevision }) => {
 			const note = loadNote(db, noteId);
 			if (!note) return fail("Note not found.");
 			const text =
@@ -430,7 +439,8 @@ export const registerWritingTools = (
 				title,
 				content: text !== undefined ? fromMarkdown(text) : undefined,
 				// Refuses if the writer typed into it since it was read above.
-				baseRevision: text !== undefined ? note.revision : undefined,
+				baseRevision:
+					text !== undefined ? (baseRevision ?? note.revision) : undefined,
 			});
 			if (result?.conflict)
 				return fail(

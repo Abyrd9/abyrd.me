@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, lt, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, isNull, lt, sql } from "drizzle-orm";
 import {
 	writingChapters,
 	writingNotes,
@@ -7,15 +7,20 @@ import {
 } from "./database/schema";
 import type { AppDatabaseClient } from "./database/service";
 import { replaceNoteLinks } from "./note-links";
-import { touchWriting } from "./writings";
+import {
+	affectedNoteIds,
+	preserveProjectNotes,
+	touchWriting,
+} from "./writings";
 
 const retention = 30 * 24 * 60 * 60 * 1000;
 type Kind = "writing" | "chapter" | "note";
 type Snapshot = {
-	writing: typeof writings.$inferSelect;
+	writing: typeof writings.$inferSelect | null;
 	chapters: (typeof writingChapters.$inferSelect)[];
 	notes: (typeof writingNotes.$inferSelect)[];
 	rootId: number;
+	preservedNoteIds?: number[];
 };
 type TrashRow = typeof writingTrash.$inferSelect;
 export type TrashItem = Omit<TrashRow, "snapshot"> & {
@@ -59,55 +64,60 @@ const trash = (db: AppDatabaseClient, kind: Kind, id: number, now: number) =>
 		const writingId =
 			kind === "writing" ? id : (chapter?.writingId ?? note?.writingId);
 		if (writingId === undefined) return null;
-		const writing = tx
-			.select()
-			.from(writings)
-			.where(eq(writings.id, writingId))
-			.get();
-		if (!writing) return null;
+		const writing =
+			writingId === null
+				? null
+				: tx.select().from(writings).where(eq(writings.id, writingId)).get();
+		if (!writing && writingId !== null) return null;
 		const chapters = tx
 			.select()
 			.from(writingChapters)
-			.where(eq(writingChapters.writingId, writingId))
+			.where(
+				writingId === null ? sql`0` : eq(writingChapters.writingId, writingId),
+			)
 			.all();
 		if (kind === "chapter" && chapters.length === 1)
 			throw new TrashError("last-chapter");
-		const notes = tx
-			.select()
-			.from(writingNotes)
-			.where(eq(writingNotes.writingId, writingId))
-			.all();
-		const ids = new Set([id]);
-		if (kind === "note") {
-			let size = 0;
-			while (size !== ids.size) {
-				size = ids.size;
-				for (const row of notes)
-					if (row.parentId !== null && ids.has(row.parentId)) ids.add(row.id);
-			}
-		}
+		const scope =
+			kind === "note"
+				? eq(writingNotes.id, id)
+				: kind === "chapter"
+					? eq(writingNotes.chapterId, id)
+					: eq(writingNotes.writingId, id);
+		const ids = affectedNoteIds(tx, scope);
+		const notes = ids.length
+			? tx
+					.select()
+					.from(writingNotes)
+					.where(inArray(writingNotes.id, ids))
+					.all()
+			: [];
 		const snapshot: Snapshot = {
-			writing,
+			writing: writing ?? null,
 			rootId: id,
 			chapters: kind === "writing" ? chapters : chapter ? [chapter] : [],
-			notes: notes.filter(
-				(row) =>
-					kind === "writing" ||
-					(kind === "chapter" ? row.chapterId === id : ids.has(row.id)),
-			),
+			notes,
 		};
+		snapshot.preservedNoteIds = snapshot.notes
+			.filter(
+				(saved) =>
+					saved.projectId !== null && (kind !== "note" || saved.id !== id),
+			)
+			.map((saved) => saved.id);
 		const row = tx
 			.insert(writingTrash)
 			.values({
 				kind,
-				title: chapter?.title ?? note?.title ?? writing.title,
+				title: chapter?.title ?? note?.title ?? writing?.title ?? "",
 				writingId,
-				writingTitle: writing.title,
+				writingTitle: writing?.title ?? null,
 				snapshot: JSON.stringify(snapshot),
 				deletedAt: now,
 			})
 			.returning()
 			.get();
+		// Keep project-owned notes alive so other writings retain their links.
+		preserveProjectNotes(tx, scope, kind === "note" ? id : undefined);
 		if (kind === "writing")
 			tx.delete(writings).where(eq(writings.id, id)).run();
 		else {
@@ -117,7 +127,7 @@ const trash = (db: AppDatabaseClient, kind: Kind, id: number, now: number) =>
 					.set({ position: sql`${writingChapters.position} - 1` })
 					.where(
 						and(
-							eq(writingChapters.writingId, writingId),
+							eq(writingChapters.writingId, chapter.writingId),
 							sql`${writingChapters.position} > ${chapter.position}`,
 						),
 					)
@@ -178,13 +188,12 @@ export const restoreTrashItem = (
 			.get();
 		if (!row) return null;
 		const data = snapshotOf(row);
-		const writingId = data.writing.id;
-		const existing = tx
-			.select()
-			.from(writings)
-			.where(eq(writings.id, writingId))
-			.get();
-		if (row.kind !== "writing" && !existing)
+		const writingId = data.writing?.id ?? null;
+		const existing =
+			writingId === null
+				? null
+				: tx.select().from(writings).where(eq(writings.id, writingId)).get();
+		if (row.kind !== "writing" && writingId !== null && !existing)
 			throw new TrashError("writing-gone");
 		if (
 			(row.kind === "writing" && existing) ||
@@ -195,30 +204,47 @@ export const restoreTrashItem = (
 					.where(eq(writingChapters.id, chapter.id))
 					.get(),
 			) ||
-			data.notes.some((note) =>
-				tx
+			data.notes.some((note) => {
+				const existing = tx
 					.select()
 					.from(writingNotes)
 					.where(eq(writingNotes.id, note.id))
-					.get(),
-			)
+					.get();
+				return (
+					existing &&
+					!(
+						data.preservedNoteIds?.includes(note.id) &&
+						note.projectId !== null &&
+						existing.projectId === note.projectId &&
+						existing.writingId === null &&
+						existing.chapterId === null &&
+						existing.parentId ===
+							(note.parentId !== null &&
+							(data.preservedNoteIds?.includes(note.parentId) ||
+								!data.notes.some((saved) => saved.id === note.parentId))
+								? note.parentId
+								: null)
+					)
+				);
+			})
 		)
 			throw new TrashError("id-conflict");
-		if (row.kind === "writing") tx.insert(writings).values(data.writing).run();
+		if (row.kind === "writing" && data.writing)
+			tx.insert(writings).values(data.writing).run();
 		if (row.kind === "chapter") {
 			const chapter = data.chapters[0];
 			if (!chapter) return null;
 			const siblings = tx
 				.select()
 				.from(writingChapters)
-				.where(eq(writingChapters.writingId, writingId))
+				.where(eq(writingChapters.writingId, chapter.writingId))
 				.all();
 			chapter.position = Math.min(chapter.position, siblings.length);
 			tx.update(writingChapters)
 				.set({ position: sql`${writingChapters.position} + 1` })
 				.where(
 					and(
-						eq(writingChapters.writingId, writingId),
+						eq(writingChapters.writingId, chapter.writingId),
 						gte(writingChapters.position, chapter.position),
 					),
 				)
@@ -244,13 +270,32 @@ export const restoreTrashItem = (
 							.from(writingChapters)
 							.where(eq(writingChapters.id, root.chapterId))
 							.get();
-			root.parentId = parent?.id ?? null;
-			const chapterId = parent ? parent.chapterId : (chapter?.id ?? null);
-			for (const note of data.notes) note.chapterId = chapterId;
+			const validParent =
+				parent &&
+				(writingId === null
+					? root.projectId !== null && parent.projectId === root.projectId
+					: parent.writingId === writingId)
+					? parent
+					: undefined;
+			root.parentId = validParent?.id ?? null;
+			const chapterId =
+				writingId === null
+					? null
+					: validParent
+						? validParent.chapterId
+						: chapter?.writingId === writingId
+							? chapter.id
+							: null;
+			for (const note of data.notes)
+				if (note.writingId === writingId) note.chapterId = chapterId;
 			const siblings = tx
 				.select()
 				.from(writingNotes)
-				.where(eq(writingNotes.writingId, writingId))
+				.where(
+					writingId === null
+						? isNull(writingNotes.writingId)
+						: eq(writingNotes.writingId, writingId),
+				)
 				.all()
 				.filter(
 					(note) =>
@@ -280,12 +325,33 @@ export const restoreTrashItem = (
 					.get()
 			)
 				note.parentId = null;
-			tx.insert(writingNotes).values(note).run();
+			const live = tx
+				.select()
+				.from(writingNotes)
+				.where(eq(writingNotes.id, note.id))
+				.get();
+			if (live)
+				tx.update(writingNotes)
+					.set({
+						writingId: note.writingId,
+						chapterId: note.chapterId,
+						parentId: note.parentId,
+						position: note.position,
+					})
+					.where(eq(writingNotes.id, note.id))
+					.run();
+			else tx.insert(writingNotes).values(note).run();
 		}
 		for (const chapter of data.chapters)
 			replaceNoteLinks(tx, { chapterId: chapter.id }, chapter.content);
-		for (const note of data.notes)
-			replaceNoteLinks(tx, { noteId: note.id }, note.content);
+		for (const note of data.notes) {
+			const live = tx
+				.select()
+				.from(writingNotes)
+				.where(eq(writingNotes.id, note.id))
+				.get();
+			replaceNoteLinks(tx, { noteId: note.id }, live?.content ?? null);
+		}
 		touchWriting(tx, writingId, now);
 		tx.delete(writingTrash).where(eq(writingTrash.id, trashId)).run();
 		return { kind: row.kind, id: data.rootId, writingId };

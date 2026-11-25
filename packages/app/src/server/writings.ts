@@ -1,5 +1,18 @@
 import { createHash } from "node:crypto";
-import { and, asc, count, desc, eq, gt, lt, max, sql, sum } from "drizzle-orm";
+import {
+	and,
+	asc,
+	count,
+	desc,
+	eq,
+	gt,
+	inArray,
+	lt,
+	max,
+	type SQL,
+	sql,
+	sum,
+} from "drizzle-orm";
 import type { PageSizeId } from "#/writing-page-sizes";
 import {
 	writingChapters,
@@ -58,6 +71,7 @@ export function listWritings(db: AppDatabaseClient) {
 	return db
 		.select({
 			id: writings.id,
+			projectId: writings.projectId,
 			title: writings.title,
 			pageSize: writings.pageSize,
 			createdAt: writings.createdAt,
@@ -207,7 +221,62 @@ export function updateWriting(
 }
 
 export function deleteWriting(db: AppDatabaseClient, id: number) {
-	db.delete(writings).where(eq(writings.id, id)).run();
+	db.transaction((tx) => {
+		preserveProjectNotes(tx, eq(writingNotes.writingId, id));
+		tx.delete(writings).where(eq(writings.id, id)).run();
+	});
+}
+
+/** Project notes outlive their binder placement, including a deleted ancestor. */
+export function affectedNoteIds(tx: Transaction, scope: SQL) {
+	return tx
+		.all<{ id: number }>(sql`
+		WITH RECURSIVE affected(id) AS (
+			SELECT id FROM writing_notes WHERE ${scope}
+			UNION
+			SELECT n.id FROM writing_notes n JOIN affected ON n.parent_id = affected.id
+		) SELECT id FROM affected
+	`)
+		.map((note) => note.id);
+}
+
+export function preserveProjectNotes(
+	tx: Transaction,
+	scope: SQL,
+	excludedId?: number,
+) {
+	const ids = affectedNoteIds(tx, scope);
+	if (!ids.length) return;
+	const affected = new Set(ids);
+	const notes = tx
+		.select({
+			id: writingNotes.id,
+			parentId: writingNotes.parentId,
+			projectId: writingNotes.projectId,
+		})
+		.from(writingNotes)
+		.where(inArray(writingNotes.id, ids))
+		.all();
+	const survivors = new Set(
+		notes
+			.filter((note) => note.projectId !== null && note.id !== excludedId)
+			.map((note) => note.id),
+	);
+	for (const note of notes) {
+		if (!survivors.has(note.id)) continue;
+		tx.update(writingNotes)
+			.set({
+				writingId: null,
+				chapterId: null,
+				parentId:
+					note.parentId !== null &&
+					(survivors.has(note.parentId) || !affected.has(note.parentId))
+						? note.parentId
+						: null,
+			})
+			.where(eq(writingNotes.id, note.id))
+			.run();
+	}
 }
 
 export function createChapter(
@@ -313,6 +382,7 @@ export function deleteChapter(
 			.all();
 		if (siblings.length <= 1) return false;
 
+		preserveProjectNotes(tx, eq(writingNotes.chapterId, id));
 		tx.delete(writingChapters).where(eq(writingChapters.id, id)).run();
 		tx.update(writingChapters)
 			.set({ position: sql`${writingChapters.position} - 1` })
@@ -380,7 +450,12 @@ export type Transaction = Parameters<
 	Parameters<AppDatabaseClient["transaction"]>[0]
 >[0];
 
-export function touchWriting(tx: Transaction, writingId: number, now: number) {
+export function touchWriting(
+	tx: Transaction,
+	writingId: number | null,
+	now: number,
+) {
+	if (writingId === null) return;
 	tx.update(writings)
 		.set({ updatedAt: now })
 		.where(eq(writings.id, writingId))

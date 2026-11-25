@@ -2,6 +2,10 @@ import { Menu } from "@base-ui/react/menu";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { type ReactNode, useEffect, useState } from "react";
 import {
+	createProject,
+	listProjects,
+} from "#/server/writing-projects-functions";
+import {
 	deleteWritingTrash,
 	listWritingTrash,
 	restoreWritingTrash,
@@ -59,8 +63,19 @@ function WritingShelf() {
 		Awaited<ReturnType<typeof listWritingTrash>>
 	>([]);
 	const [busy, setBusy] = useState(false);
+	const [projects, setProjects] = useState<
+		Awaited<ReturnType<typeof listProjects>>
+	>([]);
+	const [projectQuery, setProjectQuery] = useState("");
+	const [projectTitle, setProjectTitle] = useState("");
+	const [creatingProject, setCreatingProject] = useState(false);
 
 	useEffect(() => {
+		void listProjects()
+			.then(setProjects)
+			.catch(() =>
+				setMessage("Could not load projects. Refresh and try again."),
+			);
 		void listWritingTrash()
 			.then(setTrash)
 			.catch(() => setMessage("Could not load Trash. Refresh and try again."));
@@ -206,6 +221,95 @@ function WritingShelf() {
 					</div>
 				) : null}
 			</header>
+
+			<section
+				aria-label="Projects"
+				className="mt-8 border-y border-stone-200 py-5 dark:border-stone-800"
+			>
+				<div className="flex flex-wrap items-center justify-between gap-3">
+					<h2 className="font-book text-2xl text-stone-950 dark:text-stone-100">
+						Projects
+					</h2>
+					<label>
+						<span className="sr-only">Find projects</span>
+						<input
+							className="border-b border-stone-300 bg-transparent py-1 text-sm outline-none focus:border-stone-700 placeholder:text-stone-500 dark:border-stone-700 dark:text-stone-100 dark:placeholder:text-stone-400 dark:focus:border-stone-400"
+							placeholder="Find projects"
+							value={projectQuery}
+							onChange={(event) => setProjectQuery(event.target.value)}
+						/>
+					</label>
+				</div>
+				<p className="mt-2 text-sm text-stone-600 dark:text-stone-400">
+					A shared wiki for books in the same world or series.
+				</p>
+				<ul className="mt-4 flex flex-wrap gap-x-6 gap-y-3">
+					{projects
+						.filter((project) =>
+							project.title
+								.toLowerCase()
+								.includes(projectQuery.trim().toLowerCase()),
+						)
+						.map((project) => (
+							<li key={project.id}>
+								<Link
+									className="font-book text-stone-900 hover:underline dark:text-stone-100"
+									to="/projects/$projectId"
+									params={{ projectId: String(project.id) }}
+								>
+									{project.title}
+								</Link>
+							</li>
+						))}
+				</ul>
+				{projectQuery &&
+				!projects.some((project) =>
+					project.title
+						.toLowerCase()
+						.includes(projectQuery.trim().toLowerCase()),
+				) ? (
+					<p className="mt-3 text-sm text-stone-600 dark:text-stone-400">
+						No projects match.
+					</p>
+				) : null}
+				<form
+					className="mt-4 flex flex-wrap items-center gap-3"
+					onSubmit={async (event) => {
+						event.preventDefault();
+						if (!projectTitle.trim() || creatingProject) return;
+						setCreatingProject(true);
+						try {
+							const project = await createProject({
+								data: { title: projectTitle },
+							});
+							await navigate({
+								to: "/projects/$projectId",
+								params: { projectId: String(project.id) },
+							});
+						} catch {
+							setMessage("Could not create the project. Try again.");
+						} finally {
+							setCreatingProject(false);
+						}
+					}}
+				>
+					<input
+						aria-label="New project title"
+						maxLength={300}
+						value={projectTitle}
+						onChange={(event) => setProjectTitle(event.target.value)}
+						placeholder="New project title"
+						className="border-b border-stone-300 bg-transparent py-1 text-sm outline-none focus:border-stone-700 placeholder:text-stone-500 dark:border-stone-700 dark:text-stone-100 dark:placeholder:text-stone-400 dark:focus:border-stone-400"
+					/>
+					<button
+						type="submit"
+						disabled={creatingProject || !projectTitle.trim()}
+						className="text-sm text-stone-800 hover:underline disabled:opacity-50 dark:text-stone-200"
+					>
+						{creatingProject ? "Creating…" : "Create project"}
+					</button>
+				</form>
+			</section>
 
 			{message ? (
 				<p

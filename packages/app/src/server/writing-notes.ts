@@ -10,14 +10,25 @@ import {
 	max,
 	sql,
 } from "drizzle-orm";
-import { writingChapters, writingNotes, writings } from "./database/schema";
+import {
+	projects,
+	writingChapters,
+	writingNotes,
+	writings,
+} from "./database/schema";
 import type { AppDatabaseClient } from "./database/service";
 import { loadBacklinks, replaceNoteLinks } from "./note-links";
-import { contentRevision, type Transaction, touchWriting } from "./writings";
+import {
+	contentRevision,
+	preserveProjectNotes,
+	type Transaction,
+	touchWriting,
+} from "./writings";
 
 /** Where a note sits: in a writing, optionally in one of its chapters, and under a parent. */
 export type NotePlacement = {
-	writingId: number;
+	writingId: number | null;
+	projectId?: number | null;
 	chapterId: number | null;
 	parentId: number | null;
 };
@@ -50,11 +61,14 @@ export function loadNote(db: AppDatabaseClient, id: number) {
 		.get();
 	if (!note) return null;
 
-	const writing = db
-		.select({ id: writings.id, title: writings.title })
-		.from(writings)
-		.where(eq(writings.id, note.writingId))
-		.get();
+	const writing =
+		note.writingId === null
+			? null
+			: db
+					.select({ id: writings.id, title: writings.title })
+					.from(writings)
+					.where(eq(writings.id, note.writingId))
+					.get();
 	const chapter = note.chapterId
 		? (db
 				.select({
@@ -80,7 +94,7 @@ export function loadNote(db: AppDatabaseClient, id: number) {
 	return {
 		...note,
 		revision: contentRevision(note.content),
-		writing: writing ?? { id: note.writingId, title: "" },
+		writing: writing ?? null,
 		chapter,
 		ancestors,
 		backlinks: loadBacklinks(db, id),
@@ -89,12 +103,13 @@ export function loadNote(db: AppDatabaseClient, id: number) {
 
 export function createNote(
 	db: AppDatabaseClient,
-	input: Partial<NotePlacement> & { writingId: number; title: string },
+	input: Partial<NotePlacement> & { writingId: number | null; title: string },
 	now = Date.now(),
 ) {
 	return db.transaction((tx) => {
 		const place = resolvePlacement(tx, {
 			writingId: input.writingId,
+			projectId: input.projectId ?? null,
 			chapterId: input.chapterId ?? null,
 			parentId: input.parentId ?? null,
 		});
@@ -144,6 +159,7 @@ export function updateNote(
 				conflict: true as const,
 				id,
 				writingId: current.writingId,
+				projectId: current.projectId,
 				chapterId: current.chapterId,
 				parentId: current.parentId,
 				title: current.title,
@@ -173,7 +189,8 @@ export function updateNote(
 export function keepUnsavedEdits(
 	db: AppDatabaseClient,
 	from: {
-		writingId: number;
+		writingId: number | null;
+		projectId?: number | null;
 		chapterId: number | null;
 		parentId: number | null;
 		title: string;
@@ -182,6 +199,7 @@ export function keepUnsavedEdits(
 ) {
 	const note = createNote(db, {
 		writingId: from.writingId,
+		projectId: from.projectId,
 		chapterId: from.chapterId,
 		parentId: from.parentId,
 		title: `${from.title || "Untitled"}: your unsaved edits`,
@@ -208,7 +226,11 @@ export function moveNote(
 			.get();
 		if (!note) throw new NotePlacementError("That note no longer exists.");
 
-		const place = resolvePlacement(tx, { writingId: note.writingId, ...to });
+		const place = resolvePlacement(tx, {
+			writingId: note.writingId,
+			projectId: note.projectId,
+			...to,
+		});
 		const subtree = descendantIds(tx, id);
 		if (place.parentId !== null && subtree.includes(place.parentId))
 			throw new NotePlacementError("A note can't move inside itself.");
@@ -222,11 +244,18 @@ export function moveNote(
 			})
 			.where(eq(writingNotes.id, id))
 			.run();
-		// Children always live in their parent's chapter.
+		// Project-only children stay outside the binder.
 		for (const childId of subtree.filter((noteId) => noteId !== id))
 			tx.update(writingNotes)
 				.set({ chapterId: place.chapterId })
-				.where(eq(writingNotes.id, childId))
+				.where(
+					and(
+						eq(writingNotes.id, childId),
+						note.writingId === null
+							? sql`0`
+							: eq(writingNotes.writingId, note.writingId),
+					),
+				)
 				.run();
 		touchWriting(tx, note.writingId, now);
 		return true;
@@ -286,6 +315,7 @@ export function deleteNote(
 	now = Date.now(),
 ) {
 	return db.transaction((tx) => {
+		preserveProjectNotes(tx, eq(writingNotes.id, id), id);
 		const note = tx
 			.delete(writingNotes)
 			.where(eq(writingNotes.id, id))
@@ -320,7 +350,7 @@ export function searchNotes(
 			chapterPosition: writingChapters.position,
 		})
 		.from(writingNotes)
-		.innerJoin(writings, eq(writingNotes.writingId, writings.id))
+		.leftJoin(writings, eq(writingNotes.writingId, writings.id))
 		.leftJoin(writingChapters, eq(writingNotes.chapterId, writingChapters.id))
 		.where(like(writingNotes.title, sql`${`%${escaped}%`} ESCAPE '\\'`))
 		.orderBy(
@@ -343,16 +373,37 @@ function resolvePlacement(
 		const parent = tx
 			.select({
 				writingId: writingNotes.writingId,
+				projectId: writingNotes.projectId,
 				chapterId: writingNotes.chapterId,
 			})
 			.from(writingNotes)
 			.where(eq(writingNotes.id, place.parentId))
 			.get();
-		if (!parent || parent.writingId !== place.writingId)
+		if (
+			!parent ||
+			(place.writingId !== null && parent.writingId !== place.writingId) ||
+			(place.writingId === null && parent.projectId !== place.projectId)
+		)
 			throw new NotePlacementError(
 				"That parent note isn't part of this writing.",
 			);
-		return { ...place, chapterId: parent.chapterId };
+		return {
+			...place,
+			chapterId: place.writingId === null ? null : parent.chapterId,
+		};
+	}
+	if (place.writingId === null) {
+		if (
+			place.chapterId !== null ||
+			place.projectId == null ||
+			!tx
+				.select({ id: projects.id })
+				.from(projects)
+				.where(eq(projects.id, place.projectId))
+				.get()
+		)
+			throw new NotePlacementError("That project no longer exists.");
+		return place;
 	}
 	if (place.chapterId !== null) {
 		const chapter = tx
@@ -375,7 +426,14 @@ function resolvePlacement(
 
 const siblingsOf = (place: NotePlacement) =>
 	and(
-		eq(writingNotes.writingId, place.writingId),
+		place.writingId === null
+			? and(
+					isNull(writingNotes.writingId),
+					place.projectId == null
+						? isNull(writingNotes.projectId)
+						: eq(writingNotes.projectId, place.projectId),
+				)
+			: eq(writingNotes.writingId, place.writingId),
 		place.chapterId === null
 			? isNull(writingNotes.chapterId)
 			: eq(writingNotes.chapterId, place.chapterId),

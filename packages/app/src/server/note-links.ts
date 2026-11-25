@@ -118,8 +118,8 @@ export type Backlink = {
 	kind: "chapter" | "note";
 	id: number;
 	title: string;
-	writingId: number;
-	writingTitle: string;
+	writingId: number | null;
+	writingTitle: string | null;
 	/** The chapter itself, or the chapter a linking note belongs to. */
 	chapterId: number | null;
 	chapterPosition: number | null;
@@ -170,7 +170,7 @@ export function loadBacklinks(
 		})
 		.from(noteLinks)
 		.innerJoin(writingNotes, eq(noteLinks.sourceNoteId, writingNotes.id))
-		.innerJoin(writings, eq(writingNotes.writingId, writings.id))
+		.leftJoin(writings, eq(writingNotes.writingId, writings.id))
 		.where(eq(noteLinks.targetNoteId, noteId))
 		.all()
 		.map((row) => ({

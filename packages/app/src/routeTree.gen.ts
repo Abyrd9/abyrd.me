@@ -24,6 +24,7 @@ import { Route as ApiWritingImagesRouteImport } from './routes/api.writing-image
 import { Route as AuthenticatedKindleIndexRouteImport } from './routes/_authenticated.kindle.index'
 import { Route as AuthenticatedKindleArchivedRouteImport } from './routes/_authenticated.kindle.archived'
 import { Route as AuthenticatedKindleSetupRouteImport } from './routes/_authenticated.kindle.setup'
+import { Route as AuthenticatedProjectsProjectIdRouteImport } from './routes/_authenticated.projects.$projectId'
 import { Route as FocusWritingWritingIdRouteImport } from './routes/_focus.writing.$writingId'
 import { Route as ApiWritingImagesNameRouteImport } from './routes/api.writing-images.$name'
 import { Route as AuthenticatedKindleSynopsisAsinTargetRouteImport } from './routes/_authenticated.kindle.synopsis.$asin.$target'
@@ -104,6 +105,12 @@ const AuthenticatedKindleSetupRoute =
     path: '/setup',
     getParentRoute: () => AuthenticatedKindleRoute,
   } as any)
+const AuthenticatedProjectsProjectIdRoute =
+  AuthenticatedProjectsProjectIdRouteImport.update({
+    id: '/projects/$projectId',
+    path: '/projects/$projectId',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const FocusWritingWritingIdRoute = FocusWritingWritingIdRouteImport.update({
   id: '/writing/$writingId',
   path: '/writing/$writingId',
@@ -134,6 +141,7 @@ export interface FileRoutesByFullPath {
   '/api/writing-images': typeof ApiWritingImagesRouteWithChildren
   '/kindle/archived': typeof AuthenticatedKindleArchivedRoute
   '/kindle/setup': typeof AuthenticatedKindleSetupRoute
+  '/projects/$projectId': typeof AuthenticatedProjectsProjectIdRoute
   '/writing/$writingId': typeof FocusWritingWritingIdRoute
   '/api/writing-images/$name': typeof ApiWritingImagesNameRoute
   '/kindle/': typeof AuthenticatedKindleIndexRoute
@@ -151,6 +159,7 @@ export interface FileRoutesByTo {
   '/api/writing-images': typeof ApiWritingImagesRouteWithChildren
   '/kindle/archived': typeof AuthenticatedKindleArchivedRoute
   '/kindle/setup': typeof AuthenticatedKindleSetupRoute
+  '/projects/$projectId': typeof AuthenticatedProjectsProjectIdRoute
   '/writing/$writingId': typeof FocusWritingWritingIdRoute
   '/api/writing-images/$name': typeof ApiWritingImagesNameRoute
   '/kindle': typeof AuthenticatedKindleIndexRoute
@@ -172,6 +181,7 @@ export interface FileRoutesById {
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/kindle/archived': typeof AuthenticatedKindleArchivedRoute
   '/_authenticated/kindle/setup': typeof AuthenticatedKindleSetupRoute
+  '/_authenticated/projects/$projectId': typeof AuthenticatedProjectsProjectIdRoute
   '/_focus/writing/$writingId': typeof FocusWritingWritingIdRoute
   '/api/writing-images/$name': typeof ApiWritingImagesNameRoute
   '/_authenticated/kindle/': typeof AuthenticatedKindleIndexRoute
@@ -192,6 +202,7 @@ export interface FileRouteTypes {
     | '/api/writing-images'
     | '/kindle/archived'
     | '/kindle/setup'
+    | '/projects/$projectId'
     | '/writing/$writingId'
     | '/api/writing-images/$name'
     | '/kindle/'
@@ -209,6 +220,7 @@ export interface FileRouteTypes {
     | '/api/writing-images'
     | '/kindle/archived'
     | '/kindle/setup'
+    | '/projects/$projectId'
     | '/writing/$writingId'
     | '/api/writing-images/$name'
     | '/kindle'
@@ -229,6 +241,7 @@ export interface FileRouteTypes {
     | '/_authenticated/'
     | '/_authenticated/kindle/archived'
     | '/_authenticated/kindle/setup'
+    | '/_authenticated/projects/$projectId'
     | '/_focus/writing/$writingId'
     | '/api/writing-images/$name'
     | '/_authenticated/kindle/'
@@ -351,6 +364,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedKindleSetupRouteImport
       parentRoute: typeof AuthenticatedKindleRoute
     }
+    '/_authenticated/projects/$projectId': {
+      id: '/_authenticated/projects/$projectId'
+      path: '/projects/$projectId'
+      fullPath: '/projects/$projectId'
+      preLoaderRoute: typeof AuthenticatedProjectsProjectIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_focus/writing/$writingId': {
       id: '/_focus/writing/$writingId'
       path: '/writing/$writingId'
@@ -400,6 +420,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedQuotesRoute: typeof AuthenticatedQuotesRoute
   AuthenticatedWritingRoute: typeof AuthenticatedWritingRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedProjectsProjectIdRoute: typeof AuthenticatedProjectsProjectIdRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
@@ -409,6 +430,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedQuotesRoute: AuthenticatedQuotesRoute,
   AuthenticatedWritingRoute: AuthenticatedWritingRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedProjectsProjectIdRoute: AuthenticatedProjectsProjectIdRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(

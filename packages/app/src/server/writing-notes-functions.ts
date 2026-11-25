@@ -29,7 +29,8 @@ export const createWritingNote = createServerFn({ method: "POST" })
 	.validator((input: unknown) =>
 		z
 			.object({
-				writingId: id,
+				writingId: optionalId,
+				projectId: optionalId.optional(),
 				chapterId: optionalId.optional(),
 				parentId: optionalId.optional(),
 				title,

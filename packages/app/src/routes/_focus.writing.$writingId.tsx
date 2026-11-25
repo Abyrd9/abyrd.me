@@ -12,6 +12,7 @@ import {
 	subtreeIds,
 } from "#/components/NotesContents";
 import { PagedEditor, PX_PER_INCH } from "#/components/PagedEditor";
+import { ProjectNotes } from "#/components/ProjectNotes";
 import { type SideTab, SideTabs, toSideTab } from "#/components/SideTabs";
 import { WordLookupContext, WordPanel } from "#/components/WordPanel";
 import { WritingGuides } from "#/components/WritingGuides";
@@ -69,6 +70,7 @@ function WritingEditor() {
 	const [status, setStatus] = useState<SaveStatus>("saved");
 	const [chromeVisible, setChromeVisible] = useState(true);
 	const [notes, setNotes] = useState<BinderNote[]>([]);
+	const [noteScope, setNoteScope] = useState<"book" | "project">("book");
 	// Whether the notes column is showing; remembered for each writing.
 	const [notesOpen, setNotesOpenState] = useState(false);
 	// Notes opened before the current one in the pane, for its back button.
@@ -148,7 +150,10 @@ function WritingEditor() {
 	// A note opened from a link shows in the Notes tab, whichever tab was last used.
 	// biome-ignore lint/correctness/useExhaustiveDependencies: setTab only writes state and storage.
 	useEffect(() => {
-		if (search.note !== undefined) setTab("notes");
+		if (search.note !== undefined) {
+			setTab("notes");
+			setNoteScope("book");
+		}
 	}, [search.note]);
 
 	const refreshNotes = () =>
@@ -413,6 +418,7 @@ function WritingEditor() {
 	}
 
 	function openNote(id: number, { keepHistory = true } = {}) {
+		setNoteScope("book");
 		if (openNoteId !== null && openNoteId !== id && keepHistory)
 			setNoteHistory((history) => [...history, openNoteId]);
 		setNotesOpen(true);
@@ -857,6 +863,34 @@ function WritingEditor() {
 						<div className="min-w-0 max-md:fixed max-md:inset-x-0 max-md:top-[52px] max-md:bottom-0 max-md:z-30 max-md:bg-stone-100 md:flex-1 md:pt-24 md:pb-6 md:pl-8 dark:max-md:bg-[#0a0a0a]">
 							<div className="flex h-full w-full flex-col md:max-w-[var(--side)] md:pr-6">
 								<SideTabs onClose={closeNote} onTab={setTab} tab={tab} />
+								{tab === "notes" && writing.projectId ? (
+									<div className="mb-4 flex items-center gap-4 px-3 text-sm">
+										<button
+											type="button"
+											aria-pressed={noteScope === "book"}
+											className={
+												noteScope === "book"
+													? "font-medium text-stone-950 underline underline-offset-4 dark:text-stone-100"
+													: "text-stone-600 hover:text-stone-950 dark:text-stone-400 dark:hover:text-stone-100"
+											}
+											onClick={() => setNoteScope("book")}
+										>
+											This book
+										</button>
+										<button
+											type="button"
+											aria-pressed={noteScope === "project"}
+											className={
+												noteScope === "project"
+													? "font-medium text-stone-950 underline underline-offset-4 dark:text-stone-100"
+													: "text-stone-600 hover:text-stone-950 dark:text-stone-400 dark:hover:text-stone-100"
+											}
+											onClick={() => setNoteScope("project")}
+										>
+											Project wiki
+										</button>
+									</div>
+								) : null}
 								{tab === "notes" && openNoteId !== null ? null : (
 									// An open note draws its own, blue when it's tied to the chapter.
 									<SeamLink
@@ -874,6 +908,12 @@ function WritingEditor() {
 									</div>
 									{tab === "dictionary" ? null : tab === "guides" ? (
 										<WritingGuides />
+									) : noteScope === "project" && writing.projectId ? (
+										<ProjectNotes
+											key={writing.projectId}
+											projectId={writing.projectId}
+											currentChapter={chapter}
+										/>
 									) : openNoteId !== null ? (
 										<NotePane
 											canGoBack={noteHistory.length > 0}
@@ -881,6 +921,12 @@ function WritingEditor() {
 											onShowContents={showContents}
 											key={openNoteId}
 											noteId={openNoteId}
+											projectId={writing.projectId}
+											onShared={() => {
+												void refreshNotes();
+												showContents();
+												setNoteScope("project");
+											}}
 											onBack={backNote}
 											onOpenChapter={goTo}
 											onOpenNote={(id) => openNote(id)}

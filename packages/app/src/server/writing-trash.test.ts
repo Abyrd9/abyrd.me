@@ -5,12 +5,20 @@ import { join } from "node:path";
 import { Effect } from "effect";
 import {
 	noteLinks,
+	projects,
 	writingChapters,
 	writingNotes,
 	writings,
 } from "./database/schema";
 import { createDatabase } from "./database/service";
-import { createNote, deleteNote, updateNote } from "./writing-notes";
+import {
+	createNote,
+	deleteNote,
+	keepUnsavedEdits,
+	loadNote,
+	moveNote,
+	updateNote,
+} from "./writing-notes";
 import {
 	deleteTrashItem,
 	listTrash,
@@ -51,6 +59,203 @@ const rows = (db: Db) => ({
 	writings: db.select().from(writings).all(),
 	chapters: db.select().from(writingChapters).all(),
 	notes: db.select().from(writingNotes).all(),
+});
+
+test("project notes survive writing trash and restore keeps live edits and links", async () => {
+	await withDatabase((db) => {
+		const project = db
+			.insert(projects)
+			.values({ title: "Project", createdAt: 1, updatedAt: 1 })
+			.returning()
+			.get();
+		const book = createWriting(db, "Book");
+		const shared = createNote(db, {
+			writingId: book.id,
+			projectId: project.id,
+			chapterId: book.firstChapterId,
+			title: "Shared",
+		});
+		const other = createWriting(db, "Other");
+		updateChapter(db, other.firstChapterId, { content: link(shared.id) });
+		const item = trashWriting(db, book.id);
+		expect(item).not.toBeNull();
+		expect(db.select().from(writingNotes).all()[0]?.writingId).toBeNull();
+		updateNote(db, shared.id, {
+			title: "Edited while detached",
+			content: "new content",
+		});
+		expect(db.select().from(noteLinks).all()).toHaveLength(1);
+		if (!item) throw new Error("Missing trash item");
+		restoreTrashItem(db, item.id);
+		const restored = db.select().from(writingNotes).all()[0];
+		expect(restored?.id).toBe(shared.id);
+		expect(restored?.writingId).toBe(book.id);
+		expect(restored?.title).toBe("Edited while detached");
+		expect(restored?.content).toBe("new content");
+		expect(db.select().from(noteLinks).all()).toHaveLength(1);
+	});
+});
+
+test("standalone project notes can be trashed and restored", async () => {
+	await withDatabase((db) => {
+		const project = db
+			.insert(projects)
+			.values({ title: "Project", createdAt: 1, updatedAt: 1 })
+			.returning()
+			.get();
+		const note = createNote(db, {
+			writingId: null,
+			projectId: project.id,
+			title: "Independent",
+		});
+		const item = trashNote(db, note.id);
+		expect(item).not.toBeNull();
+		expect(db.select().from(writingNotes).all()).toHaveLength(0);
+		if (!item) throw new Error("Missing trash item");
+		restoreTrashItem(db, item.id);
+		expect(db.select().from(writingNotes).all()[0]?.id).toBe(note.id);
+	});
+});
+
+for (const kind of ["note", "chapter", "writing"] as const) {
+	test(`${kind} trash preserves mixed project descendants and restores their hierarchy`, async () => {
+		await withDatabase((db) => {
+			const project = db
+				.insert(projects)
+				.values({ title: "Project", createdAt: 1, updatedAt: 1 })
+				.returning()
+				.get();
+			const book = createWriting(db, "Book");
+			createChapter(db, book.id);
+			const root = createNote(db, {
+				writingId: book.id,
+				projectId: project.id,
+				chapterId: book.firstChapterId,
+				title: "Root",
+			});
+			const child = createNote(db, {
+				writingId: null,
+				projectId: project.id,
+				parentId: root.id,
+				title: "Project-only child",
+			});
+			const grandchild = createNote(db, {
+				writingId: null,
+				projectId: project.id,
+				parentId: child.id,
+				title: "Grandchild",
+			});
+			const item =
+				kind === "note"
+					? trashNote(db, root.id)
+					: kind === "chapter"
+						? trashChapter(db, book.firstChapterId)
+						: trashWriting(db, book.id);
+			if (!item) throw new Error("Missing trash item");
+			expect(loadNote(db, child.id)?.parentId).toBe(
+				kind === "note" ? null : root.id,
+			);
+			expect(loadNote(db, grandchild.id)?.parentId).toBe(child.id);
+			updateNote(db, child.id, { content: "Live edits" });
+			restoreTrashItem(db, item.id);
+			expect(loadNote(db, child.id)).toMatchObject({
+				writingId: null,
+				chapterId: null,
+				parentId: root.id,
+				content: "Live edits",
+			});
+			expect(loadNote(db, grandchild.id)?.parentId).toBe(child.id);
+		});
+	});
+}
+
+test("project-only children keep their placement during conflict recovery and binder moves", async () => {
+	await withDatabase((db) => {
+		const project = db
+			.insert(projects)
+			.values({ title: "Project", createdAt: 1, updatedAt: 1 })
+			.returning()
+			.get();
+		const book = createWriting(db, "Book");
+		const chapter = createChapter(db, book.id);
+		const root = createNote(db, {
+			writingId: book.id,
+			projectId: project.id,
+			chapterId: book.firstChapterId,
+			title: "Root",
+		});
+		const child = createNote(db, {
+			writingId: null,
+			projectId: project.id,
+			parentId: root.id,
+			title: "Child",
+		});
+		const kept = keepUnsavedEdits(db, child, "Recovered text");
+		expect(loadNote(db, kept)).toMatchObject({
+			writingId: null,
+			chapterId: null,
+			parentId: root.id,
+			content: "Recovered text",
+		});
+		moveNote(db, root.id, { chapterId: chapter.id, parentId: null });
+		expect(loadNote(db, child.id)).toMatchObject({
+			writingId: null,
+			chapterId: null,
+			parentId: root.id,
+		});
+		const item = trashNote(db, child.id);
+		if (!item) throw new Error("Missing trash item");
+		restoreTrashItem(db, item.id);
+		expect(loadNote(db, child.id)).toMatchObject({
+			writingId: null,
+			chapterId: null,
+			parentId: root.id,
+		});
+	});
+});
+
+test("hard chapter and note deletion detach shared descendants", async () => {
+	await withDatabase((db) => {
+		const project = db
+			.insert(projects)
+			.values({ title: "Project", createdAt: 1, updatedAt: 1 })
+			.returning()
+			.get();
+		const book = createWriting(db, "Book");
+		createChapter(db, book.id);
+		const parent = createNote(db, {
+			writingId: book.id,
+			chapterId: book.firstChapterId,
+			title: "Local parent",
+		});
+		const shared = createNote(db, {
+			writingId: book.id,
+			projectId: project.id,
+			parentId: parent.id,
+			title: "Shared child",
+		});
+		deleteNote(db, parent.id);
+		expect(db.select().from(writingNotes).all()[0]).toMatchObject({
+			id: shared.id,
+			writingId: null,
+			parentId: null,
+			chapterId: null,
+		});
+		const chapterNote = createNote(db, {
+			writingId: book.id,
+			projectId: project.id,
+			chapterId: book.firstChapterId,
+			title: "Chapter note",
+		});
+		deleteChapter(db, book.firstChapterId);
+		expect(
+			db
+				.select()
+				.from(writingNotes)
+				.all()
+				.find((note) => note.id === chapterNote.id),
+		).toMatchObject({ writingId: null, chapterId: null });
+	});
 });
 const link = (id: number) =>
 	JSON.stringify({

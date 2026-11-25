@@ -96,7 +96,7 @@ test("builds nested trees in a writing and its chapters", () =>
 		expect(beat.chapterId).toBe(book.firstChapterId);
 
 		const note = loadNote(db, beat.id);
-		expect(note?.writing.title).toBe("Book");
+		expect(note?.writing?.title).toBe("Book");
 		expect(note?.chapter?.id).toBe(book.firstChapterId);
 		expect(note?.ancestors.map((ancestor) => ancestor.title)).toEqual([
 			"Beats",

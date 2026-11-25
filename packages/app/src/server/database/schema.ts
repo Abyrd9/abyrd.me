@@ -82,16 +82,31 @@ export const quotes = sqliteTable(
 	(table) => [index("quotes_created_at_idx").on(table.createdAt)],
 );
 
+/** A world or series: writings that share one wiki of project notes. */
+export const projects = sqliteTable("projects", {
+	id: integer("id").primaryKey({ autoIncrement: true }),
+	title: text("title").notNull(),
+	createdAt: integer("created_at").notNull(),
+	updatedAt: integer("updated_at").notNull(),
+});
+
 export const writings = sqliteTable(
 	"writings",
 	{
 		id: integer("id").primaryKey({ autoIncrement: true }),
 		title: text("title").notNull(),
 		pageSize: text("page_size").notNull().default("trade"),
+		/** The one project this writing belongs to, if any. */
+		projectId: integer("project_id").references(() => projects.id, {
+			onDelete: "set null",
+		}),
 		createdAt: integer("created_at").notNull(),
 		updatedAt: integer("updated_at").notNull(),
 	},
-	(table) => [index("writings_updated_at_idx").on(table.updatedAt)],
+	(table) => [
+		index("writings_updated_at_idx").on(table.updatedAt),
+		index("writings_project_id_idx").on(table.projectId),
+	],
 );
 
 export const writingChapters = sqliteTable(
@@ -117,14 +132,21 @@ export const writingChapters = sqliteTable(
  * chapterId is null, or to one chapter, and nests under parentId. Children
  * always share their parent's writing and chapter; deleting a chapter or a
  * note deletes everything beneath it.
+ *
+ * A note with a projectId is a project note: the one copy every writing in
+ * the project reads and edits. Its writingId and chapterId then only say
+ * where it is attached, and are null for a note made in the project's wiki.
+ * These foreign keys still cascade, so code that deletes a writing, chapter,
+ * or note calls keepProjectNotes first; see writing-notes.ts.
  */
 export const writingNotes = sqliteTable(
 	"writing_notes",
 	{
 		id: integer("id").primaryKey({ autoIncrement: true }),
-		writingId: integer("writing_id")
-			.notNull()
-			.references(() => writings.id, { onDelete: "cascade" }),
+		writingId: integer("writing_id").references(() => writings.id, {
+			onDelete: "cascade",
+		}),
+		projectId: integer("project_id").references(() => projects.id),
 		chapterId: integer("chapter_id").references(() => writingChapters.id, {
 			onDelete: "cascade",
 		}),
@@ -143,6 +165,11 @@ export const writingNotes = sqliteTable(
 		index("writing_notes_writing_id_idx").on(table.writingId),
 		index("writing_notes_parent_id_idx").on(table.parentId),
 		index("writing_notes_chapter_id_idx").on(table.chapterId),
+		index("writing_notes_project_id_idx").on(table.projectId),
+		check(
+			"writing_notes_has_home",
+			sql`${table.writingId} IS NOT NULL OR ${table.projectId} IS NOT NULL`,
+		),
 	],
 );
 
@@ -190,8 +217,9 @@ export const writingTrash = sqliteTable(
 		id: integer("id").primaryKey({ autoIncrement: true }),
 		kind: text("kind", { enum: ["writing", "chapter", "note"] }).notNull(),
 		title: text("title").notNull(),
-		writingId: integer("writing_id").notNull(),
-		writingTitle: text("writing_title").notNull(),
+		/** Null for a project note that was attached to no writing. */
+		writingId: integer("writing_id"),
+		writingTitle: text("writing_title"),
 		snapshot: text("snapshot").notNull(),
 		deletedAt: integer("deleted_at").notNull(),
 	},
