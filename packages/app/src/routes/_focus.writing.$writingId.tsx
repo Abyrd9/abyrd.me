@@ -4,6 +4,7 @@ import {
 	type ChapterSuggestion,
 	ChapterSuggestions,
 } from "#/components/ChapterSuggestions";
+import { ChapterWordCount } from "#/components/ChapterWordCount";
 import { NotePane } from "#/components/NotePane";
 import {
 	type BinderNote,
@@ -86,6 +87,8 @@ function WritingEditor() {
 	const [kept, setKept] = useState<{ noteId: number; chapter: string } | null>(
 		null,
 	);
+	// Where the chapter editor draws its word count in the top bar.
+	const [wordCountSlot, setWordCountSlot] = useState<HTMLElement | null>(null);
 	// Suggested edits waiting on the open chapter.
 	const [suggestions, setSuggestions] = useState<ChapterSuggestion[]>([]);
 	const currentChapterId = writing
@@ -570,6 +573,11 @@ function WritingEditor() {
 				</div>
 
 				<div className="flex items-center justify-end gap-1">
+					<span
+						aria-live="off"
+						className="px-2 text-stone-400 tabular-nums max-sm:hidden"
+						ref={setWordCountSlot}
+					/>
 					{kept ? (
 						<span className="flex items-center gap-1 rounded-md bg-amber-50 px-2 py-1 text-amber-900 dark:bg-amber-950 dark:text-amber-200">
 							{kept.chapter} changed elsewhere. Your edits are in a note.
@@ -717,6 +725,7 @@ function WritingEditor() {
 									onTyping={() => setChromeVisible(false)}
 									pageSize={pageSize}
 								>
+									<ChapterWordCount slot={wordCountSlot} />
 									<ChapterSuggestions
 										onResolve={(id, outcome) => {
 											setSuggestions((current) =>
