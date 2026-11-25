@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Effect } from "effect";
-import { initializeDatabase } from "./database/service";
+import { type AppDatabaseClient, initializeDatabase } from "./database/service";
 import { importKindleBooks, loadKindleLibrary } from "./kindle";
 import { handleKindleMcp } from "./kindle-mcp";
 
@@ -115,6 +115,9 @@ test("MCP requires the private token and restricts writes to personal fields", a
 			),
 		);
 		expect(JSON.stringify(await missing.json())).toContain('"isError":true');
+		// The app keeps one database connection per process, so the remaining
+		// tool checks run here, before this test closes it.
+		await checkQuoteAndParityTools(db.client);
 		db.client.$client.close(false);
 	} finally {
 		if (oldPath === undefined) delete process.env.APP_DATABASE_PATH;
@@ -126,3 +129,114 @@ test("MCP requires the private token and restricts writes to personal fields", a
 		rmSync(directory, { recursive: true, force: true });
 	}
 });
+
+const checkQuoteAndParityTools = async (client: AppDatabaseClient) => {
+	importKindleBooks(client, {
+		books: [
+			{
+				asin: "firm",
+				title: "The Nature of the Firm",
+				author: "R. H. Coase",
+				lastAnnotatedAt: "",
+				annotations: [{ highlight: "Markets cost something.", location: "12" }],
+			},
+		],
+		errors: [],
+	});
+	const call = async (name: string, args: unknown) => {
+		const response = await handleKindleMcp(
+			new Request("http://localhost:3001/api/mcp", {
+				method: "POST",
+				headers: {
+					"content-type": "application/json",
+					accept: "application/json, text/event-stream",
+					authorization: `Bearer ${process.env.APP_MCP_TOKEN}`,
+				},
+				body: JSON.stringify({
+					jsonrpc: "2.0",
+					id: 1,
+					method: "tools/call",
+					params: { name, arguments: args },
+				}),
+			}),
+		);
+		const body: {
+			result: { isError?: boolean; content: Array<{ text: string }> };
+		} = await response.json();
+		return {
+			isError: body.result.isError === true,
+			value: JSON.parse(body.result.content[0]?.text ?? "null"),
+		};
+	};
+
+	const created = await call("save_quote", {
+		text: "Knowledge of time and place.",
+		attribution: "F. A. Hayek",
+		sourceTitle: "The Use of Knowledge in Society",
+	});
+	expect(created.value.citation).toBe(
+		"F. A. Hayek, The Use of Knowledge in Society.",
+	);
+
+	const edited = await call("save_quote", {
+		id: created.value.id,
+		sourceUrl: "https://www.econlib.org/library/Essays/hykKnw.html",
+	});
+	expect(edited.value).toMatchObject({
+		text: "Knowledge of time and place.",
+		attribution: "F. A. Hayek",
+	});
+	expect((await call("list_quotes", {})).value[0].citation).toBe(
+		"F. A. Hayek, “The Use of Knowledge in Society,” https://www.econlib.org/library/Essays/hykKnw.html.",
+	);
+
+	expect((await call("save_quote", { text: " " })).isError).toBe(true);
+	expect(
+		(
+			await call("save_quote", {
+				text: "Hi",
+				sourceUrl: "javascript:alert(1)",
+			})
+		).isError,
+	).toBe(true);
+	expect((await call("save_quote", { id: 999, text: "Hi" })).isError).toBe(
+		true,
+	);
+
+	expect((await call("delete_quote", { id: created.value.id })).isError).toBe(
+		false,
+	);
+	expect((await call("list_quotes", {})).value).toEqual([]);
+	expect((await call("delete_quote", { id: created.value.id })).isError).toBe(
+		true,
+	);
+
+	const book = await call("read_book", { asin: "firm" });
+	expect(book.value.activeHighlights[0].citation).toBe(
+		"R. H. Coase, The Nature of the Firm (Kindle edition), loc. 12.",
+	);
+
+	await call("edit_personal", {
+		action: "createChapter",
+		asin: "firm",
+		title: "One",
+	});
+	const chapterId = loadKindleLibrary(client).chapters.find(
+		(chapter) => chapter.title === "One",
+	)?.id;
+	const deleted = await call("edit_personal", {
+		action: "deleteChapter",
+		id: chapterId,
+		previous: null,
+	});
+	expect(deleted.isError).toBe(false);
+	expect(
+		loadKindleLibrary(client).chapters.some(
+			(chapter) => chapter.id === chapterId,
+		),
+	).toBe(false);
+
+	const decks = await call("list_flashcard_decks", {});
+	expect(decks.value.systemTerms.length).toBeGreaterThan(0);
+	expect(decks.value.studyVisuals).toBeUndefined();
+};

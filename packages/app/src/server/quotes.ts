@@ -1,6 +1,35 @@
 import { desc, eq } from "drizzle-orm";
+import { z } from "zod";
 import { quotes } from "./database/schema";
 import type { AppDatabaseClient } from "./database/service";
+
+const isHttpUrl = (value: string) => {
+	if (!value) return true;
+	if (!URL.canParse(value)) return false;
+	const { protocol } = new URL(value);
+	return protocol === "http:" || protocol === "https:";
+};
+
+/** What the app and the MCP server accept for a quote. Empty strings mean "none". */
+export const quoteFieldsSchema = z.object({
+	text: z.string().trim().min(1, "Enter a quote.").max(10_000),
+	attribution: z.string().trim().max(500),
+	sourceTitle: z.string().trim().max(500),
+	sourceUrl: z
+		.string()
+		.trim()
+		.max(2_048)
+		.refine(isHttpUrl, "Enter a valid web address."),
+	sourceNote: z.string().trim().max(2_000),
+});
+
+export const quoteInput = (data: z.infer<typeof quoteFieldsSchema>) => ({
+	text: data.text,
+	attribution: data.attribution || null,
+	sourceTitle: data.sourceTitle || null,
+	sourceUrl: data.sourceUrl || null,
+	sourceNote: data.sourceNote || null,
+});
 
 export type QuoteInput = {
 	readonly text: string;

@@ -9,14 +9,26 @@ import {
 import { Effect } from "effect";
 import { $getRoot, createEditor } from "lexical";
 import { z } from "zod";
+import {
+	formatKindleCitation,
+	formatQuoteCitation,
+} from "#/components/citation";
 import { initializeDatabase } from "./database/service";
+import { getFlashcardDecks } from "./flashcards";
 import {
 	loadKindleLibrary,
 	setKindleAnnotationArchived,
 	setKindleBookArchived,
 } from "./kindle";
 import { applyKindlePersonalEdit, personalEditSchema } from "./kindle-personal";
-import { loadQuotes } from "./quotes";
+import {
+	createQuote,
+	deleteQuote,
+	loadQuotes,
+	quoteFieldsSchema,
+	quoteInput,
+	updateQuote,
+} from "./quotes";
 
 const textResult = (value: unknown) => ({
 	content: [{ type: "text" as const, text: JSON.stringify(value) }],
@@ -70,7 +82,7 @@ export async function handleKindleMcp(request: Request) {
 			status: 401,
 			headers: {
 				"Cache-Control": "no-store",
-				"WWW-Authenticate": 'Bearer realm="kindle"',
+				"WWW-Authenticate": 'Bearer realm="abyrd-app"',
 			},
 		});
 	}
@@ -80,7 +92,7 @@ export async function handleKindleMcp(request: Request) {
 			status: 403,
 			headers: { "Cache-Control": "no-store" },
 		});
-	const server = new McpServer({ name: "personal-kindle", version: "1.0.0" });
+	const server = new McpServer({ name: "abyrd-app", version: "1.1.0" });
 	const database = await Effect.runPromise(
 		initializeDatabase.pipe(Effect.orDie),
 	);
@@ -114,6 +126,7 @@ export async function handleKindleMcp(request: Request) {
 					.map((item) => ({
 						...item,
 						commentaryText: plainText(item.commentary),
+						citation: formatKindleCitation(item),
 					}));
 			return textResult({
 				book: { ...book, synopsisText: plainText(book.synopsis) },
@@ -131,23 +144,100 @@ export async function handleKindleMcp(request: Request) {
 	server.registerTool(
 		"list_quotes",
 		{
-			description: "Read your separate quote library.",
+			description:
+				"Read the quote library, newest first. Each quote includes its Chicago-style citation, built from attribution, sourceTitle, and sourceUrl.",
 			annotations: { readOnlyHint: true },
 			inputSchema: z.object({}),
 		},
-		() => textResult(loadQuotes(client)),
+		() =>
+			textResult(
+				loadQuotes(client).map((quote) => ({
+					...quote,
+					citation: formatQuoteCitation(quote),
+				})),
+			),
+	);
+	server.registerTool(
+		"save_quote",
+		{
+			description:
+				"Add a quote, or edit one by passing its id. When editing, only the fields you pass change; pass an empty string to clear a field. attribution is the author, sourceTitle the book or article, sourceUrl an http(s) link, and sourceNote any context. Quotes that share a sourceUrl are grouped together in the app.",
+			annotations: { readOnlyHint: false },
+			inputSchema: z.object({
+				id: z.number().int().positive().optional(),
+				text: z.string().optional(),
+				attribution: z.string().optional(),
+				sourceTitle: z.string().optional(),
+				sourceUrl: z.string().optional(),
+				sourceNote: z.string().optional(),
+			}),
+		},
+		({ id, ...changes }) => {
+			const existing = id
+				? loadQuotes(client).find((quote) => quote.id === id)
+				: undefined;
+			if (id && !existing)
+				return { isError: true, ...textResult("Quote not found.") };
+
+			const fields = quoteFieldsSchema.safeParse({
+				text: changes.text ?? existing?.text ?? "",
+				attribution: changes.attribution ?? existing?.attribution ?? "",
+				sourceTitle: changes.sourceTitle ?? existing?.sourceTitle ?? "",
+				sourceUrl: changes.sourceUrl ?? existing?.sourceUrl ?? "",
+				sourceNote: changes.sourceNote ?? existing?.sourceNote ?? "",
+			});
+			if (!fields.success)
+				return {
+					isError: true,
+					...textResult(fields.error.issues.map((issue) => issue.message)),
+				};
+
+			const quote = id
+				? updateQuote(client, id, quoteInput(fields.data))
+				: createQuote(client, quoteInput(fields.data));
+			return textResult({ ...quote, citation: formatQuoteCitation(quote) });
+		},
+	);
+	server.registerTool(
+		"delete_quote",
+		{
+			description: "Permanently delete a quote from the library.",
+			annotations: { readOnlyHint: false, destructiveHint: true },
+			inputSchema: z.object({ id: z.number().int().positive() }),
+		},
+		({ id }) => {
+			if (!loadQuotes(client).some((quote) => quote.id === id))
+				return { isError: true, ...textResult("Quote not found.") };
+			deleteQuote(client, id);
+			return textResult({ ok: true });
+		},
+	);
+	server.registerTool(
+		"list_flashcard_decks",
+		{
+			description:
+				"Read the Study page's decks: system-design terms, architecture patterns, and algorithm paths. These are built into the app; study progress is kept only in the browser.",
+			annotations: { readOnlyHint: true },
+			inputSchema: z.object({}),
+		},
+		async () => {
+			const { systemTerms, architecturePatterns, algorithmPaths } =
+				await Effect.runPromise(getFlashcardDecks());
+			return textResult({ systemTerms, architecturePatterns, algorithmPaths });
+		},
 	);
 	server.registerTool(
 		"edit_personal",
 		{
 			description:
-				"Create, rename, reorder chapters; assign highlights; or save personal book/chapter synopses and highlight commentary. Never edits Kindle-synced text. For save actions, content is Lexical JSON and previous is the exact current document or null; first read the book to prevent overwriting newer edits. Supported actions: createChapter, renameChapter, moveChapter, assignChapter, saveBook, saveChapter, saveCommentary.",
+				"Create, rename, reorder, or delete Kindle chapters; assign highlights; or save personal book/chapter synopses and highlight commentary. Never edits Kindle-synced text. For save actions and deleteChapter, previous is the exact current synopsis or commentary (Lexical JSON) or null; read the book first so newer edits are not overwritten. Deleting a chapter unassigns its highlights. Supported actions: createChapter, renameChapter, moveChapter, deleteChapter, assignChapter, saveBook, saveChapter, saveCommentary.",
 			annotations: { readOnlyHint: false },
 			inputSchema: z.object({
 				action: z.enum([
 					"createChapter",
 					"renameChapter",
 					"moveChapter",
+					"deleteChapter",
 					"assignChapter",
 					"saveBook",
 					"saveChapter",

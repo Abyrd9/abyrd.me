@@ -10,21 +10,11 @@ import { AppDatabase, AppDatabaseLive } from "./database/service";
 import {
 	updateQuote as editQuote,
 	createQuote as insertQuote,
+	quoteFieldsSchema,
+	quoteInput,
 	loadQuotes as readQuotes,
 	deleteQuote as removeQuote,
 } from "./quotes";
-
-const quoteFieldsSchema = z.object({
-	text: z.string().trim().min(1, "Enter a quote.").max(10_000),
-	attribution: z.string().trim().max(500),
-	sourceTitle: z.string().trim().max(500),
-	sourceUrl: z
-		.string()
-		.trim()
-		.max(2_048)
-		.refine(_isHttpUrl, "Enter a valid web address."),
-	sourceNote: z.string().trim().max(2_000),
-});
 
 const quoteIdSchema = z.object({ id: z.number().int().positive() });
 const updateQuoteSchema = quoteFieldsSchema.extend({
@@ -63,7 +53,7 @@ export const createQuote = createServerFn({ method: "POST" })
 			Effect.gen(function* () {
 				yield* requireSignedIn;
 				const database = yield* AppDatabase;
-				return insertQuote(database.client, _quoteInput(data));
+				return insertQuote(database.client, quoteInput(data));
 			}).pipe(withDatabase, Effect.orDie),
 		);
 
@@ -78,7 +68,7 @@ export const updateQuote = createServerFn({ method: "POST" })
 			Effect.gen(function* () {
 				yield* requireSignedIn;
 				const database = yield* AppDatabase;
-				return editQuote(database.client, data.id, _quoteInput(data));
+				return editQuote(database.client, data.id, quoteInput(data));
 			}).pipe(withDatabase, Effect.orDie),
 		);
 
@@ -100,21 +90,3 @@ export const deleteQuote = createServerFn({ method: "POST" })
 		setResponseHeader("Cache-Control", "no-store");
 		return { ok: true as const };
 	});
-
-function _isHttpUrl(value: string) {
-	if (!value) return true;
-	if (!URL.canParse(value)) return false;
-
-	const { protocol } = new URL(value);
-	return protocol === "http:" || protocol === "https:";
-}
-
-function _quoteInput(data: z.infer<typeof quoteFieldsSchema>) {
-	return {
-		text: data.text,
-		attribution: data.attribution || null,
-		sourceTitle: data.sourceTitle || null,
-		sourceUrl: data.sourceUrl || null,
-		sourceNote: data.sourceNote || null,
-	};
-}

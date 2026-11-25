@@ -24,9 +24,9 @@ APP_SESSION_SECRET
 
 The app has no account creation. A successful sign-in creates a signed, `HttpOnly` session cookie valid for 14 days.
 
-## Kindle MCP for Codex
+## App MCP for Codex
 
-The `/api/mcp` endpoint stays disabled unless `APP_MCP_TOKEN` is set to a separate secret of at least 32 characters. For local development only, a loopback request can instead use the token in macOS Keychain under service `me.abyrd.kindle-mcp.local` and account `token`. Railway and production never use this fallback. Generate a random token with at least 32 bytes of entropy; do not reuse the app password or Kindle sync secret. Store it outside Git and logs. Anyone with the token can read the Kindle and quote libraries and edit personal notes, chapters, assignments, and archive state. Rotate the token if it is exposed. Kindle-imported text cannot be edited through these tools.
+The `/api/mcp` endpoint (server name `abyrd-app`) stays disabled unless `APP_MCP_TOKEN` is set to a separate secret of at least 32 characters. For local development only, a loopback request can instead use the token in macOS Keychain under service `me.abyrd.kindle-mcp.local` and account `token`. Railway and production never use this fallback. Generate a random token with at least 32 bytes of entropy; do not reuse the app password or Kindle sync secret. Store it outside Git and logs. Anyone with the token can read the Kindle library, quotes, and study decks; edit personal notes, chapters, assignments, and archive state; and add, edit, or permanently delete quotes. Rotate the token if it is exposed. Kindle-imported text cannot be edited through these tools.
 
 For the local Keychain setup, the checked-in `scripts/kindle-mcp-local-auth.ts` reads the token and supplies its authorization header. Codex can run that script through `http_headers_helper`; it does not need the token in its configuration. Alternatively, set the token in the app's environment and in the Codex process environment, then configure the connection without putting the token itself in the config:
 
