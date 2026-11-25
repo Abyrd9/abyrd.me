@@ -177,3 +177,9 @@ export const noteLinks = sqliteTable(
 		),
 	],
 );
+
+/** Words the writer has added to the spell checker's dictionary. */
+export const dictionaryWords = sqliteTable("dictionary_words", {
+	word: text("word").primaryKey(),
+	createdAt: integer("created_at").notNull(),
+});

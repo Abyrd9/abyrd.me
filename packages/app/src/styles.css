@@ -473,3 +473,16 @@ html.dark .writing-footnote-ref::before {
 .writing-footnotes li {
 	margin-bottom: 0.4em;
 }
+
+/* Spell check underlines, painted over the text without changing it. */
+::highlight(writing-spelling) {
+	text-decoration: underline wavy #dc2626;
+	text-decoration-skip-ink: none;
+	text-underline-offset: 0.2em;
+}
+
+::highlight(writing-grammar) {
+	text-decoration: underline wavy #2563eb;
+	text-decoration-skip-ink: none;
+	text-underline-offset: 0.2em;
+}

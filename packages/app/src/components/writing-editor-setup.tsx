@@ -16,6 +16,7 @@ import { LibraryQuotePicker } from "#/components/LibraryQuotePicker";
 import { FootnoteNode } from "#/components/WritingFootnotes";
 import { ImageNode, WritingImagePlugin } from "#/components/WritingImage";
 import { WritingSlashMenu } from "#/components/WritingSlashMenu";
+import { WritingSpellCheck } from "#/components/WritingSpellCheck";
 import { WritingToolbar } from "#/components/WritingToolbar";
 import {
 	CalloutNode,
@@ -120,5 +121,6 @@ export const WritingEditorPlugins = ({
 			}}
 		/>
 		<WritingToolbar />
+		<WritingSpellCheck />
 	</>
 );
