@@ -22,8 +22,9 @@ import {
 	type LexicalEditor,
 	type TextFormatType,
 } from "lexical";
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { type ReactNode, useContext, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { asLookupWord, WordLookupContext } from "#/components/WordPanel";
 
 type Block = "paragraph" | "h2" | "h3" | "quote" | "other";
 
@@ -78,11 +79,14 @@ type ToolbarState = {
 	block: Block;
 	formats: Set<TextFormatType>;
 	link: boolean;
+	/** The selection, when it's a single word to look up. */
+	word: string | null;
 };
 
 /** Formatting controls that appear above selected text. */
 export const WritingToolbar = () => {
 	const [editor] = useLexicalComposerContext();
+	const lookUp = useContext(WordLookupContext);
 	const [state, setState] = useState<ToolbarState | null>(null);
 	const [linkDraft, setLinkDraftState] = useState<string | null>(null);
 	// Read by the update listener, which must not hide the toolbar while the
@@ -143,6 +147,7 @@ export const WritingToolbar = () => {
 										: "paragraph",
 							formats,
 							link: $findMatchingParent(anchor, $isLinkNode) !== null,
+							word: asLookupWord(selection.getTextContent()),
 						});
 					});
 				}),
@@ -280,6 +285,33 @@ export const WritingToolbar = () => {
 					>
 						<span className="font-serif text-lg leading-none">“</span>
 					</ToolbarButton>
+					{lookUp && state.word ? (
+						<>
+							<Divider />
+							<ToolbarButton
+								active={false}
+								label={`Define “${state.word}”`}
+								onClick={() => {
+									if (state.word) lookUp(state.word);
+								}}
+							>
+								<svg
+									aria-hidden="true"
+									fill="none"
+									height="15"
+									stroke="currentColor"
+									strokeLinecap="round"
+									strokeLinejoin="round"
+									strokeWidth="2"
+									viewBox="0 0 24 24"
+									width="15"
+								>
+									<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z" />
+									<path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5" />
+								</svg>
+							</ToolbarButton>
+						</>
+					) : null}
 					<Divider />
 					<ToolbarButton
 						active={false}
