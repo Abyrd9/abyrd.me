@@ -8,7 +8,13 @@ export const Route = createFileRoute("/_authenticated/media")({
 });
 
 type CropMode = "square" | "circle" | "thread";
-type PlatformFilter = "all" | "x" | "instagram" | "newsletter";
+type PlatformFilter =
+	| "all"
+	| "x"
+	| "instagram"
+	| "threads"
+	| "substack"
+	| "newsletter";
 
 const inkSwatches = [
 	{
@@ -40,7 +46,7 @@ const identityFacts = [
 	{
 		label: "Handle",
 		value: "@rook_",
-		note: "X, Instagram & social handle",
+		note: "X, Instagram, Threads & Substack Notes handle",
 	},
 	{
 		label: "Press & Inbox",
@@ -132,7 +138,8 @@ function MediaDossierPage() {
 					</h1>
 					<p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
 						Official linocut avatar, canonical handles, ink values, and platform
-						placeholders for X, Instagram, and the newsletter.
+						placeholders for X, Instagram, Threads, Substack, and the
+						newsletter.
 					</p>
 				</div>
 
@@ -382,7 +389,7 @@ function MediaDossierPage() {
 						</h2>
 						<p className="mt-1 text-sm text-slate-600">
 							Live avatar previews paired with true-aspect-ratio placeholders
-							for X, Instagram, and the newsletter.
+							for X, Instagram, Threads, Substack, and email.
 						</p>
 					</div>
 
@@ -395,7 +402,9 @@ function MediaDossierPage() {
 								["all", "All platforms"],
 								["x", "X / Twitter"],
 								["instagram", "Instagram"],
-								["newsletter", "Newsletter & Web"],
+								["threads", "Threads"],
+								["substack", "Substack"],
+								["newsletter", "Direct Email"],
 							] as const
 						).map(([id, label]) => (
 							<button
@@ -627,6 +636,219 @@ function MediaDossierPage() {
 								<CopyButton
 									label="Copy Instagram bio"
 									text="Essays & notes. New pieces by email."
+								/>
+							</div>
+						</article>
+					) : null}
+
+					{platformFilter === "all" || platformFilter === "threads" ? (
+						<article className="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
+							<div>
+								<div className="flex items-center justify-between gap-2">
+									<div>
+										<span className="text-xs font-semibold tracking-[0.12em] text-slate-500 uppercase">
+											Threads
+										</span>
+										<h3 className="mt-0.5 text-lg font-semibold text-slate-950">
+											@rook_
+										</h3>
+									</div>
+									<span className="rounded-full bg-slate-100 px-2.5 py-1 font-mono text-xs text-slate-600">
+										1 ready · 2 placeholders
+									</span>
+								</div>
+
+								<div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+									<div className="flex items-start justify-between gap-3">
+										<div>
+											<p className="text-base font-semibold text-slate-950">
+												Rook
+											</p>
+											<div className="mt-0.5 flex items-center gap-1.5">
+												<span className="font-mono text-xs text-slate-600">
+													rook_
+												</span>
+												<span className="rounded-full bg-white px-2 py-0.5 font-mono text-[10px] text-slate-500">
+													threads.net
+												</span>
+											</div>
+										</div>
+										<img
+											alt="Rook Threads profile avatar preview"
+											className="size-14 shrink-0 rounded-full border border-slate-200 object-cover"
+											height={56}
+											src="/rook-avatar.png"
+											width={56}
+										/>
+									</div>
+
+									<p className="mt-2.5 text-xs leading-5 text-slate-700">
+										Essays, notes, and small strange things. Signed, Rook.
+									</p>
+									<p className="mt-1 font-mono text-xs text-[#b54422]">
+										abyrd.me
+									</p>
+
+									<div className="mt-4 grid grid-cols-2 gap-2.5">
+										<div className="flex aspect-[4/3] flex-col items-center justify-center rounded-lg border border-dashed border-slate-300 bg-white p-2.5 text-center">
+											<span className="font-mono text-[11px] font-medium text-slate-700">
+												+ Passage Screenshot Card
+											</span>
+											<span className="mt-0.5 font-mono text-[10px] text-slate-500">
+												1080×1350 (4:5) or 1080×1080
+											</span>
+										</div>
+										<div className="flex aspect-[4/3] flex-col items-center justify-center rounded-lg border border-dashed border-slate-300 bg-white p-2.5 text-center">
+											<span className="font-mono text-[11px] font-medium text-slate-700">
+												+ Link Preview Card
+											</span>
+											<span className="mt-0.5 font-mono text-[10px] text-slate-500">
+												1200×630 (1.91:1 OG)
+											</span>
+										</div>
+									</div>
+								</div>
+
+								<ul className="mt-5 divide-y divide-slate-200 text-xs">
+									<li className="flex items-center justify-between py-2.5">
+										<span>
+											<strong className="font-medium text-slate-950">
+												Profile Picture
+											</strong>{" "}
+											· 320 × 320 px circular crop (synced or standalone)
+										</span>
+										<span className="font-mono text-[#b54422]">Ready</span>
+									</li>
+									<li className="flex items-center justify-between py-2.5">
+										<span>
+											<strong className="font-medium text-slate-950">
+												Excerpt Image Attachment
+											</strong>{" "}
+											· 1080 × 1350 px (4:5)
+										</span>
+										<span className="font-mono text-slate-500">
+											Placeholder
+										</span>
+									</li>
+									<li className="flex items-center justify-between py-2.5">
+										<span>
+											<strong className="font-medium text-slate-950">
+												Cross-Post Link Card
+											</strong>{" "}
+											· 1200 × 630 px (1.91:1)
+										</span>
+										<span className="font-mono text-slate-500">
+											Placeholder
+										</span>
+									</li>
+								</ul>
+							</div>
+
+							<div className="mt-4 flex flex-wrap gap-2 pt-2">
+								<CopyButton label="Copy @rook_" text="@rook_" />
+								<CopyButton
+									label="Copy Threads bio"
+									text="Essays, notes, and small strange things. Signed, Rook."
+								/>
+							</div>
+						</article>
+					) : null}
+
+					{platformFilter === "all" || platformFilter === "substack" ? (
+						<article className="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
+							<div>
+								<div className="flex items-center justify-between gap-2">
+									<div>
+										<span className="text-xs font-semibold tracking-[0.12em] text-slate-500 uppercase">
+											Substack & Notes
+										</span>
+										<h3 className="mt-0.5 text-lg font-semibold text-slate-950">
+											By Rook · @rook_
+										</h3>
+									</div>
+									<span className="rounded-full bg-slate-100 px-2.5 py-1 font-mono text-xs text-slate-600">
+										1 ready · 3 placeholders
+									</span>
+								</div>
+
+								<div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+									<div className="flex items-center gap-3.5 border-b border-slate-200 pb-3.5">
+										<img
+											alt="Rook Substack publication icon preview"
+											className="size-14 shrink-0 rounded-xl border border-slate-200 object-cover shadow-xs"
+											height={56}
+											src="/rook-avatar.png"
+											width={56}
+										/>
+										<div className="min-w-0">
+											<p className="font-book text-lg font-semibold text-slate-950">
+												Rook
+											</p>
+											<p className="text-xs text-slate-600">
+												Essays, notes, and small strange things. By Rook.
+											</p>
+										</div>
+									</div>
+
+									<div className="mt-3.5 grid grid-cols-2 gap-2.5">
+										<div className="flex aspect-[5/2] flex-col items-center justify-center rounded-lg border border-dashed border-slate-300 bg-white p-2 text-center">
+											<span className="font-mono text-[11px] font-medium text-slate-700">
+												+ Publication Wordmark
+											</span>
+											<span className="mt-0.5 font-mono text-[10px] text-slate-500">
+												1344×256 px transparent PNG
+											</span>
+										</div>
+										<div className="flex aspect-[5/2] flex-col items-center justify-center rounded-lg border border-dashed border-slate-300 bg-white p-2 text-center">
+											<span className="font-mono text-[11px] font-medium text-slate-700">
+												+ Email Banner Header
+											</span>
+											<span className="mt-0.5 font-mono text-[10px] text-slate-500">
+												1100×220 px (5:1)
+											</span>
+										</div>
+									</div>
+								</div>
+
+								<ul className="mt-5 divide-y divide-slate-200 text-xs">
+									<li className="flex items-center justify-between py-2.5">
+										<span>
+											<strong className="font-medium text-slate-950">
+												Publication Logo & Author Avatar
+											</strong>{" "}
+											· 1024 × 1024 px (1:1, ≥256×256)
+										</span>
+										<span className="font-mono text-[#b54422]">Ready</span>
+									</li>
+									<li className="flex items-center justify-between py-2.5">
+										<span>
+											<strong className="font-medium text-slate-950">
+												Publication Wordmark
+											</strong>{" "}
+											· 1344 × 256 px (max 21:4)
+										</span>
+										<span className="font-mono text-slate-500">
+											Placeholder
+										</span>
+									</li>
+									<li className="flex items-center justify-between py-2.5">
+										<span>
+											<strong className="font-medium text-slate-950">
+												Welcome Page Cover / Social Preview
+											</strong>{" "}
+											· 1200 × 630 px
+										</span>
+										<span className="font-mono text-slate-500">
+											Placeholder
+										</span>
+									</li>
+								</ul>
+							</div>
+
+							<div className="mt-4 flex flex-wrap gap-2 pt-2">
+								<CopyButton
+									label="Copy Substack one-liner"
+									text="Essays, notes, and small strange things. By Rook."
 								/>
 							</div>
 						</article>
