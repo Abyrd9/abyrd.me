@@ -30,8 +30,8 @@ export const NoteEditor = ({
 	return (
 		<LexicalExtensionComposer extension={extension} contentEditable={null}>
 			<div
-				// No top padding: the note's control strip sits on the top edge.
-				className="writing-paper mx-auto min-h-[calc(100dvh-6.5rem)] w-full max-w-[40rem] bg-white px-5 pb-12 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_8px_24px_rgba(0,0,0,0.06)] sm:px-10"
+				className="writing-paper mx-auto min-h-[calc(100dvh-6.5rem)] w-full max-w-[40rem] bg-white px-5 pt-12 pb-12 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_8px_24px_rgba(0,0,0,0.06)] sm:px-10"
+				data-note-paper
 				// Notes have no page to fit, so images cap at most of the screen.
 				style={{ fontSize: "11.5pt", ["--page-text-height" as string]: "70vh" }}
 			>

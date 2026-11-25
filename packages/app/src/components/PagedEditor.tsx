@@ -189,6 +189,7 @@ const PaperSurface = ({
 		<div
 			// Clips the spare page-gap floats. "clip", unlike "hidden", also stops the browser scrolling this box to follow the cursor.
 			className="writing-paper relative mx-auto overflow-clip"
+			data-chapter-paper
 			onMouseDown={(event) => {
 				const text = textRef.current?.getBoundingClientRect();
 				if (!text || event.clientY < text.bottom) return;
