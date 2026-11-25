@@ -42,12 +42,6 @@ export const subtreeIds = (notes: BinderNote[], id: number) => {
 	return ids;
 };
 
-const formatEdited = (time: number) =>
-	new Date(time).toLocaleDateString("en-US", {
-		month: "short",
-		day: "numeric",
-	});
-
 /**
  * The writing's notes set like a book's contents page: the whole book first,
  * then each chapter, every level showing, with dotted leaders to a count or
@@ -113,12 +107,7 @@ export const NotesContents = ({
 							</>
 						}
 						depth={depth}
-						meta={inside ? String(inside) : formatEdited(note.updatedAt)}
-						metaLabel={
-							inside
-								? `${inside} ${inside === 1 ? "note" : "notes"} inside`
-								: "Last edited"
-						}
+						inside={inside}
 					>
 						{renaming === note.id ? (
 							<input
@@ -304,17 +293,19 @@ export const NotesContents = ({
 	);
 };
 
-/** One line of the contents: title, dotted leader, and a count or date. */
+/**
+ * One line of the contents: the title, then a dotted leader to the number of
+ * notes inside it. A note with none inside shows just its title.
+ */
 const Entry = ({
 	depth,
-	meta,
-	metaLabel,
+	inside,
 	actions,
 	children,
 }: {
 	depth: number;
-	meta: string;
-	metaLabel: string;
+	/** How many notes sit beneath this one, at any depth. */
+	inside: number;
 	actions: ReactNode;
 	children: ReactNode;
 }) => (
@@ -325,15 +316,17 @@ const Entry = ({
 		{children}
 		<span
 			aria-hidden="true"
-			className="min-w-4 flex-1 translate-y-[-4px] border-b-[1.5px] border-dotted border-stone-300 dark:border-stone-700"
+			className={`min-w-4 flex-1 ${inside ? "translate-y-[-4px] border-b-[1.5px] border-dotted border-stone-300 dark:border-stone-700" : ""}`}
 		/>
 		<span className="relative shrink-0">
-			<span
-				className="font-mono text-[11px] text-stone-400 tabular-nums group-focus-within:invisible group-hover:invisible max-sm:hidden"
-				title={metaLabel}
-			>
-				{meta}
-			</span>
+			{inside ? (
+				<span
+					className="font-mono text-[11px] text-stone-400 tabular-nums group-focus-within:invisible group-hover:invisible max-sm:hidden"
+					title={`${inside} ${inside === 1 ? "note" : "notes"} inside`}
+				>
+					{inside}
+				</span>
+			) : null}
 			<span className="absolute top-1/2 right-0 flex -translate-y-1/2 items-center opacity-0 group-focus-within:opacity-100 group-hover:opacity-100 max-sm:static max-sm:translate-y-0 max-sm:opacity-100">
 				{actions}
 			</span>
