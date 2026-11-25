@@ -466,7 +466,7 @@ function WritingEditor() {
 			<div className="flex h-full">
 				<div className="min-w-0 flex-1 overflow-y-auto">
 					<div
-						className={`flex px-3 pt-20 pb-24 sm:px-6 ${sideOpen ? "md:justify-end md:pr-3" : "justify-center"}`}
+						className={`flex px-3 pt-20 pb-24 sm:px-6 ${sideOpen ? "md:justify-end md:pr-8" : "justify-center"}`}
 					>
 						<div
 							className="relative min-w-0"
@@ -531,7 +531,7 @@ function WritingEditor() {
 				</div>
 
 				{sideOpen ? (
-					<div className="min-w-0 max-md:fixed max-md:inset-x-0 max-md:top-12 max-md:bottom-0 max-md:z-30 max-md:bg-stone-100 md:flex-1 md:pt-20 md:pb-6 md:pl-3 dark:max-md:bg-[#0a0a0a]">
+					<div className="min-w-0 max-md:fixed max-md:inset-x-0 max-md:top-12 max-md:bottom-0 max-md:z-30 max-md:bg-stone-100 md:flex-1 md:pt-20 md:pb-6 md:pl-8 dark:max-md:bg-[#0a0a0a]">
 						<div className="h-full w-full md:max-w-[var(--side)] md:pr-6">
 							{openNoteId !== null ? (
 								<NotePane

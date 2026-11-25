@@ -15,6 +15,7 @@ export const NoteEditor = ({
 	onChange,
 	autoFocus,
 	header,
+	height,
 }: {
 	/** Serialized Lexical state. Read once when the editor mounts. */
 	initialContent: string | null;
@@ -22,6 +23,11 @@ export const NoteEditor = ({
 	autoFocus: boolean;
 	/** Shown at the top of the sheet, above the text (the note's title). */
 	header: ReactNode;
+	/**
+	 * Fixes the sheet to this height in pixels, scrolling the note inside it.
+	 * Without one, the sheet grows with the note.
+	 */
+	height?: number;
 }) => {
 	const [extension] = useState(() =>
 		createWritingExtension("NoteWriting", initialContent),
@@ -30,10 +36,14 @@ export const NoteEditor = ({
 	return (
 		<LexicalExtensionComposer extension={extension} contentEditable={null}>
 			<div
-				className="writing-paper mx-auto min-h-[calc(100dvh-6.5rem)] w-full max-w-[40rem] bg-white px-5 pt-12 pb-12 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_8px_24px_rgba(0,0,0,0.06)] sm:px-10"
+				className={`writing-paper mx-auto w-full max-w-[40rem] bg-white px-5 pt-12 pb-12 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_8px_24px_rgba(0,0,0,0.06)] sm:px-10 ${height ? "overflow-y-auto" : "min-h-[calc(100dvh-6.5rem)]"}`}
 				data-note-paper
-				// Notes have no page to fit, so images cap at most of the screen.
-				style={{ fontSize: "11.5pt", ["--page-text-height" as string]: "70vh" }}
+				style={{
+					fontSize: "11.5pt",
+					height,
+					// Notes have no page to fit, so images cap at most of the screen.
+					["--page-text-height" as string]: "70vh",
+				}}
 			>
 				{header}
 				<div className="relative mt-6">

@@ -99,6 +99,7 @@ export const PagedEditor = ({
 						<div
 							aria-hidden="true"
 							className="absolute inset-x-0 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.08),0_8px_24px_rgba(0,0,0,0.06)]"
+							data-chapter-page
 							// biome-ignore lint/suspicious/noArrayIndexKey: pages are positional.
 							key={page}
 							style={{ top: page * stride, height }}

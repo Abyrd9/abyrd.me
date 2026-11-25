@@ -222,6 +222,8 @@ export const NotePane = ({
 		</aside>
 	);
 
+	const pageHeight = useChapterPageHeight();
+
 	return (
 		<section
 			aria-label="Note"
@@ -239,6 +241,7 @@ export const NotePane = ({
 				) : (
 					<NoteEditor
 						autoFocus={false}
+						height={pageHeight}
 						header={
 							<input
 								aria-label="Note title"
@@ -319,14 +322,19 @@ const SeamLink = ({ tied, label }: { tied: boolean; label: string }) => {
 		};
 		place();
 		const observer = new ResizeObserver(place);
+		// The chapter shrinks to fit with CSS zoom, which resizing doesn't report.
+		const zoom = new MutationObserver(place);
 		for (const paper of document.querySelectorAll(
 			"[data-chapter-paper], [data-note-paper]",
-		))
+		)) {
 			observer.observe(paper);
+			zoom.observe(paper, { attributes: true, attributeFilter: ["style"] });
+		}
 		window.addEventListener("resize", place);
 		window.addEventListener("scroll", place, { capture: true, passive: true });
 		return () => {
 			observer.disconnect();
+			zoom.disconnect();
 			window.removeEventListener("resize", place);
 			window.removeEventListener("scroll", place, { capture: true });
 		};
@@ -356,4 +364,36 @@ const SeamLink = ({ tied, label }: { tied: boolean; label: string }) => {
 			</svg>
 		</span>
 	);
+};
+
+/**
+ * The height of one of the chapter's pages as drawn, so the note's paper can
+ * match it. Follows page size changes and the shrink-to-fit scaling.
+ */
+const useChapterPageHeight = () => {
+	const [height, setHeight] = useState<number | undefined>(undefined);
+	useEffect(() => {
+		const measure = () => {
+			const page = document.querySelector("[data-chapter-page]");
+			setHeight(
+				page ? Math.round(page.getBoundingClientRect().height) : undefined,
+			);
+		};
+		measure();
+		const paper = document.querySelector("[data-chapter-paper]");
+		const observer = new ResizeObserver(measure);
+		// The chapter shrinks to fit with CSS zoom, which resizing doesn't report.
+		const zoom = new MutationObserver(measure);
+		if (paper) {
+			observer.observe(paper);
+			zoom.observe(paper, { attributes: true, attributeFilter: ["style"] });
+		}
+		window.addEventListener("resize", measure);
+		return () => {
+			observer.disconnect();
+			zoom.disconnect();
+			window.removeEventListener("resize", measure);
+		};
+	}, []);
+	return height;
 };
