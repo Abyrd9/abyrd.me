@@ -57,6 +57,13 @@
 			"when": 1795554129070,
 			"tag": "0007_writings",
 			"breakpoints": true
+		},
+		{
+			"idx": 8,
+			"version": "6",
+			"when": 1795621301579,
+			"tag": "0008_writing_notes",
+			"breakpoints": true
 		}
 	]
 }

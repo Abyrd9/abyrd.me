@@ -1,4 +1,12 @@
-import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { sql } from "drizzle-orm";
+import {
+	type AnySQLiteColumn,
+	check,
+	index,
+	integer,
+	sqliteTable,
+	text,
+} from "drizzle-orm/sqlite-core";
 
 export const kindleBooks = sqliteTable("kindle_books", {
 	asin: text("asin").primaryKey(),
@@ -102,4 +110,70 @@ export const writingChapters = sqliteTable(
 		updatedAt: integer("updated_at").notNull(),
 	},
 	(table) => [index("writing_chapters_writing_id_idx").on(table.writingId)],
+);
+
+/**
+ * Notes that sit beside a writing. A note belongs to the whole writing when
+ * chapterId is null, or to one chapter, and nests under parentId. Children
+ * always share their parent's writing and chapter; deleting a chapter or a
+ * note deletes everything beneath it.
+ */
+export const writingNotes = sqliteTable(
+	"writing_notes",
+	{
+		id: integer("id").primaryKey({ autoIncrement: true }),
+		writingId: integer("writing_id")
+			.notNull()
+			.references(() => writings.id, { onDelete: "cascade" }),
+		chapterId: integer("chapter_id").references(() => writingChapters.id, {
+			onDelete: "cascade",
+		}),
+		parentId: integer("parent_id").references(
+			(): AnySQLiteColumn => writingNotes.id,
+			{ onDelete: "cascade" },
+		),
+		title: text("title").notNull().default(""),
+		position: integer("position").notNull(),
+		/** Serialized Lexical editor state, or null for a note never typed in. */
+		content: text("content"),
+		createdAt: integer("created_at").notNull(),
+		updatedAt: integer("updated_at").notNull(),
+	},
+	(table) => [
+		index("writing_notes_writing_id_idx").on(table.writingId),
+		index("writing_notes_parent_id_idx").on(table.parentId),
+		index("writing_notes_chapter_id_idx").on(table.chapterId),
+	],
+);
+
+/**
+ * Wiki links found in saved text, rebuilt each time a chapter or note saves.
+ * Exactly one source column is set. context is the text of the block that
+ * holds the link, shown in the target's "Linked from" list.
+ */
+export const noteLinks = sqliteTable(
+	"note_links",
+	{
+		id: integer("id").primaryKey({ autoIncrement: true }),
+		sourceChapterId: integer("source_chapter_id").references(
+			() => writingChapters.id,
+			{ onDelete: "cascade" },
+		),
+		sourceNoteId: integer("source_note_id").references(() => writingNotes.id, {
+			onDelete: "cascade",
+		}),
+		targetNoteId: integer("target_note_id")
+			.notNull()
+			.references(() => writingNotes.id, { onDelete: "cascade" }),
+		context: text("context").notNull().default(""),
+	},
+	(table) => [
+		index("note_links_target_idx").on(table.targetNoteId),
+		index("note_links_source_chapter_idx").on(table.sourceChapterId),
+		index("note_links_source_note_idx").on(table.sourceNoteId),
+		check(
+			"note_links_one_source",
+			sql`(${table.sourceChapterId} IS NULL) <> (${table.sourceNoteId} IS NULL)`,
+		),
+	],
 );

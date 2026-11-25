@@ -2,6 +2,8 @@ import { and, asc, count, desc, eq, gt, lt, max, sql, sum } from "drizzle-orm";
 import type { PageSizeId } from "#/writing-page-sizes";
 import { writingChapters, writings } from "./database/schema";
 import type { AppDatabaseClient } from "./database/service";
+import { rootBlocks, textOf, typeOf } from "./lexical-json";
+import { replaceNoteLinks } from "./note-links";
 
 const PREVIEW_CHARACTERS = 600;
 
@@ -9,17 +11,9 @@ export type PreviewBlock = { kind: "heading" | "paragraph"; text: string };
 
 /** The opening blocks of a saved chapter, as plain text for the library thumbnail. */
 export function previewBlocks(content: string | null) {
-	if (!content) return [];
-	let state: unknown;
-	try {
-		state = JSON.parse(content);
-	} catch {
-		return [];
-	}
-
 	const blocks: PreviewBlock[] = [];
 	let remaining = PREVIEW_CHARACTERS;
-	for (const node of childrenOf(childOf(state, "root"))) {
+	for (const node of rootBlocks(content)) {
 		if (remaining <= 0) break;
 		const text = textOf(node).trim();
 		if (!text) continue;
@@ -31,24 +25,6 @@ export function previewBlocks(content: string | null) {
 	}
 	return blocks;
 }
-
-const childOf = (value: unknown, key: string) =>
-	value && typeof value === "object" && key in value
-		? (value as Record<string, unknown>)[key]
-		: undefined;
-
-const childrenOf = (value: unknown) => {
-	const children = childOf(value, "children");
-	return Array.isArray(children) ? children : [];
-};
-
-const typeOf = (value: unknown) => childOf(value, "type");
-
-const textOf = (value: unknown): string => {
-	const text = childOf(value, "text");
-	if (typeof text === "string") return text;
-	return childrenOf(value).map(textOf).join("");
-};
 
 export function listWritings(db: AppDatabaseClient) {
 	const openings = new Map(
@@ -186,12 +162,15 @@ export function updateChapter(
 				writingId: writingChapters.writingId,
 			})
 			.get();
-		if (chapter) touchWriting(tx, chapter.writingId, now);
-		return chapter ?? null;
+		if (!chapter) return null;
+		if (changes.content !== undefined)
+			replaceNoteLinks(tx, { chapterId: id }, changes.content);
+		touchWriting(tx, chapter.writingId, now);
+		return chapter;
 	});
 }
 
-/** Deletes a chapter unless it is the writing's last one. */
+/** Deletes a chapter, with its notes, unless it is the writing's last one. */
 export function deleteChapter(
 	db: AppDatabaseClient,
 	id: number,
@@ -275,11 +254,11 @@ export function moveChapter(
 	});
 }
 
-type Transaction = Parameters<
+export type Transaction = Parameters<
 	Parameters<AppDatabaseClient["transaction"]>[0]
 >[0];
 
-function touchWriting(tx: Transaction, writingId: number, now: number) {
+export function touchWriting(tx: Transaction, writingId: number, now: number) {
 	tx.update(writings)
 		.set({ updatedAt: now })
 		.where(eq(writings.id, writingId))

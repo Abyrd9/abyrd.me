@@ -1,17 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
-import {
-	getRequestHeader,
-	setResponseHeader,
-} from "@tanstack/react-start/server";
-import { Effect } from "effect";
 import { z } from "zod";
 import { pageSizeIds } from "#/writing-page-sizes";
-import { hasValidSession } from "./auth";
-import {
-	AppDatabase,
-	type AppDatabaseClient,
-	AppDatabaseLive,
-} from "./database/service";
+import { runSignedIn } from "./signed-in";
 import {
 	createChapter as addChapter,
 	createWriting as addWriting,
@@ -26,22 +16,6 @@ import {
 
 const id = z.number().int().positive();
 const title = z.string().trim().max(300);
-
-const runSignedIn = async <A>(run: (db: AppDatabaseClient) => A) => {
-	const result = await Effect.runPromise(
-		Effect.gen(function* () {
-			const isSignedIn = yield* hasValidSession(getRequestHeader("cookie"));
-			if (!isSignedIn)
-				return yield* Effect.fail(
-					new Response("Unauthorized", { status: 401 }),
-				);
-			const database = yield* AppDatabase;
-			return run(database.client);
-		}).pipe(Effect.provide(AppDatabaseLive), Effect.orDie),
-	);
-	setResponseHeader("Cache-Control", "no-store");
-	return result;
-};
 
 export const listWritings = createServerFn({ method: "GET" }).handler(() =>
 	runSignedIn(readWritings),
