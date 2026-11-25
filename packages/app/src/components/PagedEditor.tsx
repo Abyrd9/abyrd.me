@@ -24,6 +24,7 @@ import {
 	useRef,
 	useState,
 } from "react";
+import { LibraryQuotePicker } from "#/components/LibraryQuotePicker";
 import { FootnoteNode, FootnotesList } from "#/components/WritingFootnotes";
 import { ImageNode, WritingImagePlugin } from "#/components/WritingImage";
 import { WritingSlashMenu } from "#/components/WritingSlashMenu";
@@ -233,6 +234,7 @@ export const PagedEditor = ({
 			<MarkdownShortcutPlugin transformers={markdownShortcuts} />
 			<WritingSlashMenu />
 			<WritingImagePlugin />
+			<LibraryQuotePicker />
 			<OnChangePlugin
 				ignoreSelectionChange
 				onChange={(state) => {

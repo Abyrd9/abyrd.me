@@ -23,6 +23,7 @@ import {
 } from "lexical";
 import { useState } from "react";
 import { createPortal } from "react-dom";
+import { OPEN_LIBRARY_PICKER_COMMAND } from "#/components/LibraryQuotePicker";
 import { $createFootnoteNode } from "#/components/WritingFootnotes";
 import { OPEN_IMAGE_PICKER_COMMAND } from "#/components/WritingImage";
 import {
@@ -129,6 +130,13 @@ const options = [
 		turnInto($createCalloutNode),
 	),
 	new BlockOption(
+		"Quote from library",
+		"A saved quote or Kindle highlight, cited",
+		"❞",
+		["kindle", "highlight", "library", "quotes", "cite", "book"],
+		(editor) => editor.dispatchCommand(OPEN_LIBRARY_PICKER_COMMAND, undefined),
+	),
+	new BlockOption(
 		"Image",
 		"Upload a picture",
 		"▣",
@@ -228,9 +236,10 @@ export const WritingSlashMenu = () => {
 					: null
 			}
 			onQueryChange={setQuery}
-			onSelectOption={(option, textNode, closeMenu) => {
+			onSelectOption={(option, textNode, closeMenu, matchingString) => {
 				editor.update(() => {
-					textNode?.remove();
+					if (textNode) textNode.remove();
+					else $removeTypedQuery(`/${matchingString}`);
 					option.run(editor);
 				});
 				closeMenu();
@@ -239,4 +248,21 @@ export const WritingSlashMenu = () => {
 			triggerFn={triggerFn}
 		/>
 	);
+};
+
+/**
+ * Deletes the "/query" just typed before the cursor. The typeahead menu does
+ * this itself except when the slash directly follows punctuation, where it
+ * hands back no text node to remove.
+ */
+const $removeTypedQuery = (typed: string) => {
+	const selection = $getSelection();
+	if (!$isRangeSelection(selection) || !selection.isCollapsed()) return;
+	const { offset } = selection.anchor;
+	const node = selection.anchor.getNode();
+	if (
+		$isTextNode(node) &&
+		node.getTextContent().slice(0, offset).endsWith(typed)
+	)
+		node.spliceText(offset - typed.length, typed.length, "", true);
 };
