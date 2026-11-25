@@ -174,7 +174,7 @@ export const NotesContents = ({
 			aria-label="Notes"
 			className="flex h-full flex-col bg-stone-100 font-sans text-stone-700 dark:bg-[#0a0a0a] dark:text-stone-300"
 		>
-			<div className="flex items-baseline justify-between gap-3 px-6 pt-5">
+			<div className="flex items-baseline justify-between gap-3 px-6">
 				<h2 className="font-book text-[22px] text-stone-900 dark:text-stone-100">
 					Notes
 				</h2>
@@ -225,7 +225,7 @@ export const NotesContents = ({
 				/>
 			</label>
 
-			<nav aria-label="Contents" className="flex-1 overflow-y-auto px-6 pb-8">
+			<nav aria-label="Contents" className="min-h-0 flex-1 overflow-y-auto px-6 pb-8">
 				{search ? (
 					matches.length ? (
 						<ul className="mt-4">
