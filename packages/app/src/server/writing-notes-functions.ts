@@ -4,6 +4,7 @@ import { runSignedIn } from "./signed-in";
 import {
 	createNote,
 	deleteNote,
+	keepUnsavedEdits,
 	listNotes,
 	loadNote,
 	moveNote,
@@ -45,11 +46,18 @@ export const updateWritingNote = createServerFn({ method: "POST" })
 				title: title.optional(),
 				// Matches the chapter limit; notes are usually far smaller.
 				content: z.string().max(10_000_000).optional(),
+				/** The text version the editor started from; see contentRevision. */
+				baseRevision: z.string().max(64).optional(),
 			})
 			.parse(input),
 	)
 	.handler(({ data: { id, ...changes } }) =>
-		runSignedIn((db) => updateNote(db, id, changes)),
+		runSignedIn((db) => {
+			const result = updateNote(db, id, changes);
+			if (!result?.conflict || changes.content === undefined) return result;
+			const keptNoteId = keepUnsavedEdits(db, result, changes.content);
+			return { ...result, keptNoteId };
+		}),
 	);
 
 export const moveWritingNote = createServerFn({ method: "POST" })

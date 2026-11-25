@@ -13,7 +13,7 @@ import {
 import { writingChapters, writingNotes, writings } from "./database/schema";
 import type { AppDatabaseClient } from "./database/service";
 import { loadBacklinks, replaceNoteLinks } from "./note-links";
-import { type Transaction, touchWriting } from "./writings";
+import { contentRevision, type Transaction, touchWriting } from "./writings";
 
 /** Where a note sits: in a writing, optionally in one of its chapters, and under a parent. */
 export type NotePlacement = {
@@ -79,6 +79,7 @@ export function loadNote(db: AppDatabaseClient, id: number) {
 
 	return {
 		...note,
+		revision: contentRevision(note.content),
 		writing: writing ?? { id: note.writingId, title: "" },
 		chapter,
 		ancestors,
@@ -113,25 +114,80 @@ export function createNote(
 	});
 }
 
+/**
+ * Saves a note's title or text. With baseRevision, text is saved only if the
+ * note still holds the version the editor started from; otherwise nothing
+ * changes and the current version comes back as a conflict.
+ */
 export function updateNote(
 	db: AppDatabaseClient,
 	id: number,
-	changes: { title?: string; content?: string },
+	{
+		baseRevision,
+		...changes
+	}: { title?: string; content?: string; baseRevision?: string },
 	now = Date.now(),
 ) {
 	return db.transaction((tx) => {
-		const note = tx
-			.update(writingNotes)
+		const current = tx
+			.select()
+			.from(writingNotes)
+			.where(eq(writingNotes.id, id))
+			.get();
+		if (!current) return null;
+		if (
+			changes.content !== undefined &&
+			baseRevision !== undefined &&
+			baseRevision !== contentRevision(current.content)
+		)
+			return {
+				conflict: true as const,
+				id,
+				writingId: current.writingId,
+				chapterId: current.chapterId,
+				parentId: current.parentId,
+				title: current.title,
+				content: current.content,
+				revision: contentRevision(current.content),
+			};
+		tx.update(writingNotes)
 			.set({ ...changes, updatedAt: now })
 			.where(eq(writingNotes.id, id))
-			.returning({ id: writingNotes.id, writingId: writingNotes.writingId })
-			.get();
-		if (!note) return null;
+			.run();
 		if (changes.content !== undefined)
 			replaceNoteLinks(tx, { noteId: id }, changes.content);
-		touchWriting(tx, note.writingId, now);
-		return note;
+		touchWriting(tx, current.writingId, now);
+		return {
+			conflict: false as const,
+			id,
+			writingId: current.writingId,
+			revision: contentRevision(changes.content ?? current.content),
+		};
 	});
+}
+
+/**
+ * Keeps text that couldn't be saved because its chapter or note changed
+ * elsewhere, as a new note beside it, so nothing typed is lost.
+ */
+export function keepUnsavedEdits(
+	db: AppDatabaseClient,
+	from: {
+		writingId: number;
+		chapterId: number | null;
+		parentId: number | null;
+		title: string;
+	},
+	content: string,
+) {
+	const note = createNote(db, {
+		writingId: from.writingId,
+		chapterId: from.chapterId,
+		parentId: from.parentId,
+		title: `${from.title || "Untitled"}: your unsaved edits`,
+	});
+	updateNote(db, note.id, { content });
+	return note.id;
 }
 
 /**

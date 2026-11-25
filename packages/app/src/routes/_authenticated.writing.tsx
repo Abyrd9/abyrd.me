@@ -2,6 +2,11 @@ import { Menu } from "@base-ui/react/menu";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { type ReactNode, useEffect, useState } from "react";
 import {
+	deleteWritingTrash,
+	listWritingTrash,
+	restoreWritingTrash,
+} from "#/server/writing-trash-functions";
+import {
 	createWriting,
 	deleteWriting,
 	listWritings,
@@ -50,8 +55,15 @@ function WritingShelf() {
 	const [query, setQuery] = useState("");
 	const [sort, setSort] = useState<SortId>("edited");
 	const [message, setMessage] = useState<string | null>(null);
+	const [trash, setTrash] = useState<
+		Awaited<ReturnType<typeof listWritingTrash>>
+	>([]);
+	const [busy, setBusy] = useState(false);
 
 	useEffect(() => {
+		void listWritingTrash()
+			.then(setTrash)
+			.catch(() => setMessage("Could not load Trash. Refresh and try again."));
 		void listWritings()
 			.then(setWritings)
 			.catch(() =>
@@ -109,6 +121,31 @@ function WritingShelf() {
 			);
 		} catch {
 			setMessage("Could not delete that writing. Please try again.");
+		}
+	}
+
+	async function changeTrash(id: number, restore: boolean) {
+		if (
+			!restore &&
+			!confirm("Delete this item forever? This cannot be undone.")
+		)
+			return;
+		setBusy(true);
+		setMessage(null);
+		try {
+			if (restore) {
+				const restored = await restoreWritingTrash({ data: { id } });
+				if (!restored)
+					setMessage("That item has expired or is no longer in Trash.");
+				setWritings(await listWritings());
+			} else await deleteWritingTrash({ data: { id } });
+			setTrash(await listWritingTrash());
+		} catch {
+			setMessage(
+				"Could not update Trash. Its writing may no longer exist. Please try again.",
+			);
+		} finally {
+			setBusy(false);
 		}
 	}
 
@@ -209,6 +246,61 @@ function WritingShelf() {
 				<p className="mt-8 text-sm text-slate-500">
 					No writing has “{query.trim()}” in its title.
 				</p>
+			) : null}
+			{trash.length ? (
+				<details className="mt-14 border-t border-stone-200 pt-5 text-sm text-stone-500">
+					<summary className="w-fit cursor-pointer hover:text-stone-800">
+						Trash ({trash.length})
+					</summary>
+					<p className="mt-3 text-xs">
+						Items are deleted forever after 30 days.
+					</p>
+					<ul className="mt-3 divide-y divide-stone-200">
+						{trash.map((item) => {
+							const days = Math.max(
+								0,
+								Math.floor((Date.now() - item.deletedAt) / 86_400_000),
+							);
+							return (
+								<li
+									className="flex flex-wrap items-center justify-between gap-3 py-4"
+									key={item.id}
+								>
+									<div>
+										<p className="text-stone-800">{item.title || "Untitled"}</p>
+										<p className="mt-1 text-xs">
+											{item.kind === "writing"
+												? "Book"
+												: `${item.kind === "chapter" ? "Chapter of" : "Note in"} ${item.writingTitle}`}{" "}
+											· Deleted{" "}
+											{days === 0
+												? "today"
+												: `${days} ${days === 1 ? "day" : "days"} ago`}
+										</p>
+									</div>
+									<div className="flex gap-4 text-xs">
+										<button
+											className="hover:text-stone-900 hover:underline disabled:opacity-50"
+											disabled={busy}
+											onClick={() => void changeTrash(item.id, true)}
+											type="button"
+										>
+											Restore
+										</button>
+										<button
+											className="hover:text-red-700 hover:underline disabled:opacity-50"
+											disabled={busy}
+											onClick={() => void changeTrash(item.id, false)}
+											type="button"
+										>
+											Delete forever
+										</button>
+									</div>
+								</li>
+							);
+						})}
+					</ul>
+				</details>
 			) : null}
 		</section>
 	);

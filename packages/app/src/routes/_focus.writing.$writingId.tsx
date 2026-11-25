@@ -19,7 +19,9 @@ import {
 import {
 	createChapter,
 	deleteChapter,
+	loadChapter,
 	loadWriting,
+	loadWritingRevisions,
 	moveChapter,
 	updateChapter,
 	updateWriting,
@@ -44,6 +46,8 @@ type PendingSave = { content: string; wordCount: number };
 
 const SAVE_DELAY_MS = 1000;
 const RETRY_DELAY_MS = 5000;
+/** How often an open writing checks for changes made elsewhere, like by an agent. */
+const REFRESH_MS = 15_000;
 
 function WritingEditor() {
 	const { writingId } = Route.useParams();
@@ -66,10 +70,23 @@ function WritingEditor() {
 	const saving = useRef(false);
 	const timer = useRef<number | undefined>(undefined);
 	const latestContent = useRef(new Map<number, string>());
+	// The saved text version each chapter's editor started from; see contentRevision.
+	const revisions = useRef(new Map<number, string>());
+	// Bumped to reload the chapter's editor with text that changed elsewhere.
+	const [reloads, setReloads] = useState(0);
+	// Set when a save found its chapter changed elsewhere and kept the edits as a note.
+	const [kept, setKept] = useState<{ noteId: number; chapter: string } | null>(
+		null,
+	);
 
 	useEffect(() => {
 		void loadWriting({ data: { id: Number(writingId) } })
-			.then((loaded) => (loaded ? setWriting(loaded) : setLoadError(true)))
+			.then((loaded) => {
+				if (!loaded) return setLoadError(true);
+				for (const chapter of loaded.chapters)
+					revisions.current.set(chapter.id, chapter.revision);
+				setWriting(loaded);
+			})
 			.catch(() => setLoadError(true));
 		void listWritingNotes({ data: { writingId: Number(writingId) } }).then(
 			setNotes,
@@ -117,7 +134,11 @@ function WritingEditor() {
 			for (const [id, next] of pending.current) {
 				pending.current.delete(id);
 				try {
-					await updateChapter({ data: { id, ...next } });
+					const result = await updateChapter({
+						data: { id, ...next, baseRevision: revisions.current.get(id) },
+					});
+					if (result?.conflict) await keepConflict(result, next.content);
+					else if (result) revisions.current.set(id, result.revision);
 				} catch {
 					if (!pending.current.has(id)) pending.current.set(id, next);
 					setStatus("error");
@@ -130,6 +151,131 @@ function WritingEditor() {
 			saving.current = false;
 		}
 	}
+
+	/**
+	 * The chapter changed elsewhere before this save. The server kept the
+	 * edits as a note; anything typed since joins it, and the editor reloads
+	 * the newer text.
+	 */
+	async function keepConflict(
+		chapter: {
+			id: number;
+			title: string;
+			position: number;
+			content: string | null;
+			revision: string;
+			keptNoteId?: number;
+		},
+		sent: string,
+	) {
+		const newer = pending.current.get(chapter.id);
+		pending.current.delete(chapter.id);
+		if (chapter.keptNoteId && newer && newer.content !== sent)
+			await updateWritingNote({
+				data: { id: chapter.keptNoteId, content: newer.content },
+			});
+		showChapterText(chapter);
+		if (chapter.keptNoteId)
+			setKept({
+				noteId: chapter.keptNoteId,
+				chapter: chapter.title || `Chapter ${chapter.position + 1}`,
+			});
+		void refreshNotes();
+	}
+
+	/** Puts text saved elsewhere into the chapter, reloading its editor if open. */
+	function showChapterText(chapter: {
+		id: number;
+		content: string | null;
+		revision: string;
+	}) {
+		revisions.current.set(chapter.id, chapter.revision);
+		latestContent.current.delete(chapter.id);
+		setWriting(
+			(current) =>
+				current && {
+					...current,
+					chapters: current.chapters.map((item) =>
+						item.id === chapter.id
+							? {
+									...item,
+									content: chapter.content,
+									revision: chapter.revision,
+								}
+							: item,
+					),
+				},
+		);
+		setReloads((count) => count + 1);
+	}
+
+	// Picks up chapters and notes changed elsewhere, like by an agent. Text
+	// with unsaved edits is left alone; its next save sorts out the conflict.
+	const refresh = useRef(async () => {});
+	refresh.current = async () => {
+		if (!writing || document.visibilityState !== "visible") return;
+		const latest = await loadWritingRevisions({
+			data: { writingId: writing.id },
+		});
+		const shape = (
+			items: Array<{ id: number; title: string; position: number }>,
+		) =>
+			items
+				.map(({ id, title, position }) => `${id}:${position}:${title}`)
+				.join("|");
+		if (shape(latest.chapters) !== shape(writing.chapters)) {
+			const loaded = await loadWriting({ data: { id: writing.id } });
+			if (loaded) {
+				for (const chapter of loaded.chapters)
+					if (!revisions.current.has(chapter.id))
+						revisions.current.set(chapter.id, chapter.revision);
+				setWriting((current) => ({
+					...loaded,
+					// Keep text already loaded; changed text is handled below.
+					chapters: loaded.chapters.map((chapter) => {
+						const known = current?.chapters.find(
+							(item) => item.id === chapter.id,
+						);
+						return known
+							? { ...known, title: chapter.title, position: chapter.position }
+							: chapter;
+					}),
+				}));
+			}
+		}
+		for (const { id, revision } of latest.chapters) {
+			const known = revisions.current.get(id);
+			if (!known || known === revision) continue;
+			if (pending.current.has(id) || saving.current) continue;
+			const chapter = await loadChapter({ data: { id } });
+			if (chapter && !pending.current.has(id)) showChapterText(chapter);
+		}
+		const noteShape = (
+			items: Array<{
+				id: number;
+				title: string;
+				position: number;
+				chapterId: number | null;
+				parentId: number | null;
+			}>,
+		) =>
+			items
+				.map((note) =>
+					[
+						note.id,
+						note.title,
+						note.position,
+						note.chapterId,
+						note.parentId,
+					].join(":"),
+				)
+				.join("|");
+		if (noteShape(latest.notes) !== noteShape(notes)) void refreshNotes();
+	};
+	useEffect(() => {
+		const timer = window.setInterval(() => void refresh.current(), REFRESH_MS);
+		return () => window.clearInterval(timer);
+	}, []);
 
 	// Save what's left when leaving, and warn if the browser would drop it.
 	// biome-ignore lint/correctness/useExhaustiveDependencies: save only reads refs.
@@ -242,6 +388,7 @@ function WritingEditor() {
 	async function addChapter() {
 		if (!writing) return;
 		const created = await createChapter({ data: { writingId: writing.id } });
+		revisions.current.set(created.id, created.revision);
 		setWriting({ ...writing, chapters: [...writing.chapters, created] });
 		goTo(created.id);
 	}
@@ -354,7 +501,8 @@ function WritingEditor() {
 						aria-label="Chapter title"
 						className={`w-[min(50vw,28rem)] truncate rounded-md bg-transparent px-2 py-1 text-center font-serif text-base text-stone-800 outline-none placeholder:text-stone-400 focus:bg-white dark:text-stone-100 dark:focus:bg-stone-900`}
 						defaultValue={chapter.title}
-						key={chapter.id}
+						// Follows renames made elsewhere.
+						key={`${chapter.id}:${chapter.title}`}
 						onBlur={(event) => void renameChapter(event.target.value)}
 						onKeyDown={(event) => {
 							if (event.key === "Enter") event.currentTarget.blur();
@@ -385,6 +533,29 @@ function WritingEditor() {
 				</div>
 
 				<div className="flex items-center justify-end gap-1">
+					{kept ? (
+						<span className="flex items-center gap-1 rounded-md bg-amber-50 px-2 py-1 text-amber-900 dark:bg-amber-950 dark:text-amber-200">
+							{kept.chapter} changed elsewhere. Your edits are in a note.
+							<button
+								className="underline"
+								onClick={() => {
+									openNote(kept.noteId);
+									setKept(null);
+								}}
+								type="button"
+							>
+								Open
+							</button>
+							<button
+								aria-label="Dismiss"
+								className="px-1"
+								onClick={() => setKept(null)}
+								type="button"
+							>
+								×
+							</button>
+						</span>
+					) : null}
 					<span className="px-2 text-stone-400" role="status">
 						{status === "saving"
 							? "Saving…"
@@ -490,7 +661,7 @@ function WritingEditor() {
 									initialContent={
 										latestContent.current.get(chapter.id) ?? chapter.content
 									}
-									key={chapter.id}
+									key={`${chapter.id}:${reloads}`}
 									onChange={(content, wordCount) => {
 										const previous =
 											latestContent.current.get(chapter.id) ?? chapter.content;
@@ -562,6 +733,10 @@ function WritingEditor() {
 										onClose={closeNote}
 										onOpenChapter={goTo}
 										onOpenNote={(id) => openNote(id)}
+										onKeptEdits={(keptId) => {
+											void refreshNotes();
+											setKept({ noteId: keptId, chapter: "This note" });
+										}}
 										onTitleChange={(id, title) =>
 											setNotes((current) =>
 												current.map((note) =>

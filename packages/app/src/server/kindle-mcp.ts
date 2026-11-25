@@ -29,6 +29,7 @@ import {
 	quoteInput,
 	updateQuote,
 } from "./quotes";
+import { registerWritingTools } from "./writing-mcp";
 
 const textResult = (value: unknown) => ({
 	content: [{ type: "text" as const, text: JSON.stringify(value) }],
@@ -92,7 +93,7 @@ export async function handleKindleMcp(request: Request) {
 			status: 403,
 			headers: { "Cache-Control": "no-store" },
 		});
-	const server = new McpServer({ name: "abyrd-app", version: "1.1.0" });
+	const server = new McpServer({ name: "abyrd-app", version: "1.2.0" });
 	const database = await Effect.runPromise(
 		initializeDatabase.pipe(Effect.orDie),
 	);
@@ -284,6 +285,7 @@ export async function handleKindleMcp(request: Request) {
 			return textResult({ ok: true });
 		},
 	);
+	registerWritingTools(server, client);
 	const transport = new WebStandardStreamableHTTPServerTransport({
 		sessionIdGenerator: undefined,
 		enableJsonResponse: true,

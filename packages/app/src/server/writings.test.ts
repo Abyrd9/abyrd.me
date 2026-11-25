@@ -4,12 +4,15 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Effect } from "effect";
 import { createDatabase } from "./database/service";
+import { createNote, loadNote, updateNote } from "./writing-notes";
 import {
+	contentRevision,
 	createChapter,
 	createWriting,
 	deleteChapter,
 	deleteWriting,
 	listWritings,
+	loadChapter,
 	loadWriting,
 	moveChapter,
 	previewBlocks,
@@ -117,3 +120,40 @@ test("previews the opening blocks of a saved chapter", () => {
 	expect(previewBlocks(null)).toEqual([]);
 	expect(previewBlocks("not json")).toEqual([]);
 });
+
+test("a save from a stale version is refused and leaves the text alone", () =>
+	withDatabase((db) => {
+		const book = createWriting(db, "Book", 1);
+		const id = book.firstChapterId;
+		const start = loadChapter(db, id)?.revision ?? "";
+		expect(start).toBe(contentRevision(null));
+
+		const first = updateChapter(db, id, {
+			content: "agent",
+			baseRevision: start,
+		});
+		expect(first).toMatchObject({
+			conflict: false,
+			revision: contentRevision("agent"),
+		});
+
+		// An editor still holding the original version tries to save.
+		const stale = updateChapter(db, id, {
+			content: "mine",
+			baseRevision: start,
+		});
+		expect(stale).toMatchObject({ conflict: true, content: "agent" });
+		expect(loadChapter(db, id)?.content).toBe("agent");
+
+		// Titles and saves without a base version still go through.
+		expect(updateChapter(db, id, { title: "One" })?.conflict).toBe(false);
+		expect(updateChapter(db, id, { content: "forced" })?.conflict).toBe(false);
+
+		const note = createNote(db, { writingId: book.id, title: "N" });
+		const noteStart = loadNote(db, note.id)?.revision ?? "";
+		updateNote(db, note.id, { content: "agent", baseRevision: noteStart });
+		expect(
+			updateNote(db, note.id, { content: "mine", baseRevision: noteStart }),
+		).toMatchObject({ conflict: true, content: "agent" });
+		expect(loadNote(db, note.id)?.content).toBe("agent");
+	}));

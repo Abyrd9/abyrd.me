@@ -10,6 +10,8 @@ type SaveStatus = "saved" | "unsaved" | "saving" | "error";
 
 const SAVE_DELAY_MS = 1000;
 const RETRY_DELAY_MS = 5000;
+/** How often an open note checks for changes made elsewhere, like by an agent. */
+const REFRESH_MS = 15_000;
 
 /** Names a chapter the way the editor's title bar does. */
 export const chapterLabel = (chapter: { title: string; position: number }) =>
@@ -29,6 +31,7 @@ export const NotePane = ({
 	onOpenNote,
 	onOpenChapter,
 	onTitleChange,
+	onKeptEdits,
 }: {
 	noteId: number;
 	/** The chapter on the page, to show whether this note is tied to it. */
@@ -42,17 +45,57 @@ export const NotePane = ({
 	onOpenChapter: (chapterId: number) => void;
 	/** Lets the binder show a renamed note right away. */
 	onTitleChange: (id: number, title: string) => void;
+	/**
+	 * A save found the note changed elsewhere, so the unsaved edits were kept
+	 * as a new note beside it.
+	 */
+	onKeptEdits: (noteId: number) => void;
 }) => {
 	const [note, setNote] = useState<Note | null | undefined>(undefined);
 	const [status, setStatus] = useState<SaveStatus>("saved");
 	const pending = useRef<string | null>(null);
 	const saving = useRef(false);
 	const timer = useRef<number | undefined>(undefined);
+	// The saved text version the editor started from; see contentRevision.
+	const revision = useRef<string | undefined>(undefined);
+	// Bumped to reload the editor with text that changed elsewhere.
+	const [reloads, setReloads] = useState(0);
 
+	const show = (loaded: Note | null) => {
+		revision.current = loaded?.revision;
+		setNote(loaded);
+	};
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: show only sets state and refs.
 	useEffect(() => {
 		void loadWritingNote({ data: { id: noteId } })
-			.then(setNote)
+			.then(show)
 			.catch(() => setNote(null));
+	}, [noteId]);
+
+	// Read through a ref so the parent's new callback each render doesn't
+	// restart the refresh timer.
+	const titleChanged = useRef(onTitleChange);
+	titleChanged.current = onTitleChange;
+
+	// Picks up changes made elsewhere while there's nothing unsaved here.
+	// biome-ignore lint/correctness/useExhaustiveDependencies: show only sets state and refs.
+	useEffect(() => {
+		const check = async () => {
+			if (document.visibilityState !== "visible") return;
+			if (pending.current !== null || saving.current) return;
+			const loaded = await loadWritingNote({ data: { id: noteId } }).catch(
+				() => undefined,
+			);
+			if (loaded === undefined || pending.current !== null || saving.current)
+				return;
+			if (loaded?.revision === revision.current) return;
+			show(loaded);
+			if (loaded) titleChanged.current(loaded.id, loaded.title);
+			setReloads((count) => count + 1);
+		};
+		const interval = window.setInterval(() => void check(), REFRESH_MS);
+		return () => window.clearInterval(interval);
 	}, [noteId]);
 
 	// Saves the newest text; edits made during a save follow right after it.
@@ -64,7 +107,32 @@ export const NotePane = ({
 		saving.current = true;
 		setStatus("saving");
 		try {
-			await updateWritingNote({ data: { id: noteId, content } });
+			const result = await updateWritingNote({
+				data: { id: noteId, content, baseRevision: revision.current },
+			});
+			if (result?.conflict) {
+				// The note changed elsewhere. The server kept these edits as a new
+				// note; anything typed since joins it, and the newer text loads.
+				const keptId = "keptNoteId" in result ? result.keptNoteId : undefined;
+				const newer = pending.current;
+				pending.current = null;
+				if (keptId && newer !== null && newer !== content)
+					await updateWritingNote({ data: { id: keptId, content: newer } });
+				revision.current = result.revision;
+				setNote(
+					(current) =>
+						current && {
+							...current,
+							title: result.title,
+							content: result.content,
+						},
+				);
+				setReloads((count) => count + 1);
+				if (keptId) onKeptEdits(keptId);
+				setStatus("saved");
+				return;
+			}
+			if (result) revision.current = result.revision;
 			setStatus(pending.current === null ? "saved" : "unsaved");
 		} catch {
 			pending.current ??= content;
@@ -247,6 +315,8 @@ export const NotePane = ({
 								aria-label="Note title"
 								className="font-book w-full bg-transparent leading-tight text-stone-900 outline-none placeholder:text-stone-300 dark:text-stone-100"
 								defaultValue={note.title}
+								// Follows renames made elsewhere.
+								key={note.title}
 								onBlur={(event) => {
 									const title = event.target.value.trim();
 									if (title === note.title) return;
@@ -269,6 +339,7 @@ export const NotePane = ({
 							/>
 						}
 						initialContent={note.content}
+						key={reloads}
 						onChange={(content) => {
 							if (content === note.content && pending.current === null) return;
 							pending.current = content;

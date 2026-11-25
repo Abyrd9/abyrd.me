@@ -1,11 +1,22 @@
+import { createHash } from "node:crypto";
 import { and, asc, count, desc, eq, gt, lt, max, sql, sum } from "drizzle-orm";
 import type { PageSizeId } from "#/writing-page-sizes";
-import { writingChapters, writings } from "./database/schema";
+import { writingChapters, writingNotes, writings } from "./database/schema";
 import type { AppDatabaseClient } from "./database/service";
 import { rootBlocks, textOf, typeOf } from "./lexical-json";
 import { replaceNoteLinks } from "./note-links";
 
 const PREVIEW_CHARACTERS = 600;
+
+/**
+ * A fingerprint of saved text. Editors send back the one they started from,
+ * so a save can't silently overwrite text changed elsewhere, like by an agent.
+ */
+export const contentRevision = (content: string | null) =>
+	createHash("sha256")
+		.update(content ?? "")
+		.digest("base64url")
+		.slice(0, 22);
 
 export type PreviewBlock = { kind: "heading" | "paragraph"; text: string };
 
@@ -98,8 +109,64 @@ export function loadWriting(db: AppDatabaseClient, id: number) {
 		.from(writingChapters)
 		.where(eq(writingChapters.writingId, id))
 		.orderBy(asc(writingChapters.position), asc(writingChapters.id))
-		.all();
+		.all()
+		.map((chapter) => ({
+			...chapter,
+			revision: contentRevision(chapter.content),
+		}));
 	return { ...writing, chapters };
+}
+
+/**
+ * Each chapter's and note's current text fingerprint and place, so an open
+ * editor can notice changes made elsewhere without reloading everything.
+ */
+export function loadRevisions(db: AppDatabaseClient, writingId: number) {
+	const chapters = db
+		.select({
+			id: writingChapters.id,
+			title: writingChapters.title,
+			position: writingChapters.position,
+			content: writingChapters.content,
+		})
+		.from(writingChapters)
+		.where(eq(writingChapters.writingId, writingId))
+		.orderBy(asc(writingChapters.position))
+		.all()
+		.map(({ content, ...chapter }) => ({
+			...chapter,
+			revision: contentRevision(content),
+		}));
+	const notes = db
+		.select({
+			id: writingNotes.id,
+			title: writingNotes.title,
+			chapterId: writingNotes.chapterId,
+			parentId: writingNotes.parentId,
+			position: writingNotes.position,
+			content: writingNotes.content,
+		})
+		.from(writingNotes)
+		.where(eq(writingNotes.writingId, writingId))
+		.orderBy(asc(writingNotes.position), asc(writingNotes.id))
+		.all()
+		.map(({ content, ...note }) => ({
+			...note,
+			revision: contentRevision(content),
+		}));
+	return { chapters, notes };
+}
+
+/** One chapter with its text, for reloading it after a change elsewhere. */
+export function loadChapter(db: AppDatabaseClient, id: number) {
+	const chapter = db
+		.select()
+		.from(writingChapters)
+		.where(eq(writingChapters.id, id))
+		.get();
+	return chapter
+		? { ...chapter, revision: contentRevision(chapter.content) }
+		: null;
 }
 
 export function updateWriting(
@@ -142,31 +209,63 @@ export function createChapter(
 			.returning()
 			.get();
 		touchWriting(tx, writingId, now);
-		return chapter;
+		return { ...chapter, revision: contentRevision(chapter.content) };
 	});
 }
 
+/**
+ * Saves a chapter's title or text. With baseRevision, text is saved only if
+ * the chapter still holds the version the editor started from; otherwise
+ * nothing changes and the current version comes back as a conflict.
+ */
 export function updateChapter(
 	db: AppDatabaseClient,
 	id: number,
-	changes: { title?: string; content?: string; wordCount?: number },
+	{
+		baseRevision,
+		...changes
+	}: {
+		title?: string;
+		content?: string;
+		wordCount?: number;
+		baseRevision?: string;
+	},
 	now = Date.now(),
 ) {
 	return db.transaction((tx) => {
-		const chapter = tx
-			.update(writingChapters)
+		const current = tx
+			.select()
+			.from(writingChapters)
+			.where(eq(writingChapters.id, id))
+			.get();
+		if (!current) return null;
+		if (
+			changes.content !== undefined &&
+			baseRevision !== undefined &&
+			baseRevision !== contentRevision(current.content)
+		)
+			return {
+				conflict: true as const,
+				id,
+				writingId: current.writingId,
+				title: current.title,
+				position: current.position,
+				content: current.content,
+				revision: contentRevision(current.content),
+			};
+		tx.update(writingChapters)
 			.set({ ...changes, updatedAt: now })
 			.where(eq(writingChapters.id, id))
-			.returning({
-				id: writingChapters.id,
-				writingId: writingChapters.writingId,
-			})
-			.get();
-		if (!chapter) return null;
+			.run();
 		if (changes.content !== undefined)
 			replaceNoteLinks(tx, { chapterId: id }, changes.content);
-		touchWriting(tx, chapter.writingId, now);
-		return chapter;
+		touchWriting(tx, current.writingId, now);
+		return {
+			conflict: false as const,
+			id,
+			writingId: current.writingId,
+			revision: contentRevision(changes.content ?? current.content),
+		};
 	});
 }
 

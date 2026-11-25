@@ -183,3 +183,17 @@ export const dictionaryWords = sqliteTable("dictionary_words", {
 	word: text("word").primaryKey(),
 	createdAt: integer("created_at").notNull(),
 });
+
+export const writingTrash = sqliteTable(
+	"writing_trash",
+	{
+		id: integer("id").primaryKey({ autoIncrement: true }),
+		kind: text("kind", { enum: ["writing", "chapter", "note"] }).notNull(),
+		title: text("title").notNull(),
+		writingId: integer("writing_id").notNull(),
+		writingTitle: text("writing_title").notNull(),
+		snapshot: text("snapshot").notNull(),
+		deletedAt: integer("deleted_at").notNull(),
+	},
+	(table) => [index("writing_trash_deleted_at_idx").on(table.deletedAt)],
+);
