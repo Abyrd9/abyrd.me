@@ -30,6 +30,11 @@ function Home() {
 					to="/writing"
 				/>
 				<AppCard
+					description="Keep Rook’s linocut avatar, handles, ink palette, bios, and social asset placeholders in one press dossier."
+					label="Media"
+					to="/media"
+				/>
+				<AppCard
 					description="Review system-design terms, architecture patterns, and algorithm patterns."
 					label="Study"
 					to="/quiz"
@@ -46,7 +51,7 @@ function AppCard({
 }: {
 	readonly description: string;
 	readonly label: string;
-	readonly to: "/kindle" | "/quiz" | "/quotes" | "/writing";
+	readonly to: "/kindle" | "/media" | "/quiz" | "/quotes" | "/writing";
 }) {
 	return (
 		<Link
