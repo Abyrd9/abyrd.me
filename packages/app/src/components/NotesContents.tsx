@@ -321,13 +321,16 @@ const Entry = ({
 		<span className="relative shrink-0">
 			{inside ? (
 				<span
-					className="font-mono text-[11px] text-stone-400 tabular-nums group-focus-within:invisible group-hover:invisible max-sm:hidden"
+					className="font-mono text-[11px] text-stone-400 tabular-nums group-focus-within:invisible group-hover:invisible group-has-[[data-popup-open]]:invisible max-sm:hidden"
 					title={`${inside} ${inside === 1 ? "note" : "notes"} inside`}
 				>
 					{inside}
 				</span>
 			) : null}
-			<span className="absolute top-1/2 right-0 flex -translate-y-1/2 items-center opacity-0 group-focus-within:opacity-100 group-hover:opacity-100 max-sm:static max-sm:translate-y-0 max-sm:opacity-100">
+			<span
+				// Stays visible while this entry's menu is open, even after the mouse leaves for the menu.
+				className="absolute top-1/2 right-0 flex -translate-y-1/2 items-center opacity-0 group-focus-within:opacity-100 group-hover:opacity-100 has-[[data-popup-open]]:opacity-100 max-sm:static max-sm:translate-y-0 max-sm:opacity-100"
+			>
 				{actions}
 			</span>
 		</span>
