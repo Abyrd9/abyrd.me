@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { NoteEditor } from "#/components/NoteEditor";
+import { SIDE_TABS_HEIGHT } from "#/components/SideTabs";
 import {
 	loadWritingNote,
 	updateWritingNote,
@@ -309,7 +310,8 @@ export const NotePane = ({
 				) : (
 					<NoteEditor
 						autoFocus={false}
-						height={pageHeight}
+						// Starts below the tab row, so it ends level with the chapter's page.
+						height={pageHeight && pageHeight - SIDE_TABS_HEIGHT}
 						header={
 							<input
 								aria-label="Note title"

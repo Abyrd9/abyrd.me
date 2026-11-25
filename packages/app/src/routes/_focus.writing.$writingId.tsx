@@ -12,7 +12,9 @@ import {
 	subtreeIds,
 } from "#/components/NotesContents";
 import { PagedEditor, PX_PER_INCH } from "#/components/PagedEditor";
+import { type SideTab, SideTabs, toSideTab } from "#/components/SideTabs";
 import { WordLookupContext, WordPanel } from "#/components/WordPanel";
+import { WritingGuides } from "#/components/WritingGuides";
 import {
 	createWritingNote,
 	deleteWritingNote,
@@ -71,8 +73,10 @@ function WritingEditor() {
 	const [notesOpen, setNotesOpenState] = useState(false);
 	// Notes opened before the current one in the pane, for its back button.
 	const [noteHistory, setNoteHistory] = useState<number[]>([]);
-	// A word open in the dictionary panel, shown over the notes column until closed.
+	// The word the Dictionary tab opens with, set by the toolbar's Define button.
 	const [lookup, setLookup] = useState<string | null>(null);
+	// Which tab the side column shows; remembered for each writing.
+	const [tab, setTabState] = useState<SideTab>("notes");
 
 	// Unsaved text lives in refs so typing never re-renders this page.
 	const pending = useRef(new Map<number, PendingSave>());
@@ -129,9 +133,16 @@ function WritingEditor() {
 			return value;
 		});
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: the key follows writingId.
+	const tabKey = `abyrd.writing-side-tab.${writingId}`;
+	const setTab = (next: SideTab) => {
+		localStorage.setItem(tabKey, next);
+		setTabState(next);
+	};
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: the keys follow writingId.
 	useEffect(() => {
 		setNotesOpenState(localStorage.getItem(notesOpenKey) === "1");
+		setTabState(toSideTab(localStorage.getItem(tabKey)));
 	}, [writingId]);
 
 	const refreshNotes = () =>
@@ -374,6 +385,7 @@ function WritingEditor() {
 		if (openNoteId !== null && openNoteId !== id && keepHistory)
 			setNoteHistory((history) => [...history, openNoteId]);
 		setNotesOpen(true);
+		setTab("notes");
 		void navigate({ search: { chapter: chapter.id, note: id }, replace: true });
 	}
 
@@ -480,12 +492,13 @@ function WritingEditor() {
 	const quiet =
 		"rounded-md px-2 py-1 text-stone-500 transition hover:bg-stone-200 hover:text-stone-900 dark:hover:bg-stone-800 dark:hover:text-stone-100";
 
-	// The notes column: the contents, or a note once one is open.
-	const sideOpen = notesOpen || openNoteId !== null || lookup !== null;
-	toggleNotes.current = () => {
-		setLookup(null);
-		if (sideOpen) closeNote();
-		else setNotesOpen(true);
+	// The side column: tabs for notes, the dictionary, and writing guides.
+	const sideOpen = notesOpen || openNoteId !== null;
+	toggleNotes.current = () => (sideOpen ? closeNote() : setNotesOpen(true));
+	const lookUp = (word: string) => {
+		setLookup(word);
+		setTab("dictionary");
+		setNotesOpen(true);
 	};
 
 	return (
@@ -495,11 +508,13 @@ function WritingEditor() {
 			className="h-dvh overflow-hidden bg-stone-100 dark:bg-[#0a0a0a]"
 			style={{
 				["--side" as string]:
-					openNoteId !== null
-						? "min(46vw, 44rem)"
-						: lookup !== null
+					tab === "guides"
+						? "min(44vw, 40rem)"
+						: tab === "dictionary"
 							? "min(40vw, 36rem)"
-							: "min(30vw, 23rem)",
+							: openNoteId !== null
+								? "min(46vw, 44rem)"
+								: "min(30vw, 23rem)",
 			}}
 		>
 			<header
@@ -690,7 +705,7 @@ function WritingEditor() {
 			{/* The page and its notes sit side by side under the top bar. The
 			    chapter's half scrolls, desk included; the notes column scrolls on
 			    its own. With notes open, the page moves over to meet them. */}
-			<WordLookupContext.Provider value={setLookup}>
+			<WordLookupContext.Provider value={lookUp}>
 				<div className="flex h-full">
 					<div className="min-w-0 flex-1 overflow-y-auto">
 						<div
@@ -740,10 +755,10 @@ function WritingEditor() {
 								</PagedEditor>
 								{sideOpen ? null : (
 									<button
-										aria-label="Show notes (⌘\)"
+										aria-label="Show side panel (⌘\)"
 										className={`absolute top-3 -right-10 flex flex-col items-center gap-1 rounded-full border border-stone-200 bg-white px-1.5 py-2 text-stone-500 shadow-sm transition hover:text-stone-900 max-sm:hidden dark:border-stone-700 dark:hover:text-stone-100 ${chromeVisible ? "opacity-100" : "pointer-events-none opacity-0"} duration-500 motion-reduce:transition-none`}
 										onClick={() => toggleNotes.current()}
-										title="Notes (⌘\)"
+										title="Notes, dictionary, and guides (⌘\)"
 										type="button"
 									>
 										<svg
@@ -773,66 +788,67 @@ function WritingEditor() {
 
 					{sideOpen ? (
 						<div className="min-w-0 max-md:fixed max-md:inset-x-0 max-md:top-12 max-md:bottom-0 max-md:z-30 max-md:bg-stone-100 md:flex-1 md:pt-20 md:pb-6 md:pl-8 dark:max-md:bg-[#0a0a0a]">
-							<div className="h-full w-full md:max-w-[var(--side)] md:pr-6">
-								{lookup !== null ? (
-									<WordPanel
-										key={lookup}
-										onClose={() => setLookup(null)}
-										word={lookup}
-									/>
-								) : openNoteId !== null ? (
-									<NotePane
-										canGoBack={noteHistory.length > 0}
-										currentChapter={chapter}
-										onShowContents={showContents}
-										key={openNoteId}
-										noteId={openNoteId}
-										onBack={backNote}
-										onClose={closeNote}
-										onOpenChapter={goTo}
-										onOpenNote={(id) => openNote(id)}
-										onKeptEdits={(keptId) => {
-											void refreshNotes();
-											setKept({ noteId: keptId, chapter: "This note" });
-										}}
-										onTitleChange={(id, title) =>
-											setNotes((current) =>
-												current.map((note) =>
-													note.id === id ? { ...note, title } : note,
-												),
-											)
-										}
-									/>
-								) : (
-									<NotesContents
-										chapters={chapters}
-										currentChapterId={chapter.id}
-										notes={notes}
-										onClose={closeNote}
-										onCreate={(place) => void addNote(place)}
-										onDelete={(note) => void removeNote(note)}
-										onMove={(id, to) =>
-											void moveWritingNote({ data: { id, ...to } }).then(
-												refreshNotes,
-											)
-										}
-										onOpenChapter={goTo}
-										onOpenNote={(id) => openNote(id)}
-										onRename={(id, title) => {
-											setNotes((current) =>
-												current.map((note) =>
-													note.id === id ? { ...note, title } : note,
-												),
-											);
-											void updateWritingNote({ data: { id, title } });
-										}}
-										onReorder={(id, direction) =>
-											void reorderWritingNote({ data: { id, direction } }).then(
-												refreshNotes,
-											)
-										}
-									/>
-								)}
+							<div className="flex h-full w-full flex-col md:max-w-[var(--side)] md:pr-6">
+								<SideTabs onHide={closeNote} onTab={setTab} tab={tab} />
+								<div className="min-h-0 flex-1">
+									{tab === "dictionary" ? (
+										<WordPanel key={lookup ?? ""} word={lookup} />
+									) : tab === "guides" ? (
+										<WritingGuides />
+									) : openNoteId !== null ? (
+										<NotePane
+											canGoBack={noteHistory.length > 0}
+											currentChapter={chapter}
+											onShowContents={showContents}
+											key={openNoteId}
+											noteId={openNoteId}
+											onBack={backNote}
+											onClose={closeNote}
+											onOpenChapter={goTo}
+											onOpenNote={(id) => openNote(id)}
+											onKeptEdits={(keptId) => {
+												void refreshNotes();
+												setKept({ noteId: keptId, chapter: "This note" });
+											}}
+											onTitleChange={(id, title) =>
+												setNotes((current) =>
+													current.map((note) =>
+														note.id === id ? { ...note, title } : note,
+													),
+												)
+											}
+										/>
+									) : (
+										<NotesContents
+											chapters={chapters}
+											currentChapterId={chapter.id}
+											notes={notes}
+											onClose={closeNote}
+											onCreate={(place) => void addNote(place)}
+											onDelete={(note) => void removeNote(note)}
+											onMove={(id, to) =>
+												void moveWritingNote({ data: { id, ...to } }).then(
+													refreshNotes,
+												)
+											}
+											onOpenChapter={goTo}
+											onOpenNote={(id) => openNote(id)}
+											onRename={(id, title) => {
+												setNotes((current) =>
+													current.map((note) =>
+														note.id === id ? { ...note, title } : note,
+													),
+												);
+												void updateWritingNote({ data: { id, title } });
+											}}
+											onReorder={(id, direction) =>
+												void reorderWritingNote({
+													data: { id, direction },
+												}).then(refreshNotes)
+											}
+										/>
+									)}
+								</div>
 							</div>
 						</div>
 					) : null}

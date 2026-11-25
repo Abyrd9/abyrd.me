@@ -26,17 +26,21 @@ type Open = (word: string, language: string) => void;
  */
 export const WordPanel = ({
 	word,
-	onClose,
 }: {
-	word: string;
-	onClose: () => void;
+	/** The word to open with, or null to start from the search box. */
+	word: string | null;
 }) => {
-	const [trail, setTrail] = useState<Lookup[]>([{ word, language: "English" }]);
-	const current = trail[trail.length - 1];
+	const [trail, setTrail] = useState<Lookup[]>(
+		word ? [{ word, language: "English" }] : [],
+	);
+	const current = trail.at(-1);
+	const [query, setQuery] = useState("");
+	const [invalid, setInvalid] = useState(false);
 	const previous = trail.length > 1 ? trail[trail.length - 2] : null;
 	const [entry, setEntry] = useState<WordEntry | null | undefined>(undefined);
 
 	useEffect(() => {
+		if (!current) return;
 		let active = true;
 		setEntry(undefined);
 		lookUpWritingWord({ data: current })
@@ -54,12 +58,42 @@ export const WordPanel = ({
 
 	return (
 		<section
-			aria-label={`Dictionary: ${current.word}`}
+			aria-label={current ? `Dictionary: ${current.word}` : "Dictionary"}
 			// The paper fits its entry, scrolling only once it reaches the bottom.
 			className="flex h-full items-start max-sm:flex-col-reverse max-sm:items-stretch"
 		>
-			<div className="max-h-full min-h-0 min-w-0 overflow-y-auto bg-white px-6 pt-10 pb-12 font-book text-stone-900 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_8px_24px_rgba(0,0,0,0.06)] sm:flex-1 sm:px-10">
-				{entry === undefined ? (
+			<div className="max-h-full min-h-0 min-w-0 overflow-y-auto bg-white px-6 pt-6 pb-12 font-book text-stone-900 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_8px_24px_rgba(0,0,0,0.06)] sm:flex-1 sm:px-10">
+				<form
+					className="mb-8 font-sans"
+					onSubmit={(event) => {
+						event.preventDefault();
+						const next = asLookupWord(query);
+						setInvalid(!next);
+						if (!next) return;
+						setQuery("");
+						open(next, "English");
+					}}
+				>
+					<input
+						aria-invalid={invalid}
+						aria-label="Look up a word"
+						className="w-full rounded-md border border-stone-200 bg-stone-50 px-3 py-1.5 text-sm outline-none placeholder:text-stone-400 focus:border-stone-400 focus:bg-white"
+						onChange={(event) => {
+							setQuery(event.target.value);
+							setInvalid(false);
+						}}
+						placeholder={
+							invalid ? "One word, letters only" : "Look up a word, then Enter"
+						}
+						value={query}
+					/>
+				</form>
+				{!current ? (
+					<p className="text-stone-500">
+						Search for a word above, or select one in your writing and press the
+						book button.
+					</p>
+				) : entry === undefined ? (
 					<p className="text-stone-400">Looking up “{current.word}”…</p>
 				) : entry === null ? (
 					<p className="text-stone-500">
@@ -69,26 +103,11 @@ export const WordPanel = ({
 					<Entry entry={entry} onOpen={open} />
 				)}
 			</div>
-			<aside
-				aria-label="Dictionary controls"
-				className="flex shrink-0 gap-3 text-xs text-stone-500 max-sm:items-center max-sm:px-3 max-sm:py-2 sm:w-36 sm:flex-col sm:items-start sm:pl-4"
-			>
-				<button className={rail} onClick={onClose} type="button">
-					<svg
-						aria-hidden="true"
-						fill="none"
-						height="14"
-						stroke="currentColor"
-						strokeLinecap="round"
-						strokeWidth="2"
-						viewBox="0 0 24 24"
-						width="14"
-					>
-						<path d="M18 6 6 18M6 6l12 12" />
-					</svg>
-					Close
-				</button>
-				{previous ? (
+			{previous ? (
+				<aside
+					aria-label="Dictionary controls"
+					className="flex shrink-0 gap-3 text-xs text-stone-500 max-sm:items-center max-sm:px-3 max-sm:py-2 sm:w-36 sm:flex-col sm:items-start sm:pl-4"
+				>
 					<button
 						className={rail}
 						onClick={() => setTrail((words) => words.slice(0, -1))}
@@ -96,8 +115,8 @@ export const WordPanel = ({
 					>
 						‹ {previous.word}
 					</button>
-				) : null}
-			</aside>
+				</aside>
+			) : null}
 		</section>
 	);
 };
