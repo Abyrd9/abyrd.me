@@ -20,7 +20,8 @@ import {
 } from "#/components/writing-editor-setup";
 import { type PageSizeId, pageSizes } from "#/writing-page-sizes";
 
-const PX_PER_INCH = 96;
+/** Screen pixels per printed inch, the CSS standard. */
+export const PX_PER_INCH = 96;
 const PAGE_GAP = 40;
 
 /**

@@ -6,7 +6,7 @@ import {
 	NotesContents,
 	subtreeIds,
 } from "#/components/NotesContents";
-import { PagedEditor } from "#/components/PagedEditor";
+import { PagedEditor, PX_PER_INCH } from "#/components/PagedEditor";
 import {
 	createWritingNote,
 	deleteWritingNote,
@@ -89,7 +89,7 @@ function WritingEditor() {
 	const refreshNotes = () =>
 		listWritingNotes({ data: { writingId: Number(writingId) } }).then(setNotes);
 
-	// ⌘\ (Ctrl+\ elsewhere) does what the top-bar notes button does. The
+	// ⌘\ (Ctrl+\ elsewhere) does what the notes tab beside the page does. The
 	// listener is added once, so it calls the latest version through a ref.
 	const toggleNotes = useRef<() => void>(() => {});
 	useEffect(() => {
@@ -296,39 +296,16 @@ function WritingEditor() {
 
 	return (
 		<main
-			className={`min-h-dvh bg-stone-100 pb-24 dark:bg-[#0a0a0a] ${sideOpen ? "md:pr-[var(--side)]" : ""}`}
+			className="min-h-dvh bg-stone-100 pb-24 dark:bg-[#0a0a0a]"
 			style={{
 				["--side" as string]:
 					openNoteId !== null ? "min(46vw, 44rem)" : "min(30vw, 23rem)",
 			}}
 		>
 			<header
-				className={`fixed inset-x-0 top-0 z-40 ${sideOpen ? "md:right-[var(--side)]" : ""} grid grid-cols-[1fr_auto_1fr] items-center gap-2 bg-stone-100/90 px-3 py-2 text-sm backdrop-blur transition-opacity duration-500 focus-within:opacity-100 dark:bg-[#0a0a0a]/90 motion-reduce:transition-none ${chromeVisible ? "opacity-100" : "pointer-events-none opacity-0"}`}
+				className={`fixed inset-x-0 top-0 z-40 grid grid-cols-[1fr_auto_1fr] items-center gap-2 bg-stone-100/90 px-3 py-2 text-sm backdrop-blur transition-opacity duration-500 focus-within:opacity-100 dark:bg-[#0a0a0a]/90 motion-reduce:transition-none ${chromeVisible ? "opacity-100" : "pointer-events-none opacity-0"}`}
 			>
 				<div className="flex min-w-0 items-center gap-1">
-					<button
-						aria-expanded={sideOpen}
-						aria-label="Notes (⌘\)"
-						className="inline-flex size-8 shrink-0 items-center justify-center rounded-md text-stone-500 transition hover:bg-stone-200 hover:text-stone-900 dark:hover:bg-stone-800 dark:hover:text-stone-100"
-						onClick={() => toggleNotes.current()}
-						title="Notes (⌘\)"
-						type="button"
-					>
-						<svg
-							aria-hidden="true"
-							fill="none"
-							height="17"
-							stroke="currentColor"
-							strokeLinecap="round"
-							strokeLinejoin="round"
-							strokeWidth="1.8"
-							viewBox="0 0 24 24"
-							width="17"
-						>
-							<rect height="16" rx="2" width="18" x="3" y="4" />
-							<path d="M9 4v16" />
-						</svg>
-					</button>
 					<Link
 						aria-label={`Back to writings from ${writing.title}`}
 						className={`${quiet} min-w-0 truncate`}
@@ -362,7 +339,7 @@ function WritingEditor() {
 					</button>
 					<input
 						aria-label="Chapter title"
-						className={`${openNoteId !== null ? "w-[min(22vw,14rem)]" : "w-[min(50vw,28rem)]"} truncate rounded-md bg-transparent px-2 py-1 text-center font-serif text-base text-stone-800 outline-none placeholder:text-stone-400 focus:bg-white dark:text-stone-100 dark:focus:bg-stone-900`}
+						className={`w-[min(50vw,28rem)] truncate rounded-md bg-transparent px-2 py-1 text-center font-serif text-base text-stone-800 outline-none placeholder:text-stone-400 focus:bg-white dark:text-stone-100 dark:focus:bg-stone-900`}
 						defaultValue={chapter.title}
 						key={chapter.id}
 						onBlur={(event) => void renameChapter(event.target.value)}
@@ -481,82 +458,122 @@ function WritingEditor() {
 				</div>
 			</header>
 
-			<div className="pt-20">
-				<PagedEditor
-					initialContent={
-						latestContent.current.get(chapter.id) ?? chapter.content
-					}
-					key={chapter.id}
-					onChange={(content, wordCount) => {
-						const previous =
-							latestContent.current.get(chapter.id) ?? chapter.content;
-						latestContent.current.set(chapter.id, content);
-						if (content === previous) return;
-						pending.current.set(chapter.id, { content, wordCount });
-						setStatus((current) =>
-							current === "saving" ? current : "unsaved",
-						);
-						window.clearTimeout(timer.current);
-						timer.current = window.setTimeout(() => void save(), SAVE_DELAY_MS);
+			{/* The page and its notes sit side by side under the top bar. */}
+			<div className="flex items-start justify-center gap-6 px-3 pt-20 sm:px-6">
+				<div
+					className="relative min-w-0"
+					style={{
+						flex: `0 1 ${pageSizes[pageSize].width * PX_PER_INCH + 24}px`,
 					}}
-					onTyping={() => setChromeVisible(false)}
-					pageSize={pageSize}
-				/>
-			</div>
-
-			{openNoteId !== null ? (
-				<div className="fixed inset-y-0 right-0 z-40 w-full border-l border-stone-200 md:w-[var(--side)] dark:border-stone-800">
-					<NotePane
-						canGoBack={noteHistory.length > 0}
-						currentChapter={chapter}
-						onShowContents={showContents}
-						key={openNoteId}
-						noteId={openNoteId}
-						onBack={backNote}
-						onClose={closeNote}
-						onOpenChapter={goTo}
-						onOpenNote={(id) => openNote(id)}
-						onTitleChange={(id, title) =>
-							setNotes((current) =>
-								current.map((note) =>
-									note.id === id ? { ...note, title } : note,
-								),
-							)
+				>
+					<PagedEditor
+						initialContent={
+							latestContent.current.get(chapter.id) ?? chapter.content
 						}
-					/>
-				</div>
-			) : null}
-
-			{sideOpen && openNoteId === null ? (
-				<div className="fixed inset-y-0 right-0 z-40 w-full md:w-[var(--side)]">
-					<NotesContents
-						chapters={chapters}
-						currentChapterId={chapter.id}
-						notes={notes}
-						onClose={closeNote}
-						onCreate={(place) => void addNote(place)}
-						onDelete={(note) => void removeNote(note)}
-						onMove={(id, to) =>
-							void moveWritingNote({ data: { id, ...to } }).then(refreshNotes)
-						}
-						onOpenChapter={goTo}
-						onOpenNote={(id) => openNote(id)}
-						onRename={(id, title) => {
-							setNotes((current) =>
-								current.map((note) =>
-									note.id === id ? { ...note, title } : note,
-								),
+						key={chapter.id}
+						onChange={(content, wordCount) => {
+							const previous =
+								latestContent.current.get(chapter.id) ?? chapter.content;
+							latestContent.current.set(chapter.id, content);
+							if (content === previous) return;
+							pending.current.set(chapter.id, { content, wordCount });
+							setStatus((current) =>
+								current === "saving" ? current : "unsaved",
 							);
-							void updateWritingNote({ data: { id, title } });
+							window.clearTimeout(timer.current);
+							timer.current = window.setTimeout(
+								() => void save(),
+								SAVE_DELAY_MS,
+							);
 						}}
-						onReorder={(id, direction) =>
-							void reorderWritingNote({ data: { id, direction } }).then(
-								refreshNotes,
-							)
-						}
+						onTyping={() => setChromeVisible(false)}
+						pageSize={pageSize}
 					/>
+					{sideOpen ? null : (
+						<button
+							aria-label="Show notes (⌘\)"
+							className={`absolute top-3 -right-10 flex flex-col items-center gap-1 rounded-full border border-stone-200 bg-white px-1.5 py-2 text-stone-500 shadow-sm transition hover:text-stone-900 max-sm:hidden dark:border-stone-700 dark:hover:text-stone-100 ${chromeVisible ? "opacity-100" : "pointer-events-none opacity-0"} duration-500 motion-reduce:transition-none`}
+							onClick={() => toggleNotes.current()}
+							title="Notes (⌘\)"
+							type="button"
+						>
+							<svg
+								aria-hidden="true"
+								fill="none"
+								height="16"
+								stroke="currentColor"
+								strokeLinecap="round"
+								strokeLinejoin="round"
+								strokeWidth="1.8"
+								viewBox="0 0 24 24"
+								width="16"
+							>
+								<path d="M4 4h12l4 4v12H4z" />
+								<path d="M8 10h8M8 14h8M8 18h5" />
+							</svg>
+							{notes.length ? (
+								<span className="font-mono text-[10px] tabular-nums">
+									{notes.length}
+								</span>
+							) : null}
+						</button>
+					)}
 				</div>
-			) : null}
+
+				{sideOpen ? (
+					<div className="shrink-0 max-md:fixed max-md:inset-x-0 max-md:top-12 max-md:bottom-0 max-md:z-30 md:sticky md:top-16 md:h-[calc(100dvh-5rem)] md:w-[var(--side)]">
+						{openNoteId !== null ? (
+							<NotePane
+								canGoBack={noteHistory.length > 0}
+								currentChapter={chapter}
+								onShowContents={showContents}
+								key={openNoteId}
+								noteId={openNoteId}
+								onBack={backNote}
+								onClose={closeNote}
+								onOpenChapter={goTo}
+								onOpenNote={(id) => openNote(id)}
+								onTitleChange={(id, title) =>
+									setNotes((current) =>
+										current.map((note) =>
+											note.id === id ? { ...note, title } : note,
+										),
+									)
+								}
+							/>
+						) : (
+							<NotesContents
+								chapters={chapters}
+								currentChapterId={chapter.id}
+								notes={notes}
+								onClose={closeNote}
+								onCreate={(place) => void addNote(place)}
+								onDelete={(note) => void removeNote(note)}
+								onMove={(id, to) =>
+									void moveWritingNote({ data: { id, ...to } }).then(
+										refreshNotes,
+									)
+								}
+								onOpenChapter={goTo}
+								onOpenNote={(id) => openNote(id)}
+								onRename={(id, title) => {
+									setNotes((current) =>
+										current.map((note) =>
+											note.id === id ? { ...note, title } : note,
+										),
+									);
+									void updateWritingNote({ data: { id, title } });
+								}}
+								onReorder={(id, direction) =>
+									void reorderWritingNote({ data: { id, direction } }).then(
+										refreshNotes,
+									)
+								}
+							/>
+						)}
+					</div>
+				) : null}
+			</div>
 		</main>
 	);
 }
