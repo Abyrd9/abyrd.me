@@ -5,11 +5,7 @@ import type { AppDatabaseClient } from "./database/service";
 
 const PREVIEW_CHARACTERS = 600;
 
-export type PreviewBlock = {
-	/** "block" covers quotes, lists, and other blocks that are not plain prose. */
-	kind: "heading" | "paragraph" | "block";
-	text: string;
-};
+export type PreviewBlock = { kind: "heading" | "paragraph"; text: string };
 
 /** The opening blocks of a saved chapter, as plain text for the library thumbnail. */
 export function previewBlocks(content: string | null) {
@@ -27,14 +23,8 @@ export function previewBlocks(content: string | null) {
 		if (remaining <= 0) break;
 		const text = textOf(node).trim();
 		if (!text) continue;
-		const type = typeOf(node);
 		blocks.push({
-			kind:
-				type === "heading"
-					? "heading"
-					: type === "paragraph"
-						? "paragraph"
-						: "block",
+			kind: typeOf(node) === "heading" ? "heading" : "paragraph",
 			text: text.slice(0, remaining),
 		});
 		remaining -= text.length;

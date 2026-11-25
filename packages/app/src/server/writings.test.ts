@@ -111,7 +111,6 @@ test("previews the opening blocks of a saved chapter", () => {
 		{ kind: "heading", text: "One" },
 		{ kind: "paragraph", text: "It was late." },
 	]);
-	expect(preview[2].kind).toBe("block");
 	expect(preview[2].text.length).toBe(
 		600 - "One".length - "It was late.".length,
 	);

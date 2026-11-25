@@ -303,17 +303,8 @@ const WritingSheet = ({
 											{block.text}
 										</p>
 									) : (
-										<p
-											className={
-												// Matches the editor's book-style indents.
-												block.kind === "paragraph" &&
-												writing.preview[index - 1]?.kind === "paragraph"
-													? "indent-[1.5em]"
-													: ""
-											}
-											// biome-ignore lint/suspicious/noArrayIndexKey: preview blocks never reorder.
-											key={index}
-										>
+										// biome-ignore lint/suspicious/noArrayIndexKey: preview blocks never reorder.
+										<p className="mb-[0.75em]" key={index}>
 											{block.text}
 										</p>
 									),
