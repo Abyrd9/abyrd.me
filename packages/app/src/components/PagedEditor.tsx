@@ -35,6 +35,7 @@ export const PagedEditor = ({
 	pageSize,
 	onChange,
 	onTyping,
+	children,
 }: {
 	/** Serialized Lexical state. Read once when the editor mounts. */
 	initialContent: string | null;
@@ -42,6 +43,8 @@ export const PagedEditor = ({
 	onChange: (content: string, wordCount: number) => void;
 	/** Called on each keystroke so the page can hide its controls. */
 	onTyping?: () => void;
+	/** Extra editor plugins, like the chapter's suggested edits. */
+	children?: ReactNode;
 }) => {
 	const [extension] = useState(() =>
 		createWritingExtension("PagedWriting", initialContent),
@@ -170,6 +173,7 @@ export const PagedEditor = ({
 				onChange={onChange}
 				paged
 			/>
+			{children}
 		</LexicalExtensionComposer>
 	);
 };

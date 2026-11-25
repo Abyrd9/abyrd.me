@@ -1,5 +1,9 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import {
+	type ChapterSuggestion,
+	ChapterSuggestions,
+} from "#/components/ChapterSuggestions";
 import { NotePane } from "#/components/NotePane";
 import {
 	type BinderNote,
@@ -16,6 +20,10 @@ import {
 	reorderWritingNote,
 	updateWritingNote,
 } from "#/server/writing-notes-functions";
+import {
+	listChapterSuggestions,
+	resolveChapterSuggestion,
+} from "#/server/writing-suggestions-functions";
 import {
 	createChapter,
 	deleteChapter,
@@ -78,6 +86,23 @@ function WritingEditor() {
 	const [kept, setKept] = useState<{ noteId: number; chapter: string } | null>(
 		null,
 	);
+	// Suggested edits waiting on the open chapter.
+	const [suggestions, setSuggestions] = useState<ChapterSuggestion[]>([]);
+	const currentChapterId = writing
+		? (
+				writing.chapters.find((item) => item.id === search.chapter) ??
+				writing.chapters[0]
+			)?.id
+		: undefined;
+	const loadSuggestions = (chapterId: number) =>
+		listChapterSuggestions({ data: { chapterId } }).then((list) =>
+			setSuggestions(list.filter((item) => item.found)),
+		);
+	// biome-ignore lint/correctness/useExhaustiveDependencies: loadSuggestions only sets state.
+	useEffect(() => {
+		setSuggestions([]);
+		if (currentChapterId !== undefined) void loadSuggestions(currentChapterId);
+	}, [currentChapterId]);
 
 	useEffect(() => {
 		void loadWriting({ data: { id: Number(writingId) } })
@@ -271,6 +296,18 @@ function WritingEditor() {
 				)
 				.join("|");
 		if (noteShape(latest.notes) !== noteShape(notes)) void refreshNotes();
+		if (currentChapterId !== undefined) {
+			const waiting = latest.suggestions
+				.filter((item) => item.chapterId === currentChapterId)
+				.map((item) => item.id)
+				.sort()
+				.join();
+			const shown = suggestions
+				.map((item) => item.id)
+				.sort()
+				.join();
+			if (waiting !== shown) void loadSuggestions(currentChapterId);
+		}
 	};
 	useEffect(() => {
 		const timer = window.setInterval(() => void refresh.current(), REFRESH_MS);
@@ -679,7 +716,19 @@ function WritingEditor() {
 									}}
 									onTyping={() => setChromeVisible(false)}
 									pageSize={pageSize}
-								/>
+								>
+									<ChapterSuggestions
+										onResolve={(id, outcome) => {
+											setSuggestions((current) =>
+												current.filter((item) => item.id !== id),
+											);
+											void resolveChapterSuggestion({
+												data: { id, ...outcome },
+											});
+										}}
+										suggestions={suggestions}
+									/>
+								</PagedEditor>
 								{sideOpen ? null : (
 									<button
 										aria-label="Show notes (⌘\)"

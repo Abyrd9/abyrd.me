@@ -1,7 +1,12 @@
 import { createHash } from "node:crypto";
 import { and, asc, count, desc, eq, gt, lt, max, sql, sum } from "drizzle-orm";
 import type { PageSizeId } from "#/writing-page-sizes";
-import { writingChapters, writingNotes, writings } from "./database/schema";
+import {
+	writingChapters,
+	writingNotes,
+	writingSuggestions,
+	writings,
+} from "./database/schema";
 import type { AppDatabaseClient } from "./database/service";
 import { rootBlocks, textOf, typeOf } from "./lexical-json";
 import { replaceNoteLinks } from "./note-links";
@@ -154,7 +159,25 @@ export function loadRevisions(db: AppDatabaseClient, writingId: number) {
 			...note,
 			revision: contentRevision(content),
 		}));
-	return { chapters, notes };
+	const suggestions = db
+		.select({
+			id: writingSuggestions.id,
+			chapterId: writingSuggestions.chapterId,
+		})
+		.from(writingSuggestions)
+		.innerJoin(
+			writingChapters,
+			eq(writingSuggestions.chapterId, writingChapters.id),
+		)
+		.where(
+			and(
+				eq(writingChapters.writingId, writingId),
+				eq(writingSuggestions.status, "pending"),
+			),
+		)
+		.orderBy(asc(writingSuggestions.id))
+		.all();
+	return { chapters, notes, suggestions };
 }
 
 /** One chapter with its text, for reloading it after a change elsewhere. */

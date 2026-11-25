@@ -1,22 +1,16 @@
 // Spelling and grammar checking with Harper, which runs entirely in the
 // browser. Underlines are painted with the CSS Custom Highlight API, so they
 // never touch the document, its saved JSON, page layout, or undo history.
-import { $isCodeNode } from "@lexical/code-core";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import type { Lint, Linter } from "harper.js";
-import {
-	$createRangeSelection,
-	$getRoot,
-	$isElementNode,
-	$isLineBreakNode,
-	$isTextNode,
-	$setSelection,
-	type ElementNode,
-	type LexicalEditor,
-	type LexicalNode,
-} from "lexical";
+import { $createRangeSelection, $setSelection } from "lexical";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import {
+	$readBlocks,
+	type Block,
+	blockRange,
+} from "#/components/writing-blocks";
 import {
 	addDictionaryWord,
 	listDictionaryWords,
@@ -40,11 +34,6 @@ type Issue = {
 	fixes: Fix[];
 	lint: Lint;
 };
-
-/** A run of text inside a block, and where it sits in the block's text. */
-type Piece = { key: string; start: number; length: number };
-
-type Block = { text: string; pieces: Piece[] };
 
 /** An issue placed on screen, with what's needed to fix it. */
 type Placed = {
@@ -134,57 +123,6 @@ const toIssues = (lints: Lint[]): Issue[] =>
 		};
 	});
 
-/** Splits the document into blocks of plain text, skipping code. */
-const $readBlocks = () => {
-	const blocks: Block[] = [];
-	const collect = (element: ElementNode) => {
-		if ($isCodeNode(element)) return;
-		const children = element.getChildren();
-		const nested = children.filter(
-			(child): child is ElementNode =>
-				$isElementNode(child) && !child.isInline(),
-		);
-		if (nested.length) {
-			for (const child of nested) collect(child);
-			return;
-		}
-		const block: Block = { text: "", pieces: [] };
-		const walk = (node: LexicalNode) => {
-			if ($isTextNode(node)) {
-				const text = node.getTextContent();
-				block.pieces.push({
-					key: node.getKey(),
-					start: block.text.length,
-					length: text.length,
-				});
-				block.text += text;
-			} else if ($isLineBreakNode(node)) block.text += "\n";
-			else if ($isElementNode(node))
-				for (const child of node.getChildren()) walk(child);
-		};
-		for (const child of children) walk(child);
-		if (block.text.trim()) blocks.push(block);
-	};
-	collect($getRoot());
-	return blocks;
-};
-
-/** Finds the text node and offset for a position in a block's text. */
-const locate = (block: Block, position: number, atEnd: boolean) => {
-	const piece = block.pieces.find((p) =>
-		atEnd
-			? position > p.start && position <= p.start + p.length
-			: position >= p.start && position < p.start + p.length,
-	);
-	return piece && { key: piece.key, offset: position - piece.start };
-};
-
-const domText = (editor: LexicalEditor, key: string) => {
-	let node: Node | null = editor.getElementByKey(key);
-	while (node?.firstChild) node = node.firstChild;
-	return node?.nodeType === Node.TEXT_NODE ? node : null;
-};
-
 /** Spelling and grammar underlines, with a card of fixes for each. */
 export const WritingSpellCheck = () => {
 	const [editor] = useLexicalComposerContext();
@@ -248,21 +186,10 @@ export const WritingSpellCheck = () => {
 					continue;
 				}
 				for (const issue of issues) {
-					const anchor = locate(block, issue.start, false);
-					const focus = locate(block, issue.end, true);
-					if (!anchor || !focus) continue;
-					const start = domText(editor, anchor.key);
-					const end = domText(editor, focus.key);
-					if (!start || !end) continue;
-					const range = new Range();
-					try {
-						range.setStart(start, anchor.offset);
-						range.setEnd(end, focus.offset);
-					} catch {
-						continue;
-					}
-					(issue.spelling ? spelling : grammar).add(range);
-					placedRef.current.push({ issue, block, range, anchor, focus });
+					const placed = blockRange(editor, block, issue.start, issue.end);
+					if (!placed) continue;
+					(issue.spelling ? spelling : grammar).add(placed.range);
+					placedRef.current.push({ issue, block, ...placed });
 				}
 			}
 			clearTimeout(timer);

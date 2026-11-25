@@ -197,3 +197,24 @@ export const writingTrash = sqliteTable(
 	},
 	(table) => [index("writing_trash_deleted_at_idx").on(table.deletedAt)],
 );
+
+export const writingSuggestions = sqliteTable(
+	"writing_suggestions",
+	{
+		id: integer("id").primaryKey({ autoIncrement: true }),
+		chapterId: integer("chapter_id")
+			.notNull()
+			.references(() => writingChapters.id, { onDelete: "cascade" }),
+		passage: text("passage").notNull(),
+		alternatives: text("alternatives", { mode: "json" })
+			.$type<Array<{ text: string; reason: string | null }>>()
+			.notNull(),
+		status: text("status", {
+			enum: ["pending", "accepted", "declined", "withdrawn"],
+		}).notNull(),
+		acceptedIndex: integer("accepted_index"),
+		createdAt: integer("created_at").notNull(),
+		resolvedAt: integer("resolved_at"),
+	},
+	(table) => [index("writing_suggestions_chapter_id_idx").on(table.chapterId)],
+);

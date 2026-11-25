@@ -1,7 +1,7 @@
 // MCP tools for the writing app: writings, chapters, notes, and the trash.
 // Text goes in and out as Markdown. Agents write chapter text only into
 // chapters that are still empty; existing chapter text changes through
-// suggestions the writer accepts or declines.
+// suggest_edit suggestions the writer accepts or declines.
 import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import { pageSizeIds } from "#/writing-page-sizes";
@@ -22,6 +22,12 @@ import {
 	searchNotes,
 	updateNote,
 } from "./writing-notes";
+import {
+	createSuggestion,
+	listSuggestions,
+	SuggestionError,
+	withdrawSuggestion,
+} from "./writing-suggestions";
 import {
 	listTrash,
 	restoreTrashItem,
@@ -59,6 +65,7 @@ const guarded =
 		try {
 			return run(input);
 		} catch (error) {
+			if (error instanceof SuggestionError) return fail(error.message);
 			if (error instanceof NotePlacementError) return fail(error.message);
 			if (error instanceof TrashError)
 				return fail(
@@ -306,7 +313,7 @@ export const registerWritingTools = (
 			if (!chapter) return fail("Chapter not found.");
 			if (markdown !== undefined && !isEmptyContent(chapter.content))
 				return fail(
-					"This chapter already has text, which only the writer changes directly. Suggest edits instead.",
+					"This chapter already has text, which only the writer changes directly. Use suggest_edit instead.",
 				);
 			const content =
 				markdown !== undefined ? fromMarkdown(markdown) : undefined;
@@ -322,6 +329,57 @@ export const registerWritingTools = (
 			if (position !== undefined) placeChapter(db, chapterId, position);
 			return json({ ok: true });
 		},
+	);
+
+	server.registerTool(
+		"suggest_edit",
+		{
+			description:
+				"Change existing chapter text by proposing an edit. The writer sees the passage in red with alternatives beside it and accepts one or declines. Copy passage exactly from read_chapter as plain text (strip Markdown markers); it must match exactly once and sit within one paragraph. Each alternative is plain text, not Markdown, and may be empty to suggest deletion. Offer several alternatives when there are genuinely different options. Keep passages as short as makes the change clear: a phrase or sentence, not a whole paragraph unless rewriting the paragraph.",
+			annotations: { readOnlyHint: false },
+			inputSchema: z.object({
+				chapterId: id,
+				passage: z.string(),
+				alternatives: z
+					.array(
+						z.object({
+							text: z.string(),
+							reason: z.string().nullable().optional(),
+						}),
+					)
+					.min(1)
+					.max(5),
+			}),
+		},
+		guarded((input) => json({ id: createSuggestion(db, input).id })),
+	);
+
+	server.registerTool(
+		"list_suggestions",
+		{
+			description:
+				"List suggested edits, newest first. found says whether a pending passage still matches exactly once in the chapter's current text.",
+			annotations: { readOnlyHint: true },
+			inputSchema: z.object({
+				chapterId: id.optional(),
+				writingId: id.optional(),
+				status: z
+					.enum(["pending", "accepted", "declined", "withdrawn"])
+					.optional(),
+			}),
+		},
+		(input) => json(listSuggestions(db, input)),
+	);
+
+	server.registerTool(
+		"withdraw_suggestion",
+		{
+			description:
+				"Withdraw a pending suggested edit. Already resolved suggestions cannot be withdrawn.",
+			annotations: { readOnlyHint: false },
+			inputSchema: z.object({ id }),
+		},
+		({ id }) => json({ ok: withdrawSuggestion(db, id) }),
 	);
 
 	server.registerTool(

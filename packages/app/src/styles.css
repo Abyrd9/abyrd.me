@@ -486,3 +486,14 @@ html.dark .writing-footnote-ref::before {
 	text-decoration-skip-ink: none;
 	text-underline-offset: 0.2em;
 }
+
+/* Passages with a suggested edit waiting, painted without changing the text. */
+::highlight(writing-suggestion) {
+	color: #b91c1c;
+	background-color: rgb(254 226 226 / 0.55);
+}
+
+::highlight(writing-suggestion-active) {
+	color: #991b1b;
+	background-color: rgb(254 202 202 / 0.9);
+}

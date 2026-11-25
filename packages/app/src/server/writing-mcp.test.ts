@@ -65,6 +65,39 @@ test("agents manage writings, chapters, and notes through MCP", async () => {
 		expect(refused.isError).toBe(true);
 		expect(loadChapter(db, firstChapterId)?.wordCount).toBe(5);
 
+		const suggested = await call("suggest_edit", {
+			chapterId: firstChapterId,
+			passage: "left at six",
+			alternatives: [{ text: "departed at dawn", reason: "More vivid" }],
+		});
+		expect(suggested.isError).toBe(false);
+		const invalid = await call("suggest_edit", {
+			chapterId: firstChapterId,
+			passage: "left at *six*",
+			alternatives: [{ text: "departed" }],
+		});
+		expect(invalid.isError).toBe(true);
+		expect(invalid.value).toContain("without Markdown");
+		expect(
+			(await call("list_suggestions", { writingId, status: "pending" })).value,
+		).toMatchObject([
+			{ id: suggested.value.id, found: true, chapterId: firstChapterId },
+		]);
+		expect(
+			(await call("withdraw_suggestion", { id: suggested.value.id })).value,
+		).toEqual({ ok: true });
+		expect(
+			(await call("withdraw_suggestion", { id: suggested.value.id })).value,
+		).toEqual({ ok: false });
+		expect(
+			(
+				await call("list_suggestions", {
+					chapterId: firstChapterId,
+					status: "pending",
+				})
+			).value,
+		).toEqual([]);
+
 		// A new chapter at the front, then written while empty.
 		const second = await call("create_chapter", {
 			writingId,
