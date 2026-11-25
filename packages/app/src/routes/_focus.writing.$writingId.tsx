@@ -347,6 +347,26 @@ function WritingEditor() {
 		};
 	}, []);
 
+	// The Options menu closes on a click outside it or Escape, like other menus.
+	const optionsRef = useRef<HTMLDetailsElement>(null);
+	useEffect(() => {
+		const close = (event: Event) => {
+			const menu = optionsRef.current;
+			if (!menu?.open) return;
+			if (event instanceof KeyboardEvent) {
+				if (event.key !== "Escape") return;
+			} else if (event.target instanceof Node && menu.contains(event.target))
+				return;
+			menu.open = false;
+		};
+		document.addEventListener("pointerdown", close);
+		document.addEventListener("keydown", close);
+		return () => {
+			document.removeEventListener("pointerdown", close);
+			document.removeEventListener("keydown", close);
+		};
+	}, []);
+
 	// Controls fade out while typing and return when the mouse moves.
 	useEffect(() => {
 		// Phones have no mouse to move, so a tap anywhere brings them back.
@@ -642,7 +662,7 @@ function WritingEditor() {
 									? "Not saved, retrying"
 									: "Saved"}
 					</span>
-					<details className="relative">
+					<details className="relative" ref={optionsRef}>
 						<summary
 							aria-label="Options"
 							className={`${quiet} cursor-pointer list-none max-sm:grid max-sm:size-9 max-sm:place-items-center max-sm:px-0`}
