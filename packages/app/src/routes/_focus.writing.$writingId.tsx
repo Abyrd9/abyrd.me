@@ -145,6 +145,12 @@ function WritingEditor() {
 		setTabState(toSideTab(localStorage.getItem(tabKey)));
 	}, [writingId]);
 
+	// A note opened from a link shows in the Notes tab, whichever tab was last used.
+	// biome-ignore lint/correctness/useExhaustiveDependencies: setTab only writes state and storage.
+	useEffect(() => {
+		if (search.note !== undefined) setTab("notes");
+	}, [search.note]);
+
 	const refreshNotes = () =>
 		listWritingNotes({ data: { writingId: Number(writingId) } }).then(setNotes);
 
@@ -709,7 +715,7 @@ function WritingEditor() {
 				<div className="flex h-full">
 					<div className="min-w-0 flex-1 overflow-y-auto">
 						<div
-							className={`flex px-3 pt-20 pb-24 sm:px-6 ${sideOpen ? "md:justify-end md:pr-8" : "justify-center"}`}
+							className={`flex px-3 pt-24 pb-24 sm:px-6 ${sideOpen ? "md:justify-end md:pr-8" : "justify-center"}`}
 						>
 							<div
 								className="relative min-w-0"
@@ -756,7 +762,8 @@ function WritingEditor() {
 								{sideOpen ? null : (
 									<button
 										aria-label="Show side panel (⌘\)"
-										className={`absolute top-3 -right-10 flex flex-col items-center gap-1 rounded-full border border-stone-200 bg-white px-1.5 py-2 text-stone-500 shadow-sm transition hover:text-stone-900 max-sm:hidden dark:border-stone-700 dark:hover:text-stone-100 ${chromeVisible ? "opacity-100" : "pointer-events-none opacity-0"} duration-500 motion-reduce:transition-none`}
+										// Sits just right of the page, level with its top edge.
+										className={`absolute top-0 -right-[30px] grid size-8 place-items-center rounded-md border border-stone-200 bg-white text-stone-500 shadow-sm transition hover:text-stone-900 max-sm:hidden dark:border-stone-700 dark:hover:text-stone-100 ${chromeVisible ? "opacity-100" : "pointer-events-none opacity-0"} duration-500 motion-reduce:transition-none`}
 										onClick={() => toggleNotes.current()}
 										title="Notes, dictionary, and guides (⌘\)"
 										type="button"
@@ -767,19 +774,12 @@ function WritingEditor() {
 											height="16"
 											stroke="currentColor"
 											strokeLinecap="round"
-											strokeLinejoin="round"
-											strokeWidth="1.8"
+											strokeWidth="2"
 											viewBox="0 0 24 24"
 											width="16"
 										>
-											<path d="M4 4h12l4 4v12H4z" />
-											<path d="M8 10h8M8 14h8M8 18h5" />
+											<path d="M4 6h16M4 12h16M4 18h16" />
 										</svg>
-										{notes.length ? (
-											<span className="font-mono text-[10px] tabular-nums">
-												{notes.length}
-											</span>
-										) : null}
 									</button>
 								)}
 							</div>
@@ -787,9 +787,9 @@ function WritingEditor() {
 					</div>
 
 					{sideOpen ? (
-						<div className="min-w-0 max-md:fixed max-md:inset-x-0 max-md:top-12 max-md:bottom-0 max-md:z-30 max-md:bg-stone-100 md:flex-1 md:pt-20 md:pb-6 md:pl-8 dark:max-md:bg-[#0a0a0a]">
+						<div className="min-w-0 max-md:fixed max-md:inset-x-0 max-md:top-12 max-md:bottom-0 max-md:z-30 max-md:bg-stone-100 md:flex-1 md:pt-24 md:pb-6 md:pl-8 dark:max-md:bg-[#0a0a0a]">
 							<div className="flex h-full w-full flex-col md:max-w-[var(--side)] md:pr-6">
-								<SideTabs onHide={closeNote} onTab={setTab} tab={tab} />
+								<SideTabs onClose={closeNote} onTab={setTab} tab={tab} />
 								<div className="min-h-0 flex-1">
 									{tab === "dictionary" ? (
 										<WordPanel key={lookup ?? ""} word={lookup} />
@@ -803,7 +803,6 @@ function WritingEditor() {
 											key={openNoteId}
 											noteId={openNoteId}
 											onBack={backNote}
-											onClose={closeNote}
 											onOpenChapter={goTo}
 											onOpenNote={(id) => openNote(id)}
 											onKeptEdits={(keptId) => {
@@ -823,7 +822,6 @@ function WritingEditor() {
 											chapters={chapters}
 											currentChapterId={chapter.id}
 											notes={notes}
-											onClose={closeNote}
 											onCreate={(place) => void addNote(place)}
 											onDelete={(note) => void removeNote(note)}
 											onMove={(id, to) =>

@@ -51,7 +51,6 @@ export const NotesContents = ({
 	chapters,
 	notes,
 	currentChapterId,
-	onClose,
 	onOpenChapter,
 	onOpenNote,
 	onCreate,
@@ -63,7 +62,6 @@ export const NotesContents = ({
 	chapters: Chapter[];
 	notes: BinderNote[];
 	currentChapterId: number;
-	onClose: () => void;
 	onOpenChapter: (id: number) => void;
 	onOpenNote: (id: number) => void;
 	onCreate: (place: Placement) => void;
@@ -170,26 +168,6 @@ export const NotesContents = ({
 				<span className="ml-auto text-xs text-stone-400 tabular-nums">
 					{notes.length} {notes.length === 1 ? "note" : "notes"}
 				</span>
-				<button
-					aria-label="Hide notes (⌘\)"
-					className="inline-flex size-7 items-center justify-center self-center rounded-md text-stone-400 hover:bg-stone-200 hover:text-stone-900 dark:hover:bg-stone-800"
-					onClick={onClose}
-					title="Hide notes (⌘\)"
-					type="button"
-				>
-					<svg
-						aria-hidden="true"
-						fill="none"
-						height="15"
-						stroke="currentColor"
-						strokeLinecap="round"
-						strokeWidth="2"
-						viewBox="0 0 24 24"
-						width="15"
-					>
-						<path d="M18 6 6 18M6 6l12 12" />
-					</svg>
-				</button>
 			</div>
 			<label className="mx-6 mt-3 flex items-center gap-2 border-b border-stone-300 pb-1 text-sm text-stone-500 focus-within:border-stone-600 dark:border-stone-700">
 				<svg
@@ -275,7 +253,7 @@ export const NotesContents = ({
 				)}
 			</nav>
 			<p className="px-6 py-2 text-[11px] text-stone-400">
-				⌘\ hides notes · double-click an entry to rename
+				Double-click an entry to rename it.
 			</p>
 
 			<MoveDialog

@@ -9,23 +9,21 @@ export const sideTabs: Array<{ id: SideTab; label: string }> = [
 export const toSideTab = (value: string | null): SideTab =>
 	sideTabs.find((tab) => tab.id === value)?.id ?? "notes";
 
-/** Height of the tab row, which papers below it subtract from their own. */
-export const SIDE_TABS_HEIGHT = 44;
-
-/** The pills along the top of the side column, and a button to hide it. */
+/**
+ * The pills along the top of the side column, and a button that closes it.
+ * On wider screens the row sits in the gap above the papers, so each tab's
+ * card starts level with the chapter's page.
+ */
 export const SideTabs = ({
 	tab,
 	onTab,
-	onHide,
+	onClose,
 }: {
 	tab: SideTab;
 	onTab: (tab: SideTab) => void;
-	onHide: () => void;
+	onClose: () => void;
 }) => (
-	<div
-		className="flex shrink-0 items-start gap-1.5 max-md:px-3 max-md:pt-2"
-		style={{ height: SIDE_TABS_HEIGHT }}
-	>
+	<div className="flex h-10 shrink-0 items-center justify-between gap-1.5 max-md:px-3 md:-mt-10">
 		<div aria-label="Side panel" className="flex gap-1.5" role="tablist">
 			{sideTabs.map(({ id, label }) => (
 				<button
@@ -45,24 +43,23 @@ export const SideTabs = ({
 			))}
 		</div>
 		<button
-			aria-label="Hide side panel (⌘\)"
-			className="grid size-[26px] place-items-center rounded-full border border-stone-300 bg-white/60 text-stone-500 transition-colors hover:border-stone-400 hover:text-stone-900 dark:border-stone-700 dark:bg-transparent dark:hover:text-stone-100"
-			onClick={onHide}
-			title="Hide (⌘\)"
+			aria-label="Close side panel (⌘\)"
+			className="grid size-7 place-items-center rounded-full text-stone-400 transition-colors hover:bg-stone-200 hover:text-stone-900 dark:hover:bg-stone-800 dark:hover:text-stone-100"
+			onClick={onClose}
+			title="Close (⌘\)"
 			type="button"
 		>
 			<svg
 				aria-hidden="true"
 				fill="none"
-				height="14"
+				height="15"
 				stroke="currentColor"
 				strokeLinecap="round"
-				strokeLinejoin="round"
 				strokeWidth="2"
 				viewBox="0 0 24 24"
-				width="14"
+				width="15"
 			>
-				<path d="m9 18 6-6-6-6" />
+				<path d="M18 6 6 18M6 6l12 12" />
 			</svg>
 		</button>
 	</div>

@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { NoteEditor } from "#/components/NoteEditor";
-import { SIDE_TABS_HEIGHT } from "#/components/SideTabs";
 import {
 	loadWritingNote,
 	updateWritingNote,
@@ -28,7 +27,6 @@ export const NotePane = ({
 	canGoBack,
 	onBack,
 	onShowContents,
-	onClose,
 	onOpenNote,
 	onOpenChapter,
 	onTitleChange,
@@ -41,7 +39,6 @@ export const NotePane = ({
 	onBack: () => void;
 	/** Returns to the notes contents. */
 	onShowContents: () => void;
-	onClose: () => void;
 	onOpenNote: (id: number) => void;
 	onOpenChapter: (chapterId: number) => void;
 	/** Lets the binder show a renamed note right away. */
@@ -267,27 +264,6 @@ export const NotePane = ({
 								? "Saved"
 								: ""}
 			</span>
-			<button
-				aria-label="Hide notes (⌘\)"
-				className="inline-flex items-center gap-1.5 rounded px-1 py-0.5 hover:bg-stone-200 hover:text-stone-900 dark:hover:bg-stone-800 dark:hover:text-stone-100"
-				onClick={onClose}
-				title="Hide notes (⌘\)"
-				type="button"
-			>
-				<svg
-					aria-hidden="true"
-					fill="none"
-					height="14"
-					stroke="currentColor"
-					strokeLinecap="round"
-					strokeWidth="2"
-					viewBox="0 0 24 24"
-					width="14"
-				>
-					<path d="M18 6 6 18M6 6l12 12" />
-				</svg>
-				<span className="max-sm:sr-only">Hide notes</span>
-			</button>
 		</aside>
 	);
 
@@ -310,8 +286,7 @@ export const NotePane = ({
 				) : (
 					<NoteEditor
 						autoFocus={false}
-						// Starts below the tab row, so it ends level with the chapter's page.
-						height={pageHeight && pageHeight - SIDE_TABS_HEIGHT}
+						height={pageHeight}
 						header={
 							<input
 								aria-label="Note title"
