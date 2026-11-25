@@ -225,7 +225,10 @@ export const NotesContents = ({
 				/>
 			</label>
 
-			<nav aria-label="Contents" className="min-h-0 flex-1 overflow-y-auto px-6 pb-8">
+			<nav
+				aria-label="Contents"
+				className="min-h-0 flex-1 overflow-y-auto px-6 pb-8"
+			>
 				{search ? (
 					matches.length ? (
 						<ul className="mt-4">
