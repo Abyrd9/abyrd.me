@@ -1,8 +1,9 @@
-import { useEffect, useRef } from "react";
+import type { ReactNode } from "react";
 
 /**
- * A Julia-set fractal whose shape, framing, and colors come from `seed`, so
- * the same title always draws the same cover. Fills its parent.
+ * A tiled mosaic whose palette, motifs, and layout come from `seed`, so the
+ * same title always draws the same cover. Some tiles split into four smaller
+ * ones. Fills its parent, cropping to fit.
  */
 export const SeededArt = ({
 	seed,
@@ -12,126 +13,121 @@ export const SeededArt = ({
 	seed: string;
 	className?: string;
 }) => {
-	const canvasRef = useRef<HTMLCanvasElement>(null);
-
-	useEffect(() => {
-		const canvas = canvasRef.current;
-		if (!canvas) return;
-		const scale = Math.min(window.devicePixelRatio || 1, 2);
-		const width = Math.max(1, Math.round(canvas.clientWidth * scale));
-		const height = Math.max(1, Math.round(canvas.clientHeight * scale));
-		canvas.width = width;
-		canvas.height = height;
-		const context = canvas.getContext("2d");
-		if (context) drawJulia(context, width, height, seed);
-	}, [seed]);
+	const random = mulberry32(hash(seed.trim().toLowerCase() || "untitled"));
+	const colors = palette(random);
+	const tiles: ReactNode[] = [];
+	for (let row = 0; row < ROWS; row++)
+		for (let column = 0; column < COLUMNS; column++)
+			drawTile(tiles, random, colors, column, row, 1, 0);
 
 	return (
-		// Decoration only; the title beside it names the item.
-		<canvas
+		<svg
+			aria-hidden="true"
 			className={`absolute inset-0 size-full ${className}`}
-			ref={canvasRef}
-		/>
+			preserveAspectRatio="xMidYMid slice"
+			viewBox={`0 0 ${COLUMNS} ${ROWS}`}
+		>
+			{tiles}
+		</svg>
 	);
 };
 
-const MAX_STEPS = 90;
+// Tall enough for a page, wide enough for a folder front once cropped.
+const COLUMNS = 4;
+const ROWS = 6;
 
-function drawJulia(
-	context: CanvasRenderingContext2D,
-	width: number,
-	height: number,
-	seed: string,
-) {
-	const random = mulberry32(hash(seed.trim().toLowerCase() || "untitled"));
-	// Constants on this circle sit near the Mandelbrot set's edge, where Julia
-	// sets are connected and detailed rather than dust or a plain blob.
-	const angle = random() * Math.PI * 2;
-	const radius = 0.7885 - random() * 0.03;
-	const cx = radius * Math.cos(angle);
-	const cy = radius * Math.sin(angle);
-	// Frame the whole set, slightly off center, so every cover shows its shape.
-	const zoom = 1.25 + random() * 0.45;
-	const turn = random() * Math.PI * 2;
-	const offsetX = (random() - 0.5) * 0.25;
-	const offsetY = (random() - 0.5) * 0.25;
-	// Four related colors: a deep background that glows toward bright edges.
-	// The accent sits a seeded step around the color wheel from the base.
+/** Five colors around one seeded hue: two deep, two bright, one light. */
+function palette(random: () => number) {
 	const hue = random() * 360;
-	const accent = hue + 140 + random() * 80;
-	const stops = [
-		hsl(hue, 0.65, 0.1),
-		hsl(hue + 25, 0.85, 0.38),
-		hsl(accent, 0.95, 0.6),
-		hsl(accent + 30, 1, 0.9),
+	const accent = hue + 150 + random() * 60;
+	return [
+		hsl(hue, 70, 22),
+		hsl(hue + 20, 85, 48),
+		hsl(accent, 90, 58),
+		hsl(accent + 35, 95, 66),
+		hsl(hue + 40, 60, 92),
 	];
-	const inside = hsl(hue, 0.55, 0.06);
-
-	const image = context.createImageData(width, height);
-	const cos = Math.cos(turn);
-	const sin = Math.sin(turn);
-	const unit = 3 / zoom / Math.min(width, height);
-	for (let py = 0; py < height; py++) {
-		for (let px = 0; px < width; px++) {
-			const u = (px - width / 2) * unit;
-			const v = (py - height / 2) * unit;
-			let x = u * cos - v * sin + offsetX;
-			let y = u * sin + v * cos + offsetY;
-			let step = 0;
-			let size = x * x + y * y;
-			while (size < 256 && step < MAX_STEPS) {
-				const next = x * x - y * y + cx;
-				y = 2 * x * y + cy;
-				x = next;
-				size = x * x + y * y;
-				step++;
-			}
-			const index = (py * width + px) * 4;
-			if (step === MAX_STEPS) {
-				image.data[index] = inside[0];
-				image.data[index + 1] = inside[1];
-				image.data[index + 2] = inside[2];
-			} else {
-				// Smooth escape count, so bands blend instead of stepping. Points
-				// that take longest to escape hug the set and glow brightest.
-				const t = Math.min(
-					1,
-					Math.sqrt(
-						(step + 1 - Math.log2(Math.log2(size) / 2)) / (MAX_STEPS * 0.35),
-					),
-				);
-				const color = blend(stops, Math.max(0, t));
-				image.data[index] = color[0];
-				image.data[index + 1] = color[1];
-				image.data[index + 2] = color[2];
-			}
-			image.data[index + 3] = 255;
-		}
-	}
-	context.putImageData(image, 0, 0);
 }
 
-/** Mixes evenly spaced color stops at t in [0, 1]. */
-function blend(stops: number[][], t: number) {
-	const at = t * (stops.length - 1);
-	const index = Math.min(Math.floor(at), stops.length - 2);
-	const mix = at - index;
-	return stops[index].map((channel, i) =>
-		Math.round(channel + (stops[index + 1][i] - channel) * mix),
+function drawTile(
+	tiles: ReactNode[],
+	random: () => number,
+	colors: string[],
+	x: number,
+	y: number,
+	size: number,
+	depth: number,
+) {
+	if (depth < 2 && random() < 0.22 - depth * 0.08) {
+		const half = size / 2;
+		for (const [dx, dy] of [
+			[0, 0],
+			[half, 0],
+			[0, half],
+			[half, half],
+		])
+			drawTile(tiles, random, colors, x + dx, y + dy, half, depth + 1);
+		return;
+	}
+
+	const pick = () => colors[Math.floor(random() * colors.length)];
+	const background = pick();
+	let shape = pick();
+	while (shape === background) shape = pick();
+	const turn = Math.floor(random() * 4) * 90;
+	const cx = x + size / 2;
+	const cy = y + size / 2;
+	const key = tiles.length;
+	const motif = Math.floor(random() * 6);
+	const r = size;
+	// Each motif is drawn for the top-left corner, then rotated in place.
+	const figure =
+		motif === 0 ? (
+			<path d={`M${x} ${y}h${r}a${r} ${r} 0 0 1 -${r} ${r}z`} fill={shape} />
+		) : motif === 1 ? (
+			<path
+				d={`M${x} ${y}h${r}a${r / 2} ${r / 2} 0 0 1 -${r} 0z`}
+				fill={shape}
+			/>
+		) : motif === 2 ? (
+			<circle cx={cx} cy={cy} fill={shape} r={size * 0.34} />
+		) : motif === 3 ? (
+			<path d={`M${x} ${y}h${r}L${x} ${y + r}z`} fill={shape} />
+		) : motif === 4 ? (
+			<>
+				<path
+					d={`M${x} ${y}h${r / 2}a${r / 2} ${r / 2} 0 0 1 -${r / 2} ${r / 2}z`}
+					fill={shape}
+				/>
+				<path
+					d={`M${x + r} ${y + r}h-${r / 2}a${r / 2} ${r / 2} 0 0 1 ${r / 2} -${r / 2}z`}
+					fill={shape}
+				/>
+			</>
+		) : (
+			<path
+				d={`M${cx} ${y + size * 0.15}L${x + size * 0.85} ${cy}L${cx} ${y + size * 0.85}L${x + size * 0.15} ${cy}z`}
+				fill={shape}
+			/>
+		);
+
+	tiles.push(
+		<g key={key} transform={`rotate(${turn} ${cx} ${cy})`}>
+			{/* Slight overlap hides hairline seams between tiles. */}
+			<rect
+				fill={background}
+				height={size + 0.01}
+				width={size + 0.01}
+				x={x}
+				y={y}
+			/>
+			{figure}
+		</g>,
 	);
 }
 
-/** HSL to RGB; hue in degrees, saturation and lightness in [0, 1]. */
-function hsl(hue: number, saturation: number, lightness: number) {
-	const h = (((hue % 360) + 360) % 360) / 30;
-	const a = saturation * Math.min(lightness, 1 - lightness);
-	return [0, 8, 4].map((n) => {
-		const k = (n + h) % 12;
-		return Math.round(
-			255 * (lightness - a * Math.max(-1, Math.min(k - 3, 9 - k, 1))),
-		);
-	});
-}
+const hsl = (hue: number, saturation: number, lightness: number) =>
+	`hsl(${Math.round(hue % 360)} ${saturation}% ${lightness}%)`;
 
 /** FNV-1a: a small, stable string hash. */
 function hash(text: string) {
