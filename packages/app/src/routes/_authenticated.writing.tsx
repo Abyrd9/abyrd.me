@@ -453,12 +453,12 @@ const Folder = ({
 		) : (
 			<>
 				<div
-					className="absolute inset-0 bg-slate-200"
+					className="absolute inset-0 bg-[#c3cedd] dark:bg-[#3a404a]"
 					style={{ clipPath: folderBack }}
 				/>
 				{Array.from({ length: Math.min(sheets, 3) }, (_, index) => (
 					<div
-						className="absolute bottom-2 bg-white shadow-[0_0_0_1px_rgba(0,0,0,0.05)]"
+						className="absolute bottom-2 bg-[#ffffff] shadow-[0_0_0_1px_rgba(15,23,42,0.08)] dark:bg-[#8a8f98]"
 						// biome-ignore lint/suspicious/noArrayIndexKey: sheets are interchangeable.
 						key={index}
 						style={{
@@ -468,7 +468,7 @@ const Folder = ({
 						}}
 					/>
 				))}
-				<div className="absolute inset-x-0 bottom-0 h-[72%] rounded-b-[2px] bg-white shadow-[0_-1px_0_rgba(0,0,0,0.05)]" />
+				<div className="absolute inset-x-0 bottom-0 h-[72%] rounded-b-[2px] bg-[#dbe3ee] shadow-[0_-1px_0_rgba(15,23,42,0.08)] dark:bg-[#2a2f37]" />
 			</>
 		)}
 		{children}
