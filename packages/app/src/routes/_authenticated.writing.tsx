@@ -423,14 +423,11 @@ type Project = NonNullable<Awaited<ReturnType<typeof listProjects>>>[number];
 /** A paper folder; its writings show as sheets tucked inside. */
 const Folder = ({
 	sheets,
-	seed,
 	className = "",
 	dashed = false,
 	children,
 }: {
 	sheets: number;
-	/** Covers the front with art drawn from this, usually the project title. */
-	seed?: string;
 	className?: string;
 	dashed?: boolean;
 	children?: ReactNode;
@@ -472,9 +469,7 @@ const Folder = ({
 						}}
 					/>
 				))}
-				<div className="absolute inset-x-0 bottom-0 h-[72%] overflow-hidden rounded-b-[2px] bg-[#dbe3ee] shadow-[0_-1px_0_rgba(15,23,42,0.08)] dark:bg-[#2a2f37]">
-					{seed === undefined ? null : <SeededArt seed={seed} />}
-				</div>
+				<div className="absolute inset-x-0 bottom-0 h-[72%] rounded-b-[2px] bg-[#dbe3ee] shadow-[0_-1px_0_rgba(15,23,42,0.08)] dark:bg-[#2a2f37]" />
 			</>
 		)}
 		{children}
@@ -497,7 +492,7 @@ const ProjectFolder = ({
 				params={params}
 				to="/projects/$projectId"
 			>
-				<Folder seed={project.title} sheets={books.length} />
+				<Folder sheets={books.length} />
 			</Link>
 			<div className="-mr-4 border-b border-slate-200 sm:-mr-8 dark:border-slate-800" />
 			<Link
@@ -563,7 +558,7 @@ const NewFolder = ({ onCreate }: { onCreate: (title: string) => void }) => {
 				if (title.trim()) onCreate(title.trim());
 			}}
 		>
-			<Folder seed={title} sheets={0} />
+			<Folder sheets={0} />
 			<div className="-mr-4 border-b border-slate-200 sm:-mr-8 dark:border-slate-800" />
 			<input
 				aria-label="Project title"
