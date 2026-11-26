@@ -1,6 +1,7 @@
 import { Menu } from "@base-ui/react/menu";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { type ReactNode, useEffect, useState } from "react";
+import { SeededArt } from "#/components/SeededArt";
 import {
 	createProject,
 	listProjects,
@@ -422,11 +423,14 @@ type Project = NonNullable<Awaited<ReturnType<typeof listProjects>>>[number];
 /** A paper folder; its writings show as sheets tucked inside. */
 const Folder = ({
 	sheets,
+	seed,
 	className = "",
 	dashed = false,
 	children,
 }: {
 	sheets: number;
+	/** Covers the front with art drawn from this, usually the project title. */
+	seed?: string;
 	className?: string;
 	dashed?: boolean;
 	children?: ReactNode;
@@ -468,7 +472,9 @@ const Folder = ({
 						}}
 					/>
 				))}
-				<div className="absolute inset-x-0 bottom-0 h-[72%] rounded-b-[2px] bg-[#dbe3ee] shadow-[0_-1px_0_rgba(15,23,42,0.08)] dark:bg-[#2a2f37]" />
+				<div className="absolute inset-x-0 bottom-0 h-[72%] overflow-hidden rounded-b-[2px] bg-[#dbe3ee] shadow-[0_-1px_0_rgba(15,23,42,0.08)] dark:bg-[#2a2f37]">
+					{seed === undefined ? null : <SeededArt seed={seed} />}
+				</div>
 			</>
 		)}
 		{children}
@@ -491,7 +497,7 @@ const ProjectFolder = ({
 				params={params}
 				to="/projects/$projectId"
 			>
-				<Folder sheets={books.length} />
+				<Folder seed={project.title} sheets={books.length} />
 			</Link>
 			<div className="-mr-4 border-b border-slate-200 sm:-mr-8 dark:border-slate-800" />
 			<Link
@@ -557,7 +563,7 @@ const NewFolder = ({ onCreate }: { onCreate: (title: string) => void }) => {
 				if (title.trim()) onCreate(title.trim());
 			}}
 		>
-			<Folder sheets={0} />
+			<Folder seed={title} sheets={0} />
 			<div className="-mr-4 border-b border-slate-200 sm:-mr-8 dark:border-slate-800" />
 			<input
 				aria-label="Project title"
@@ -586,12 +592,6 @@ const NewFolder = ({ onCreate }: { onCreate: (title: string) => void }) => {
 
 const paper =
 	"bg-white shadow-[0_1px_2px_rgba(0,0,0,0.08),0_6px_16px_rgba(0,0,0,0.06)]";
-
-const TitlePage = ({ title }: { title: string }) => (
-	<p className="font-book mt-[28%] text-center text-[9px] leading-snug text-stone-800 dark:text-stone-200">
-		{title}
-	</p>
-);
 
 const WritingSheet = ({
 	writing,
@@ -622,31 +622,7 @@ const WritingSheet = ({
 						className={`${paper} transition-shadow group-hover:shadow-[0_2px_4px_rgba(0,0,0,0.08),0_14px_28px_rgba(0,0,0,0.10)]`}
 						pageSize={pageSize}
 					>
-						{writing.preview.length ? (
-							<div
-								aria-hidden="true"
-								className="font-book text-[5.5px] leading-[1.55] text-stone-600 dark:text-stone-400"
-							>
-								{writing.preview.map((block, index) =>
-									block.kind === "heading" ? (
-										<p
-											className="mb-[0.6em] text-[7px] font-semibold text-stone-900 dark:text-stone-100"
-											// biome-ignore lint/suspicious/noArrayIndexKey: preview blocks never reorder.
-											key={index}
-										>
-											{block.text}
-										</p>
-									) : (
-										// biome-ignore lint/suspicious/noArrayIndexKey: preview blocks never reorder.
-										<p className="mb-[0.75em]" key={index}>
-											{block.text}
-										</p>
-									),
-								)}
-							</div>
-						) : (
-							<TitlePage title={writing.title} />
-						)}
+						<SeededArt seed={writing.title} />
 					</Sheet>
 				</Link>
 			</Shelf>
@@ -808,13 +784,7 @@ const NewSheet = ({ onCreate }: { onCreate: (title: string) => void }) => {
 		>
 			<Shelf>
 				<Sheet className={paper} pageSize="trade">
-					{title.trim() ? (
-						<TitlePage title={title} />
-					) : (
-						<p className="font-book mt-[28%] text-center text-[9px] text-stone-300">
-							Untitled
-						</p>
-					)}
+					<SeededArt seed={title} />
 				</Sheet>
 			</Shelf>
 			<input
