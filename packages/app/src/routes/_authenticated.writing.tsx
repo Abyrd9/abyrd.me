@@ -1,6 +1,6 @@
 import { Menu } from "@base-ui/react/menu";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import {
 	createProject,
 	listProjects,
@@ -53,6 +53,9 @@ const SHELF_HEIGHT = Math.max(
 	...Object.values(pageSizes).map((size) => size.height * SHELF_PX_PER_INCH),
 );
 
+const focusProjectTitle = (element: HTMLInputElement | null) =>
+	element?.focus();
+
 function WritingShelf() {
 	const navigate = useNavigate();
 	const [writings, setWritings] = useState<Writing[] | null>(null);
@@ -63,12 +66,13 @@ function WritingShelf() {
 		Awaited<ReturnType<typeof listWritingTrash>>
 	>([]);
 	const [busy, setBusy] = useState(false);
-	const [projects, setProjects] = useState<
-		Awaited<ReturnType<typeof listProjects>>
-	>([]);
-	const [projectQuery, setProjectQuery] = useState("");
+	const [projects, setProjects] = useState<Awaited<
+		ReturnType<typeof listProjects>
+	> | null>(null);
 	const [projectTitle, setProjectTitle] = useState("");
+	const [showProjectForm, setShowProjectForm] = useState(false);
 	const [creatingProject, setCreatingProject] = useState(false);
+	const newProjectButton = useRef<HTMLButtonElement>(null);
 
 	useEffect(() => {
 		void listProjects()
@@ -87,6 +91,9 @@ function WritingShelf() {
 	}, []);
 
 	const search = query.trim().toLowerCase();
+	const visibleProjects = projects?.filter((project) =>
+		project.title.toLowerCase().includes(search),
+	);
 	const visible = (writings ?? [])
 		.filter((writing) => writing.title.toLowerCase().includes(search))
 		.sort(sorts[sort].compare);
@@ -107,6 +114,12 @@ function WritingShelf() {
 		} catch {
 			setMessage("Could not create that writing. Please try again.");
 		}
+	}
+
+	function closeProjectForm() {
+		setShowProjectForm(false);
+		setProjectTitle("");
+		newProjectButton.current?.focus();
 	}
 
 	async function rename(writing: Writing, title: string) {
@@ -177,9 +190,9 @@ function WritingShelf() {
 						</p>
 					) : null}
 				</div>
-				{writings?.length ? (
-					<div className="flex items-center gap-4 text-sm">
-						<label className="flex items-center gap-2 border-b border-slate-300 pb-1 text-slate-500 focus-within:border-slate-700">
+				{writings?.length || projects?.length ? (
+					<div className="flex flex-wrap items-center gap-4 text-sm">
+						<label className="flex min-w-0 items-center gap-2 border-b border-slate-300 pb-1 text-slate-500 focus-within:border-slate-700">
 							<svg
 								aria-hidden="true"
 								fill="none"
@@ -193,122 +206,147 @@ function WritingShelf() {
 								<circle cx="11" cy="11" r="7" />
 								<path d="m20 20-3.5-3.5" />
 							</svg>
-							<span className="sr-only">Search by title</span>
+							<span className="sr-only">
+								Search writing and projects by title
+							</span>
 							<input
-								className="w-40 bg-transparent text-slate-950 outline-none placeholder:text-slate-400"
+								className="w-36 min-w-0 bg-transparent text-slate-950 outline-none placeholder:text-slate-500 sm:w-40"
 								onChange={(event) => setQuery(event.target.value)}
 								placeholder="Search"
 								value={query}
 							/>
 						</label>
-						<label className="flex items-center gap-1 text-slate-500">
-							<span className="sr-only">Sort by</span>
-							<select
-								className="cursor-pointer bg-transparent py-1 text-slate-700 outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
-								onChange={(event) => {
-									const next = event.target.value;
-									if (next in sorts) setSort(next as SortId);
-								}}
-								value={sort}
-							>
-								{Object.entries(sorts).map(([id, { label }]) => (
-									<option key={id} value={id}>
-										{label}
-									</option>
-								))}
-							</select>
-						</label>
+						{writings?.length ? (
+							<label className="flex items-center gap-1 text-slate-500">
+								<span className="sr-only">Sort writing by</span>
+								<select
+									className="cursor-pointer bg-transparent py-1 text-slate-700 outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+									onChange={(event) => {
+										const next = event.target.value;
+										if (next in sorts) setSort(next as SortId);
+									}}
+									value={sort}
+								>
+									{Object.entries(sorts).map(([id, { label }]) => (
+										<option key={id} value={id}>
+											{label}
+										</option>
+									))}
+								</select>
+							</label>
+						) : null}
 					</div>
 				) : null}
 			</header>
 
 			<section
 				aria-label="Projects"
-				className="mt-8 border-y border-stone-200 py-5 dark:border-stone-800"
+				className="mt-8 border-t border-slate-200 pt-3 dark:border-slate-800"
 			>
-				<div className="flex flex-wrap items-center justify-between gap-3">
-					<h2 className="font-book text-2xl text-stone-950 dark:text-stone-100">
-						Projects
-					</h2>
-					<label>
-						<span className="sr-only">Find projects</span>
-						<input
-							className="border-b border-stone-300 bg-transparent py-1 text-sm outline-none focus:border-stone-700 placeholder:text-stone-500 dark:border-stone-700 dark:text-stone-100 dark:placeholder:text-stone-400 dark:focus:border-stone-400"
-							placeholder="Find projects"
-							value={projectQuery}
-							onChange={(event) => setProjectQuery(event.target.value)}
-						/>
-					</label>
+				<div className="flex flex-wrap items-center justify-between gap-x-3">
+					<h2 className="font-book text-xl text-slate-950">Projects</h2>
+					<button
+						aria-expanded={showProjectForm}
+						className="inline-flex min-h-11 items-center gap-1.5 rounded-sm text-sm text-slate-700 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-slate-500"
+						disabled={creatingProject}
+						onClick={() => {
+							if (showProjectForm) closeProjectForm();
+							else setShowProjectForm(true);
+						}}
+						ref={newProjectButton}
+						type="button"
+					>
+						<span aria-hidden="true" className="text-base">
+							+
+						</span>{" "}
+						New project
+					</button>
 				</div>
-				<p className="mt-2 text-sm text-stone-600 dark:text-stone-400">
-					A shared wiki for books in the same world or series.
-				</p>
-				<ul className="mt-4 flex flex-wrap gap-x-6 gap-y-3">
-					{projects
-						.filter((project) =>
-							project.title
-								.toLowerCase()
-								.includes(projectQuery.trim().toLowerCase()),
-						)
-						.map((project) => (
-							<li key={project.id}>
+				{projects?.length === 0 && !showProjectForm ? (
+					<p className="text-sm text-slate-600">
+						Keep shared notes here before or between books.
+					</p>
+				) : search && projects?.length && !visibleProjects?.length ? (
+					<p className="text-sm text-slate-600">No projects match.</p>
+				) : null}
+				{showProjectForm ? (
+					<form
+						className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2"
+						onKeyDown={(event) => {
+							if (event.key === "Escape" && !creatingProject)
+								closeProjectForm();
+						}}
+						onSubmit={async (event) => {
+							event.preventDefault();
+							if (!projectTitle.trim() || creatingProject) return;
+							setMessage(null);
+							setCreatingProject(true);
+							try {
+								const project = await createProject({
+									data: { title: projectTitle },
+								});
+								setProjects((current) => [...(current ?? []), project]);
+								await navigate({
+									to: "/projects/$projectId",
+									params: { projectId: String(project.id) },
+								});
+							} catch {
+								setMessage("Could not create the project. Try again.");
+							} finally {
+								setCreatingProject(false);
+							}
+						}}
+					>
+						<input
+							aria-label="New project title"
+							disabled={creatingProject}
+							maxLength={300}
+							value={projectTitle}
+							onChange={(event) => setProjectTitle(event.target.value)}
+							placeholder="New project title"
+							className="min-h-11 w-full max-w-64 border-b border-slate-300 bg-transparent text-sm text-slate-950 outline-none focus:border-slate-700 placeholder:text-slate-500"
+							ref={focusProjectTitle}
+						/>
+						<button
+							type="submit"
+							disabled={creatingProject || !projectTitle.trim()}
+							className="min-h-11 rounded-sm text-sm font-medium text-slate-950 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-500 disabled:opacity-50"
+						>
+							{creatingProject ? "Creating…" : "Create project"}
+						</button>
+						<button
+							className="min-h-11 rounded-sm text-sm text-slate-600 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-500"
+							disabled={creatingProject}
+							onClick={closeProjectForm}
+							type="button"
+						>
+							Cancel
+						</button>
+					</form>
+				) : null}
+				{visibleProjects?.length ? (
+					<ul className="mt-3 grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-[repeat(auto-fill,minmax(12rem,1fr))]">
+						{visibleProjects.map((project) => (
+							<li className="min-w-0" key={project.id}>
 								<Link
-									className="font-book text-stone-900 hover:underline dark:text-stone-100"
-									to="/projects/$projectId"
+									className={`${paper} relative flex min-h-12 items-center justify-between gap-3 rounded-sm px-4 py-3 text-slate-950 before:absolute before:bottom-full before:left-0 before:h-1.5 before:w-14 before:rounded-t-sm before:bg-slate-100 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-slate-500 dark:bg-slate-900 dark:text-slate-100 dark:before:bg-slate-800`}
 									params={{ projectId: String(project.id) }}
+									to="/projects/$projectId"
 								>
-									{project.title}
+									<span className="font-book min-w-0 [overflow-wrap:anywhere]">
+										{project.title}
+									</span>
+									<span
+										aria-hidden="true"
+										className="shrink-0 text-slate-500 dark:text-slate-400"
+									>
+										→
+									</span>
 								</Link>
 							</li>
 						))}
-				</ul>
-				{projectQuery &&
-				!projects.some((project) =>
-					project.title
-						.toLowerCase()
-						.includes(projectQuery.trim().toLowerCase()),
-				) ? (
-					<p className="mt-3 text-sm text-stone-600 dark:text-stone-400">
-						No projects match.
-					</p>
+					</ul>
 				) : null}
-				<form
-					className="mt-4 flex flex-wrap items-center gap-3"
-					onSubmit={async (event) => {
-						event.preventDefault();
-						if (!projectTitle.trim() || creatingProject) return;
-						setCreatingProject(true);
-						try {
-							const project = await createProject({
-								data: { title: projectTitle },
-							});
-							await navigate({
-								to: "/projects/$projectId",
-								params: { projectId: String(project.id) },
-							});
-						} catch {
-							setMessage("Could not create the project. Try again.");
-						} finally {
-							setCreatingProject(false);
-						}
-					}}
-				>
-					<input
-						aria-label="New project title"
-						maxLength={300}
-						value={projectTitle}
-						onChange={(event) => setProjectTitle(event.target.value)}
-						placeholder="New project title"
-						className="border-b border-stone-300 bg-transparent py-1 text-sm outline-none focus:border-stone-700 placeholder:text-stone-500 dark:border-stone-700 dark:text-stone-100 dark:placeholder:text-stone-400 dark:focus:border-stone-400"
-					/>
-					<button
-						type="submit"
-						disabled={creatingProject || !projectTitle.trim()}
-						className="text-sm text-stone-800 hover:underline disabled:opacity-50 dark:text-stone-200"
-					>
-						{creatingProject ? "Creating…" : "Create project"}
-					</button>
-				</form>
 			</section>
 
 			{message ? (
@@ -320,7 +358,7 @@ function WritingShelf() {
 				</p>
 			) : null}
 
-			{writings ? (
+			{writings && (!search || visible.length > 0) ? (
 				<ul className="mt-10 grid grid-cols-[repeat(auto-fill,minmax(9.5rem,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(14.5rem,1fr))] gap-y-12">
 					{search ? null : (
 						<li>
@@ -337,11 +375,11 @@ function WritingShelf() {
 						</li>
 					))}
 				</ul>
-			) : message ? null : (
+			) : writings || message ? null : (
 				<p className="mt-12 text-sm text-slate-500">Loading…</p>
 			)}
 
-			{writings?.length === 0 ? (
+			{writings?.length === 0 && !search ? (
 				<p className="mt-8 max-w-sm text-sm leading-6 text-slate-500">
 					Your shelf is empty. Give the blank page a title to start your first
 					book, essay, or post.
