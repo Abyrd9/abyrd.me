@@ -1,6 +1,6 @@
 import { Menu } from "@base-ui/react/menu";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import {
 	createProject,
 	listProjects,
@@ -53,9 +53,6 @@ const SHELF_HEIGHT = Math.max(
 	...Object.values(pageSizes).map((size) => size.height * SHELF_PX_PER_INCH),
 );
 
-const focusProjectTitle = (element: HTMLInputElement | null) =>
-	element?.focus();
-
 function WritingShelf() {
 	const navigate = useNavigate();
 	const [writings, setWritings] = useState<Writing[] | null>(null);
@@ -69,10 +66,6 @@ function WritingShelf() {
 	const [projects, setProjects] = useState<Awaited<
 		ReturnType<typeof listProjects>
 	> | null>(null);
-	const [projectTitle, setProjectTitle] = useState("");
-	const [showProjectForm, setShowProjectForm] = useState(false);
-	const [creatingProject, setCreatingProject] = useState(false);
-	const newProjectButton = useRef<HTMLButtonElement>(null);
 
 	useEffect(() => {
 		void listProjects()
@@ -116,10 +109,17 @@ function WritingShelf() {
 		}
 	}
 
-	function closeProjectForm() {
-		setShowProjectForm(false);
-		setProjectTitle("");
-		newProjectButton.current?.focus();
+	async function createNewProject(title: string) {
+		setMessage(null);
+		try {
+			const project = await createProject({ data: { title } });
+			await navigate({
+				to: "/projects/$projectId",
+				params: { projectId: String(project.id) },
+			});
+		} catch {
+			setMessage("Could not create the project. Please try again.");
+		}
 	}
 
 	async function rename(writing: Writing, title: string) {
@@ -239,115 +239,37 @@ function WritingShelf() {
 				) : null}
 			</header>
 
-			<section
-				aria-label="Projects"
-				className="mt-8 border-t border-slate-200 pt-3 dark:border-slate-800"
-			>
-				<div className="flex flex-wrap items-center justify-between gap-x-3">
-					<h2 className="font-book text-xl text-slate-950">Projects</h2>
-					<button
-						aria-expanded={showProjectForm}
-						className="inline-flex min-h-11 items-center gap-1.5 rounded-sm text-sm text-slate-700 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-slate-500"
-						disabled={creatingProject}
-						onClick={() => {
-							if (showProjectForm) closeProjectForm();
-							else setShowProjectForm(true);
-						}}
-						ref={newProjectButton}
-						type="button"
-					>
-						<span aria-hidden="true" className="text-base">
-							+
-						</span>{" "}
-						New project
-					</button>
-				</div>
-				{projects?.length === 0 && !showProjectForm ? (
-					<p className="text-sm text-slate-600">
-						Keep shared notes here before or between books.
-					</p>
-				) : search && projects?.length && !visibleProjects?.length ? (
-					<p className="text-sm text-slate-600">No projects match.</p>
-				) : null}
-				{showProjectForm ? (
-					<form
-						className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2"
-						onKeyDown={(event) => {
-							if (event.key === "Escape" && !creatingProject)
-								closeProjectForm();
-						}}
-						onSubmit={async (event) => {
-							event.preventDefault();
-							if (!projectTitle.trim() || creatingProject) return;
-							setMessage(null);
-							setCreatingProject(true);
-							try {
-								const project = await createProject({
-									data: { title: projectTitle },
-								});
-								setProjects((current) => [...(current ?? []), project]);
-								await navigate({
-									to: "/projects/$projectId",
-									params: { projectId: String(project.id) },
-								});
-							} catch {
-								setMessage("Could not create the project. Try again.");
-							} finally {
-								setCreatingProject(false);
-							}
-						}}
-					>
-						<input
-							aria-label="New project title"
-							disabled={creatingProject}
-							maxLength={300}
-							value={projectTitle}
-							onChange={(event) => setProjectTitle(event.target.value)}
-							placeholder="New project title"
-							className="min-h-11 w-full max-w-64 border-b border-slate-300 bg-transparent text-sm text-slate-950 outline-none focus:border-slate-700 placeholder:text-slate-500"
-							ref={focusProjectTitle}
-						/>
-						<button
-							type="submit"
-							disabled={creatingProject || !projectTitle.trim()}
-							className="min-h-11 rounded-sm text-sm font-medium text-slate-950 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-500 disabled:opacity-50"
-						>
-							{creatingProject ? "Creating…" : "Create project"}
-						</button>
-						<button
-							className="min-h-11 rounded-sm text-sm text-slate-600 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-500"
-							disabled={creatingProject}
-							onClick={closeProjectForm}
-							type="button"
-						>
-							Cancel
-						</button>
-					</form>
-				) : null}
-				{visibleProjects?.length ? (
-					<ul className="mt-3 grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-[repeat(auto-fill,minmax(12rem,1fr))]">
-						{visibleProjects.map((project) => (
-							<li className="min-w-0" key={project.id}>
-								<Link
-									className={`${paper} relative flex min-h-12 items-center justify-between gap-3 rounded-sm px-4 py-3 text-slate-950 before:absolute before:bottom-full before:left-0 before:h-1.5 before:w-14 before:rounded-t-sm before:bg-slate-100 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-slate-500 dark:bg-slate-900 dark:text-slate-100 dark:before:bg-slate-800`}
-									params={{ projectId: String(project.id) }}
-									to="/projects/$projectId"
-								>
-									<span className="font-book min-w-0 [overflow-wrap:anywhere]">
-										{project.title}
-									</span>
-									<span
-										aria-hidden="true"
-										className="shrink-0 text-slate-500 dark:text-slate-400"
-									>
-										→
-									</span>
-								</Link>
+			<section aria-labelledby="projects-heading" className="mt-10">
+				<h2 className="font-book text-xl text-slate-950" id="projects-heading">
+					Projects
+				</h2>
+				{projects ? (
+					<ul className={`mt-6 ${shelfGrid}`}>
+						{search ? null : (
+							<li>
+								<NewFolder onCreate={createNewProject} />
+							</li>
+						)}
+						{visibleProjects?.map((project) => (
+							<li key={project.id}>
+								<ProjectFolder
+									books={(writings ?? []).filter(
+										(writing) => writing.projectId === project.id,
+									)}
+									project={project}
+								/>
 							</li>
 						))}
 					</ul>
 				) : null}
+				{search && projects?.length && !visibleProjects?.length ? (
+					<p className="text-sm text-slate-500">
+						No project has “{query.trim()}” in its title.
+					</p>
+				) : null}
 			</section>
+
+			<h2 className="font-book mt-12 text-xl text-slate-950">Writings</h2>
 
 			{message ? (
 				<p
@@ -359,7 +281,7 @@ function WritingShelf() {
 			) : null}
 
 			{writings && (!search || visible.length > 0) ? (
-				<ul className="mt-10 grid grid-cols-[repeat(auto-fill,minmax(9.5rem,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(14.5rem,1fr))] gap-y-12">
+				<ul className={`mt-0 ${shelfGrid}`}>
 					{search ? null : (
 						<li>
 							<NewSheet onCreate={create} />
@@ -481,6 +403,184 @@ const Sheet = ({
 		>
 			{children}
 		</div>
+	);
+};
+
+/** Projects and writings share one grid, so folders line up with sheets. */
+const shelfGrid =
+	"grid grid-cols-[repeat(auto-fill,minmax(9.5rem,1fr))] gap-y-12 sm:grid-cols-[repeat(auto-fill,minmax(14.5rem,1fr))]";
+
+const FOLDER_HEIGHT = 112;
+/** Folder back with a tab on the left; the front panel covers its lower part. */
+const folderBack =
+	"polygon(0 6px, 6px 0, 38% 0, calc(38% + 12px) 12px, 100% 12px, 100% 100%, 0 100%)";
+const folderShadow =
+	"[filter:drop-shadow(0_1px_1px_rgba(0,0,0,0.08))_drop-shadow(0_6px_10px_rgba(0,0,0,0.06))]";
+
+type Project = NonNullable<Awaited<ReturnType<typeof listProjects>>>[number];
+
+/** A paper folder; its writings show as sheets tucked inside. */
+const Folder = ({
+	sheets,
+	className = "",
+	dashed = false,
+	children,
+}: {
+	sheets: number;
+	className?: string;
+	dashed?: boolean;
+	children?: ReactNode;
+}) => (
+	<div
+		className={`relative w-full max-w-[13rem] ${dashed ? "" : folderShadow} ${className}`}
+		style={{ height: FOLDER_HEIGHT }}
+	>
+		{dashed ? (
+			<svg
+				aria-hidden="true"
+				className="absolute inset-0 size-full overflow-visible"
+				preserveAspectRatio="none"
+				viewBox="0 0 208 112"
+			>
+				<path
+					d="M0.5 6.5 L6.5 0.5 H79 L91 12.5 H207.5 V111.5 H0.5 Z"
+					fill="none"
+					stroke="currentColor"
+					strokeDasharray="4 3"
+					vectorEffect="non-scaling-stroke"
+				/>
+			</svg>
+		) : (
+			<>
+				<div
+					className="absolute inset-0 bg-slate-200"
+					style={{ clipPath: folderBack }}
+				/>
+				{Array.from({ length: Math.min(sheets, 3) }, (_, index) => (
+					<div
+						className="absolute bottom-2 bg-white shadow-[0_0_0_1px_rgba(0,0,0,0.05)]"
+						// biome-ignore lint/suspicious/noArrayIndexKey: sheets are interchangeable.
+						key={index}
+						style={{
+							top: 18 - index * 4,
+							left: 10 + index * 8,
+							right: 22 - index * 6,
+						}}
+					/>
+				))}
+				<div className="absolute inset-x-0 bottom-0 h-[72%] rounded-b-[2px] bg-white shadow-[0_-1px_0_rgba(0,0,0,0.05)]" />
+			</>
+		)}
+		{children}
+	</div>
+);
+
+const ProjectFolder = ({
+	project,
+	books,
+}: {
+	project: Project;
+	books: Writing[];
+}) => {
+	const params = { projectId: String(project.id) };
+	return (
+		<article className="group pr-4 sm:pr-8">
+			<Link
+				aria-label={`Open ${project.title}`}
+				className="block max-w-[13rem] rounded-[2px] transition-transform duration-200 hover:-translate-y-1 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-slate-500 motion-reduce:transition-none"
+				params={params}
+				to="/projects/$projectId"
+			>
+				<Folder sheets={books.length} />
+			</Link>
+			<div className="-mr-4 border-b border-slate-200 sm:-mr-8 dark:border-slate-800" />
+			<Link
+				className="font-book mt-4 line-clamp-2 text-[15px] leading-snug text-slate-950 hover:underline"
+				params={params}
+				to="/projects/$projectId"
+			>
+				{project.title}
+			</Link>
+			<p className="mt-1 truncate text-xs text-slate-500 tabular-nums">
+				{books.length
+					? `${books.length} ${books.length === 1 ? "writing" : "writings"} · ${books.map((book) => book.title).join(", ")}`
+					: "Wiki only, no writings yet"}
+			</p>
+		</article>
+	);
+};
+
+const NewFolder = ({ onCreate }: { onCreate: (title: string) => void }) => {
+	const [naming, setNaming] = useState(false);
+	const [title, setTitle] = useState("");
+	if (!naming)
+		return (
+			<button
+				className="group block w-full pr-4 text-left focus-visible:outline-none sm:pr-8"
+				onClick={() => setNaming(true)}
+				type="button"
+			>
+				<Folder
+					className="grid place-items-center text-slate-300 transition-colors group-hover:text-slate-500 group-focus-visible:text-slate-700"
+					dashed
+					sheets={0}
+				>
+					<svg
+						aria-hidden="true"
+						className="relative mt-3 text-slate-400 group-hover:text-slate-700"
+						fill="none"
+						height="22"
+						stroke="currentColor"
+						strokeLinecap="round"
+						strokeWidth="1.5"
+						viewBox="0 0 24 24"
+						width="22"
+					>
+						<path d="M12 5v14M5 12h14" />
+					</svg>
+				</Folder>
+				<span className="-mr-4 block border-b border-slate-200 sm:-mr-8 dark:border-slate-800" />
+				<span className="font-book mt-4 block text-[15px] text-slate-600 group-hover:text-slate-950">
+					New project
+				</span>
+				<span className="mt-1 block text-xs text-slate-400">
+					A shared wiki for a world or series
+				</span>
+			</button>
+		);
+
+	return (
+		<form
+			className="pr-4 sm:pr-8"
+			onSubmit={(event) => {
+				event.preventDefault();
+				if (title.trim()) onCreate(title.trim());
+			}}
+		>
+			<Folder sheets={0} />
+			<div className="-mr-4 border-b border-slate-200 sm:-mr-8 dark:border-slate-800" />
+			<input
+				aria-label="Project title"
+				className="font-book mt-4 w-full border-b border-slate-400 bg-transparent text-[15px] text-slate-950 outline-none placeholder:text-slate-400"
+				maxLength={300}
+				onBlur={() => {
+					if (!title.trim()) setNaming(false);
+				}}
+				onChange={(event) => setTitle(event.target.value)}
+				onKeyDown={(event) => {
+					if (event.key === "Escape") {
+						setTitle("");
+						setNaming(false);
+					}
+				}}
+				placeholder="Title"
+				ref={(element) => element?.focus()}
+				value={title}
+			/>
+			<p className="mt-1 text-xs text-slate-400">
+				Press Enter to open its wiki
+			</p>
+		</form>
 	);
 };
 
