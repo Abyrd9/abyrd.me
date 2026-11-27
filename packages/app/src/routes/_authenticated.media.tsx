@@ -45,8 +45,8 @@ const identityFacts = [
 	},
 	{
 		label: "Handle",
-		value: "@rook_",
-		note: "X, Instagram, Threads & Substack Notes handle",
+		value: "@ThoughtlessRook",
+		note: "One handle everywhere; Instagram & Threads render it lowercase",
 	},
 	{
 		label: "Press & Inbox",
@@ -76,7 +76,7 @@ const bioLengths = [
 			"Podcast show notes, anthology contributors page, and directory listings",
 		status: "Placeholder draft",
 		chars: "42 words",
-		text: "Rook writes essays and short pieces on software, books, and the quiet corners of the internet. New work goes out by newsletter and lives under a single byline. Reach the desk directly at rook@abyrd.me or follow @rook_.",
+		text: "Rook writes essays and short pieces on software, books, and the quiet corners of the internet. New work goes out by newsletter and lives under a single byline. Reach the desk directly at rook@abyrd.me or follow @ThoughtlessRook.",
 	},
 	{
 		id: "long",
@@ -215,7 +215,9 @@ function MediaDossierPage() {
 									<div className="min-w-0 flex-1">
 										<div className="flex items-center gap-1.5 text-sm">
 											<span className="font-semibold text-slate-950">Rook</span>
-											<span className="text-slate-500">@rook_ · 2m</span>
+											<span className="text-slate-500">
+												@ThoughtlessRook · 2m
+											</span>
 										</div>
 										<p className="mt-1 text-sm leading-5 text-slate-700">
 											Testing the 40 px circular crop in a feed reply. The pale
@@ -434,7 +436,7 @@ function MediaDossierPage() {
 											X / Twitter
 										</span>
 										<h3 className="mt-0.5 text-lg font-semibold text-slate-950">
-											@rook_
+											@ThoughtlessRook
 										</h3>
 									</div>
 									<span className="rounded-full bg-slate-100 px-2.5 py-1 font-mono text-xs text-slate-600">
@@ -464,12 +466,14 @@ function MediaDossierPage() {
 												width={64}
 											/>
 											<span className="rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-700">
-												Follow @rook_
+												Follow @ThoughtlessRook
 											</span>
 										</div>
 										<div className="mt-2.5">
 											<p className="font-semibold text-slate-950">Rook</p>
-											<p className="font-mono text-xs text-slate-500">@rook_</p>
+											<p className="font-mono text-xs text-slate-500">
+												@ThoughtlessRook
+											</p>
 											<p className="mt-2 text-sm text-slate-700">
 												Essays, notes, and small strange things. Signed, Rook.
 											</p>
@@ -513,7 +517,10 @@ function MediaDossierPage() {
 							</div>
 
 							<div className="mt-4 flex flex-wrap gap-2 pt-2">
-								<CopyButton label="Copy @rook_" text="@rook_" />
+								<CopyButton
+									label="Copy @ThoughtlessRook"
+									text="@ThoughtlessRook"
+								/>
 								<CopyButton
 									label="Copy X bio"
 									text="Essays, notes, and small strange things. Signed, Rook."
@@ -531,7 +538,7 @@ function MediaDossierPage() {
 											Instagram
 										</span>
 										<h3 className="mt-0.5 text-lg font-semibold text-slate-950">
-											@rook_
+											@thoughtlessrook
 										</h3>
 									</div>
 									<span className="rounded-full bg-slate-100 px-2.5 py-1 font-mono text-xs text-slate-600">
@@ -551,7 +558,7 @@ function MediaDossierPage() {
 										<div className="min-w-0">
 											<div className="flex flex-wrap items-center gap-2">
 												<span className="font-mono text-sm font-semibold text-slate-950">
-													rook_
+													thoughtlessrook
 												</span>
 												<span className="rounded bg-white px-2 py-0.5 text-[11px] font-medium text-slate-600">
 													Writer
@@ -650,7 +657,7 @@ function MediaDossierPage() {
 											Threads
 										</span>
 										<h3 className="mt-0.5 text-lg font-semibold text-slate-950">
-											@rook_
+											@thoughtlessrook
 										</h3>
 									</div>
 									<span className="rounded-full bg-slate-100 px-2.5 py-1 font-mono text-xs text-slate-600">
@@ -666,7 +673,7 @@ function MediaDossierPage() {
 											</p>
 											<div className="mt-0.5 flex items-center gap-1.5">
 												<span className="font-mono text-xs text-slate-600">
-													rook_
+													thoughtlessrook
 												</span>
 												<span className="rounded-full bg-white px-2 py-0.5 font-mono text-[10px] text-slate-500">
 													threads.net
@@ -745,7 +752,10 @@ function MediaDossierPage() {
 							</div>
 
 							<div className="mt-4 flex flex-wrap gap-2 pt-2">
-								<CopyButton label="Copy @rook_" text="@rook_" />
+								<CopyButton
+									label="Copy @thoughtlessrook"
+									text="@thoughtlessrook"
+								/>
 								<CopyButton
 									label="Copy Threads bio"
 									text="Essays, notes, and small strange things. Signed, Rook."
@@ -763,7 +773,7 @@ function MediaDossierPage() {
 											Substack & Notes
 										</span>
 										<h3 className="mt-0.5 text-lg font-semibold text-slate-950">
-											By Rook · @rook_
+											By Rook · @thoughtlessrook
 										</h3>
 									</div>
 									<span className="rounded-full bg-slate-100 px-2.5 py-1 font-mono text-xs text-slate-600">
