@@ -349,6 +349,7 @@ html.dark .writing-inline-code {
 
 .writing-link {
 	color: inherit;
+	cursor: pointer;
 	text-decoration: underline;
 	text-decoration-color: #a8a29e;
 	text-underline-offset: 0.18em;
