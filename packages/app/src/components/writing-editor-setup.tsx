@@ -1,8 +1,8 @@
 // What the chapter and note editors share: the same blocks, look, and tools.
 // Only their layout differs.
 import { CodeHighlightNode, CodeNode } from "@lexical/code-core";
-import { defineExtension } from "@lexical/extension";
-import { LinkNode } from "@lexical/link";
+import { configExtension, defineExtension } from "@lexical/extension";
+import { ClickableLinkExtension, LinkNode } from "@lexical/link";
 import { ListItemNode, ListNode } from "@lexical/list";
 import { AutoFocusPlugin } from "@lexical/react/LexicalAutoFocusPlugin";
 import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
@@ -87,6 +87,9 @@ export const createWritingExtension = (
 			},
 		},
 		register: registerVerseLines,
+		// Links in saved text are references to read, so open them on a click.
+		// Lexical's default keeps the click in the editor for editing instead.
+		dependencies: [configExtension(ClickableLinkExtension, { newTab: true })],
 		$initialEditorState: initialContent,
 	});
 
