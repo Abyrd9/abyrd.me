@@ -9,6 +9,7 @@ import {
 	getProject as readProject,
 	listProjectNotes as readProjectNotes,
 	listProjects as readProjects,
+	deleteProject as removeProject,
 	shareProjectNote as shareNote,
 } from "./writing-projects";
 
@@ -76,3 +77,7 @@ export const shareProjectNote = createServerFn({ method: "POST" })
 	.handler(({ data }) =>
 		runSignedIn((db) => shareNote(db, data.noteId, data.includeSubnotes)),
 	);
+
+export const deleteProject = createServerFn({ method: "POST" })
+	.validator((input: unknown) => z.object({ id }).parse(input))
+	.handler(({ data }) => runSignedIn((db) => removeProject(db, data.id)));

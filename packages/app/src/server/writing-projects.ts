@@ -1,4 +1,4 @@
-import { asc, desc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, isNotNull, isNull, sql } from "drizzle-orm";
 import { projects, writingNotes, writings } from "./database/schema";
 import type { AppDatabaseClient } from "./database/service";
 import { rootBlocks, textOf } from "./lexical-json";
@@ -46,6 +46,47 @@ export function getProject(db: AppDatabaseClient, id: number) {
 			.orderBy(asc(writings.title))
 			.all(),
 	};
+}
+
+/**
+ * Deletes a project. Its writings stay on the shelf, detached. Notes shared
+ * from a writing stay with that writing as its own notes. Notes that live
+ * only in the wiki are deleted for good, with everything beneath them.
+ */
+export function deleteProject(db: AppDatabaseClient, id: number) {
+	return db.transaction((tx) => {
+		const project = tx
+			.select({ id: projects.id })
+			.from(projects)
+			.where(eq(projects.id, id))
+			.get();
+		if (!project) return null;
+		const kept = tx
+			.update(writingNotes)
+			.set({ projectId: null })
+			.where(
+				and(eq(writingNotes.projectId, id), isNotNull(writingNotes.writingId)),
+			)
+			.returning({ id: writingNotes.id })
+			.all().length;
+		const wikiOnly = and(
+			eq(writingNotes.projectId, id),
+			isNull(writingNotes.writingId),
+		);
+		// Counted first: deleting a parent also removes its children by cascade.
+		const deleted = tx
+			.select({ id: writingNotes.id })
+			.from(writingNotes)
+			.where(wikiOnly)
+			.all().length;
+		tx.delete(writingNotes).where(wikiOnly).run();
+		tx.update(writings)
+			.set({ projectId: null })
+			.where(eq(writings.projectId, id))
+			.run();
+		tx.delete(projects).where(eq(projects.id, id)).run();
+		return { keptNotes: kept, deletedNotes: deleted };
+	});
 }
 
 export function setWritingProject(

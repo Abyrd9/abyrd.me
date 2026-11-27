@@ -1,9 +1,11 @@
 import { Combobox } from "@base-ui/react/combobox";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useId, useState } from "react";
 import { ProjectNotes } from "#/components/ProjectNotes";
 import {
+	deleteProject,
 	getProject,
+	listProjectNotes,
 	listProjects,
 	renameProject,
 	setWritingProject,
@@ -126,6 +128,7 @@ const ProjectPage = () => {
 					<p className="mt-3 text-xs leading-5 text-stone-600 dark:text-stone-400">
 						Detaching keeps the project's wiki and the book's local notes.
 					</p>
+					<DeleteProject projectId={project.id} title={project.title} />
 				</aside>
 				<div className="min-h-[60vh] min-w-0 flex-1">
 					<ProjectNotes key={project.id} projectId={project.id} />
@@ -197,7 +200,7 @@ const BookPicker = ({
 					/>
 					<Combobox.Trigger
 						aria-label="Show writings"
-						className="grid size-8 shrink-0 place-items-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+						className="grid size-8 shrink-0 place-items-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-[#262626] dark:hover:text-slate-100"
 					>
 						<svg
 							aria-hidden="true"
@@ -230,13 +233,13 @@ const BookPicker = ({
 						<Combobox.List className="max-h-[min(20rem,var(--available-height))] overflow-y-auto overscroll-contain outline-none">
 							{(writing: Writing) => (
 								<Combobox.Item
-									className="flex cursor-default items-center gap-3 rounded-md px-2.5 py-2 text-slate-700 outline-none select-none data-[highlighted]:bg-slate-100 data-[highlighted]:text-slate-950"
+									className="flex cursor-default items-center gap-3 rounded-md px-2.5 py-2 text-slate-700 outline-none select-none data-[highlighted]:bg-slate-100 data-[highlighted]:text-slate-950 dark:text-slate-300 dark:data-[highlighted]:bg-[#262626] dark:data-[highlighted]:text-slate-100"
 									key={writing.id}
 									value={writing}
 								>
 									<span
 										aria-hidden="true"
-										className="h-6 w-[18px] shrink-0 rounded-[1px] bg-white shadow-[0_0_0_1px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.08)]"
+										className="h-6 w-[18px] shrink-0 rounded-[1px] bg-[#fff] shadow-[0_0_0_1px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.08)] dark:bg-[#525252]"
 									/>
 									<span className="min-w-0 flex-1">
 										<span className="font-book block truncate text-[15px]">
@@ -255,5 +258,96 @@ const BookPicker = ({
 				</Combobox.Positioner>
 			</Combobox.Portal>
 		</Combobox.Root>
+	);
+};
+
+/**
+ * Deletes the project after an inline confirmation that says what happens to
+ * its books and notes.
+ */
+const DeleteProject = ({
+	projectId,
+	title,
+}: {
+	projectId: number;
+	title: string;
+}) => {
+	const navigate = useNavigate();
+	// null until asked; then how many notes exist only in the wiki.
+	const [wikiOnly, setWikiOnly] = useState<number | null>(null);
+	const [busy, setBusy] = useState(false);
+	const [failed, setFailed] = useState(false);
+
+	const ask = async () => {
+		setBusy(true);
+		setFailed(false);
+		try {
+			const notes = await listProjectNotes({ data: { projectId } });
+			setWikiOnly(notes.filter((note) => note.writingId === null).length);
+		} catch {
+			setFailed(true);
+		} finally {
+			setBusy(false);
+		}
+	};
+
+	const remove = async () => {
+		setBusy(true);
+		setFailed(false);
+		try {
+			await deleteProject({ data: { id: projectId } });
+			await navigate({ to: "/writing" });
+		} catch {
+			setFailed(true);
+			setBusy(false);
+		}
+	};
+
+	return (
+		<div className="mt-10 border-t border-slate-200 pt-4 text-xs text-slate-600 dark:border-slate-800 dark:text-slate-400">
+			{wikiOnly === null ? (
+				<button
+					className="text-red-700 hover:underline disabled:opacity-50 dark:text-red-400"
+					disabled={busy}
+					onClick={() => void ask()}
+					type="button"
+				>
+					Delete project…
+				</button>
+			) : (
+				<div role="alert">
+					<p className="leading-5">
+						Delete “{title}”? Its books stay on your shelf, and notes shared
+						from a book stay with that book.{" "}
+						{wikiOnly
+							? `${wikiOnly} ${wikiOnly === 1 ? "note that lives" : "notes that live"} only in the wiki will be deleted for good.`
+							: "No wiki notes will be lost."}
+					</p>
+					<div className="mt-2 flex gap-4">
+						<button
+							className="font-medium text-red-700 hover:underline disabled:opacity-50 dark:text-red-400"
+							disabled={busy}
+							onClick={() => void remove()}
+							type="button"
+						>
+							{busy ? "Deleting…" : "Delete project"}
+						</button>
+						<button
+							className="hover:underline disabled:opacity-50"
+							disabled={busy}
+							onClick={() => setWikiOnly(null)}
+							type="button"
+						>
+							Keep it
+						</button>
+					</div>
+				</div>
+			)}
+			{failed ? (
+				<p className="mt-2 text-red-700 dark:text-red-400">
+					Could not delete the project. Please try again.
+				</p>
+			) : null}
+		</div>
 	);
 };
