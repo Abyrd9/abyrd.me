@@ -86,6 +86,13 @@ function AuthenticatedLayout() {
 							<Link
 								activeProps={{ className: "font-semibold text-slate-950" }}
 								className="text-slate-600 transition hover:text-slate-950"
+								to="/bradbury"
+							>
+								Bradbury
+							</Link>
+							<Link
+								activeProps={{ className: "font-semibold text-slate-950" }}
+								className="text-slate-600 transition hover:text-slate-950"
 								to="/media"
 							>
 								Media
