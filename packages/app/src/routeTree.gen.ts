@@ -14,6 +14,7 @@ import { Route as FocusRouteImport } from './routes/_focus'
 import { Route as HealthRouteImport } from './routes/health'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated.index'
+import { Route as AuthenticatedBradburyRouteImport } from './routes/_authenticated.bradbury'
 import { Route as AuthenticatedKindleRouteImport } from './routes/_authenticated.kindle'
 import { Route as AuthenticatedMediaRouteImport } from './routes/_authenticated.media'
 import { Route as AuthenticatedQuizRouteImport } from './routes/_authenticated.quiz'
@@ -50,6 +51,11 @@ const SignInRoute = SignInRouteImport.update({
 const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedBradburyRoute = AuthenticatedBradburyRouteImport.update({
+  id: '/bradbury',
+  path: '/bradbury',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedKindleRoute = AuthenticatedKindleRouteImport.update({
@@ -132,6 +138,7 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/health': typeof HealthRoute
   '/sign-in': typeof SignInRoute
+  '/bradbury': typeof AuthenticatedBradburyRoute
   '/kindle': typeof AuthenticatedKindleRouteWithChildren
   '/media': typeof AuthenticatedMediaRoute
   '/quiz': typeof AuthenticatedQuizRoute
@@ -151,6 +158,7 @@ export interface FileRoutesByTo {
   '/': typeof AuthenticatedIndexRoute
   '/health': typeof HealthRoute
   '/sign-in': typeof SignInRoute
+  '/bradbury': typeof AuthenticatedBradburyRoute
   '/media': typeof AuthenticatedMediaRoute
   '/quiz': typeof AuthenticatedQuizRoute
   '/quotes': typeof AuthenticatedQuotesRoute
@@ -171,6 +179,7 @@ export interface FileRoutesById {
   '/_focus': typeof FocusRouteWithChildren
   '/health': typeof HealthRoute
   '/sign-in': typeof SignInRoute
+  '/_authenticated/bradbury': typeof AuthenticatedBradburyRoute
   '/_authenticated/kindle': typeof AuthenticatedKindleRouteWithChildren
   '/_authenticated/media': typeof AuthenticatedMediaRoute
   '/_authenticated/quiz': typeof AuthenticatedQuizRoute
@@ -193,6 +202,7 @@ export interface FileRouteTypes {
     | '/'
     | '/health'
     | '/sign-in'
+    | '/bradbury'
     | '/kindle'
     | '/media'
     | '/quiz'
@@ -212,6 +222,7 @@ export interface FileRouteTypes {
     | '/'
     | '/health'
     | '/sign-in'
+    | '/bradbury'
     | '/media'
     | '/quiz'
     | '/quotes'
@@ -231,6 +242,7 @@ export interface FileRouteTypes {
     | '/_focus'
     | '/health'
     | '/sign-in'
+    | '/_authenticated/bradbury'
     | '/_authenticated/kindle'
     | '/_authenticated/media'
     | '/_authenticated/quiz'
@@ -292,6 +304,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/bradbury': {
+      id: '/_authenticated/bradbury'
+      path: '/bradbury'
+      fullPath: '/bradbury'
+      preLoaderRoute: typeof AuthenticatedBradburyRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/kindle': {
@@ -414,6 +433,7 @@ const AuthenticatedKindleRouteWithChildren =
   AuthenticatedKindleRoute._addFileChildren(AuthenticatedKindleRouteChildren)
 
 interface AuthenticatedRouteChildren {
+  AuthenticatedBradburyRoute: typeof AuthenticatedBradburyRoute
   AuthenticatedKindleRoute: typeof AuthenticatedKindleRouteWithChildren
   AuthenticatedMediaRoute: typeof AuthenticatedMediaRoute
   AuthenticatedQuizRoute: typeof AuthenticatedQuizRoute
@@ -424,6 +444,7 @@ interface AuthenticatedRouteChildren {
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedBradburyRoute: AuthenticatedBradburyRoute,
   AuthenticatedKindleRoute: AuthenticatedKindleRouteWithChildren,
   AuthenticatedMediaRoute: AuthenticatedMediaRoute,
   AuthenticatedQuizRoute: AuthenticatedQuizRoute,

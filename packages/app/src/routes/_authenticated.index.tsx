@@ -30,6 +30,11 @@ function Home() {
 					to="/writing"
 				/>
 				<AppCard
+					description="Read one short story, one essay, and one poem each day."
+					label="Bradbury Challenge"
+					to="/bradbury"
+				/>
+				<AppCard
 					description="Keep Rook’s linocut avatar, handles, ink palette, bios, and social asset placeholders in one press dossier."
 					label="Media"
 					to="/media"
@@ -51,7 +56,13 @@ function AppCard({
 }: {
 	readonly description: string;
 	readonly label: string;
-	readonly to: "/kindle" | "/media" | "/quiz" | "/quotes" | "/writing";
+	readonly to:
+		| "/bradbury"
+		| "/kindle"
+		| "/media"
+		| "/quiz"
+		| "/quotes"
+		| "/writing";
 }) {
 	return (
 		<Link
