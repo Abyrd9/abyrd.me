@@ -186,7 +186,7 @@ const poems: Reading[] = [
 	[
 		"Jabberwocky",
 		"Lewis Carroll",
-		"Through_the_Looking-Glass,_and_What_Alice_Found_There/Chapter_I#pagenumber_21",
+		"Through_the_Looking-Glass,_and_What_Alice_Found_There/Chapter_I#21",
 	],
 	[
 		"The Road Not Taken",
