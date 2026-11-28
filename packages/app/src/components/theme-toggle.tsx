@@ -77,7 +77,7 @@ export function ThemeMenuItem() {
 	return (
 		<button
 			aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
-			className="flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-stone-500 transition hover:bg-stone-200 hover:text-stone-900 dark:hover:bg-stone-800 dark:hover:text-stone-100"
+			className="flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-stone-500 transition hover:bg-stone-200 hover:text-stone-900 dark:text-stone-300 dark:hover:bg-stone-800 dark:hover:text-stone-100"
 			onClick={() => {
 				const next = theme === "dark" ? "light" : "dark";
 				applyTheme(next);

@@ -526,9 +526,9 @@ function WritingEditor() {
 	}
 
 	const arrow =
-		"inline-flex size-9 shrink-0 items-center justify-center rounded-full text-stone-500 transition hover:bg-stone-200 hover:text-stone-900 disabled:pointer-events-none disabled:opacity-25 dark:hover:bg-stone-800 dark:hover:text-stone-100";
+		"inline-flex size-9 shrink-0 items-center justify-center rounded-full text-stone-500 transition hover:bg-stone-200 hover:text-stone-900 disabled:pointer-events-none disabled:opacity-25 dark:text-stone-300 dark:hover:bg-stone-800 dark:hover:text-stone-100";
 	const quiet =
-		"rounded-md px-2 py-1 text-stone-500 transition hover:bg-stone-200 hover:text-stone-900 dark:hover:bg-stone-800 dark:hover:text-stone-100";
+		"rounded-md px-2 py-1 text-stone-500 transition hover:bg-stone-200 hover:text-stone-900 dark:text-stone-300 dark:hover:bg-stone-800 dark:hover:text-stone-100";
 
 	// The side column: tabs for notes, the dictionary, and writing guides.
 	const sideOpen = notesOpen || openNoteId !== null;
@@ -704,10 +704,10 @@ function WritingEditor() {
 						>
 							<ThemeMenuItem />
 							<div className="my-1 border-t border-stone-200 dark:border-stone-700" />
-							<label className="grid gap-1 px-2 py-1 text-stone-600">
+							<label className="grid gap-1 px-2 py-1 text-stone-600 dark:text-stone-300">
 								Page size
 								<select
-									className="rounded-md border border-stone-300 bg-white px-2 py-1.5 text-stone-900"
+									className="rounded-md border border-stone-300 bg-white px-2 py-1.5 text-stone-900 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100"
 									onChange={(event) => {
 										const next = toPageSizeId(event.target.value);
 										setWriting({ ...writing, pageSize: next });
