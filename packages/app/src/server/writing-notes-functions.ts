@@ -6,6 +6,7 @@ import {
 	deleteNote,
 	keepUnsavedEdits,
 	listNotes,
+	listNoteTitles,
 	loadNote,
 	moveNote,
 	reorderNote,
@@ -88,3 +89,7 @@ export const searchWritingNotes = createServerFn({ method: "GET" })
 	.handler(({ data }) =>
 		runSignedIn((db) => searchNotes(db, data.query, data.currentWritingId)),
 	);
+
+export const loadNoteTitles = createServerFn({ method: "GET" })
+	.validator((input: unknown) => z.array(id).max(500).parse(input))
+	.handler(({ data }) => runSignedIn((db) => listNoteTitles(db, data)));

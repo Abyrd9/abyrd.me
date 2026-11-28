@@ -3,12 +3,13 @@ import {
 	LexicalTypeaheadMenuPlugin,
 	MenuOption,
 } from "@lexical/react/LexicalTypeaheadMenuPlugin";
-import { $createTextNode, $getNodeByKey, $isTextNode } from "lexical";
+import { $createTextNode, $getNodeByKey, $getRoot, $isTextNode } from "lexical";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { $createWikiLinkNode } from "#/components/WikiLinkNode";
+import { $createWikiLinkNode, WikiLinkNode } from "#/components/WikiLinkNode";
 import {
 	createWritingNote,
+	loadNoteTitles,
 	searchWritingNotes,
 } from "#/server/writing-notes-functions";
 
@@ -18,6 +19,53 @@ export type WikiLinkContext = {
 	currentNoteId: number | null;
 	currentParentId?: number | null;
 	onOpenNote: (id: number) => void;
+};
+
+/**
+ * Refreshes wiki-link text from the target notes when an editor opens, so a
+ * renamed note shows its new title and a deleted note reads as missing.
+ */
+export const WikiLinkTitles = () => {
+	const [editor] = useLexicalComposerContext();
+
+	useEffect(() => {
+		const noteIds = new Set<number>();
+		editor.read(() => {
+			for (const node of $getRoot().getAllTextNodes())
+				if (node instanceof WikiLinkNode) noteIds.add(node.getNoteId());
+		});
+		if (!noteIds.size) return;
+
+		let active = true;
+		void loadNoteTitles({ data: [...noteIds] })
+			.then((titles) => {
+				if (!active) return;
+				const byId = new Map(titles.map((note) => [note.id, note.title]));
+				editor.update(
+					() => {
+						for (const node of $getRoot().getAllTextNodes()) {
+							if (!(node instanceof WikiLinkNode)) continue;
+							const title = byId.get(node.getNoteId());
+							if (title === undefined) {
+								if (!node.getMissing()) node.setMissing(true);
+							} else {
+								if (node.getMissing()) node.setMissing(false);
+								if (node.getTitle() !== title) node.setTitle(title);
+							}
+						}
+					},
+					{ discrete: true },
+				);
+			})
+			.catch(() => {
+				// Leave the saved titles in place if the lookup fails.
+			});
+		return () => {
+			active = false;
+		};
+	}, [editor]);
+
+	return null;
 };
 
 class NoteOption extends MenuOption {

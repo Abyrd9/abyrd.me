@@ -30,6 +30,7 @@ import { WritingSpellCheck } from "#/components/WritingSpellCheck";
 import { WritingToolbar } from "#/components/WritingToolbar";
 import {
 	type WikiLinkContext,
+	WikiLinkTitles,
 	WritingWikiLinks,
 } from "#/components/WritingWikiLinks";
 import {
@@ -151,6 +152,7 @@ export const WritingEditorPlugins = ({
 		<MarkdownShortcutPlugin transformers={markdownShortcuts} />
 		<WritingSlashMenu paged={paged} />
 		<WritingImagePlugin />
+		<WikiLinkTitles />
 		<WritingWikiLinks {...wiki} />
 		<LibraryQuotePicker />
 		<OnChangePlugin

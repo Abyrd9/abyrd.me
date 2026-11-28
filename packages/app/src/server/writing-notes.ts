@@ -4,6 +4,7 @@ import {
 	desc,
 	eq,
 	gt,
+	inArray,
 	isNull,
 	like,
 	lt,
@@ -358,6 +359,17 @@ export function searchNotes(
 			desc(writingNotes.updatedAt),
 		)
 		.limit(limit)
+		.all();
+}
+
+/**
+/** Current titles for wiki links, so a renamed target shows its new name. */
+export function listNoteTitles(db: AppDatabaseClient, ids: number[]) {
+	if (!ids.length) return [];
+	return db
+		.select({ id: writingNotes.id, title: writingNotes.title })
+		.from(writingNotes)
+		.where(inArray(writingNotes.id, ids))
 		.all();
 }
 

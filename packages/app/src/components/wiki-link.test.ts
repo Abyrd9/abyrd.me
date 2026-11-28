@@ -36,3 +36,22 @@ test("wiki links retain their destination and title through saved editor state",
 		{ targetNoteId: 42, context: "See The garden for details." },
 	]);
 });
+
+test("wiki links can refresh a title and mark a missing target", () => {
+	const editor = createEditor({ nodes: [WikiLinkNode] });
+	editor.update(
+		() => {
+			const link = $createWikiLinkNode(7, "Old name");
+			$getRoot().append($createParagraphNode().append(link));
+			link.setTitle("New name").setMissing(true);
+		},
+		{ discrete: true },
+	);
+	const json = JSON.parse(JSON.stringify(editor.getEditorState().toJSON()));
+	expect(json.root.children[0].children[0]).toMatchObject({
+		type: "wiki-link",
+		noteId: 7,
+		title: "New name",
+		missing: true,
+	});
+});
