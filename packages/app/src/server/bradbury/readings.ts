@@ -171,7 +171,7 @@ const poems: Reading[] = [
 	[
 		"Hope is the thing with feathers",
 		"Emily Dickinson",
-		"Hope_is_the_thing_with_feathers",
+		"Poems:_Second_Series_(Dickinson)/Hope",
 	],
 	[
 		"The Tyger",
@@ -183,19 +183,31 @@ const poems: Reading[] = [
 		"Walt Whitman",
 		"Leaves_of_Grass_(1882)/Whispers_of_Heavenly_Death/A_Noiseless_Patient_Spider",
 	],
-	["Jabberwocky", "Lewis Carroll", "Jabberwocky"],
+	[
+		"Jabberwocky",
+		"Lewis Carroll",
+		"Through_the_Looking-Glass,_and_What_Alice_Found_There/Chapter_I#pagenumber_21",
+	],
 	[
 		"The Road Not Taken",
 		"Robert Frost",
 		"Mountain_Interval/The_Road_Not_Taken",
 	],
-	["In Flanders Fields", "John McCrae", "In_Flanders_Fields"],
+	[
+		"In Flanders Fields",
+		"John McCrae",
+		"In_Flanders_Fields_and_Other_Poems/In_Flanders_Fields",
+	],
 	["The Lake Isle of Innisfree", "W. B. Yeats", "The_Lake_Isle_of_Innisfree"],
-	["We Wear the Mask", "Paul Laurence Dunbar", "We_Wear_the_Mask"],
+	[
+		"We Wear the Mask",
+		"Paul Laurence Dunbar",
+		"Lyrics_of_Lowly_Life/We_wear_the_Mask",
+	],
 	[
 		"I Wandered Lonely as a Cloud",
 		"William Wordsworth",
-		"I_Wandered_Lonely_as_a_Cloud",
+		"Poems_That_Every_Child_Should_Know/I_Wandered_Lonely_as_a_Cloud",
 	],
 	[
 		"Sonnet 18",
@@ -203,22 +215,42 @@ const poems: Reading[] = [
 		"Shakespeare%27s_Sonnets_(1883)/Sonnet_18",
 	],
 	["To Autumn", "John Keats", "Keats;_poems_published_in_1820/To_Autumn"],
-	["Annabel Lee", "Edgar Allan Poe", "Annabel_Lee"],
-	["Remember", "Christina Rossetti", "Remember_(Rossetti)"],
+	[
+		"Annabel Lee",
+		"Edgar Allan Poe",
+		"The_Works_of_the_Late_Edgar_Allan_Poe_(1859)/Volume_2/Annabel_Lee",
+	],
+	[
+		"Remember",
+		"Christina Rossetti",
+		"Goblin_Market_and_Other_Poems_(1862)/Remember",
+	],
 	[
 		"Because I could not stop for Death",
 		"Emily Dickinson",
-		"Because_I_could_not_stop_for_Death",
+		"The_Complete_Poems_of_Emily_Dickinson/Because_I_could_not_stop_for_Death",
 	],
-	["To a Skylark", "Percy Bysshe Shelley", "To_a_Skylark_(Shelley)"],
+	[
+		"To a Skylark",
+		"Percy Bysshe Shelley",
+		"Prometheus_Unbound;_a_lyrical_drama_in_four_acts_with_other_poems/To_a_Skylark",
+	],
 	["The New Colossus", "Emma Lazarus", "The_New_Colossus"],
-	["Invictus", "William Ernest Henley", "Invictus"],
+	[
+		"Invictus",
+		"William Ernest Henley",
+		"Oxford_Book_of_English_Verse_1250-1900/Invictus",
+	],
 	[
 		"The Second Coming",
 		"W. B. Yeats",
 		"Michael_Robartes_and_the_Dancer/The_Second_Coming",
 	],
-	["A Red, Red Rose", "Robert Burns", "A_Red,_Red_Rose"],
+	[
+		"A Red, Red Rose",
+		"Robert Burns",
+		"Six_Excellent_Songs_(Newton_Stewart)/A_Red,_Red_Rose",
+	],
 	[
 		"The Bells",
 		"Edgar Allan Poe",
