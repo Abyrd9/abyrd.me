@@ -356,6 +356,13 @@ export const NotePane = ({
 					</div>
 				) : (
 					<NoteEditor
+						wiki={{
+							currentWritingId: note.writingId,
+							currentChapterId: note.chapterId,
+							currentNoteId: note.id,
+							currentParentId: note.parentId,
+							onOpenNote,
+						}}
 						autoFocus={false}
 						height={pageHeight}
 						header={

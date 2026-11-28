@@ -3,7 +3,7 @@
 import { CodeHighlightNode, CodeNode } from "@lexical/code-core";
 import { configExtension, defineExtension } from "@lexical/extension";
 import { ClickableLinkExtension, LinkNode } from "@lexical/link";
-import { ListItemNode, ListNode } from "@lexical/list";
+import { $isListItemNode, ListItemNode, ListNode } from "@lexical/list";
 import { AutoFocusPlugin } from "@lexical/react/LexicalAutoFocusPlugin";
 import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
 import { LinkPlugin } from "@lexical/react/LexicalLinkPlugin";
@@ -11,13 +11,27 @@ import { ListPlugin } from "@lexical/react/LexicalListPlugin";
 import { MarkdownShortcutPlugin } from "@lexical/react/LexicalMarkdownShortcutPlugin";
 import { OnChangePlugin } from "@lexical/react/LexicalOnChangePlugin";
 import { HeadingNode, QuoteNode } from "@lexical/rich-text";
-import { $getRoot } from "lexical";
+import { $findMatchingParent, mergeRegister } from "@lexical/utils";
+import {
+	$getRoot,
+	$getSelection,
+	$isRangeSelection,
+	COMMAND_PRIORITY_LOW,
+	INDENT_CONTENT_COMMAND,
+	KEY_TAB_COMMAND,
+	OUTDENT_CONTENT_COMMAND,
+} from "lexical";
 import { LibraryQuotePicker } from "#/components/LibraryQuotePicker";
+import { WikiLinkNode } from "#/components/WikiLinkNode";
 import { FootnoteNode } from "#/components/WritingFootnotes";
 import { ImageNode, WritingImagePlugin } from "#/components/WritingImage";
 import { WritingSlashMenu } from "#/components/WritingSlashMenu";
 import { WritingSpellCheck } from "#/components/WritingSpellCheck";
 import { WritingToolbar } from "#/components/WritingToolbar";
+import {
+	type WikiLinkContext,
+	WritingWikiLinks,
+} from "#/components/WritingWikiLinks";
 import {
 	CalloutNode,
 	EpigraphNode,
@@ -54,6 +68,7 @@ export const createWritingExtension = (
 			PageBreakNode,
 			ImageNode,
 			FootnoteNode,
+			WikiLinkNode,
 		],
 		theme: {
 			paragraph: "writing-paragraph",
@@ -86,7 +101,28 @@ export const createWritingExtension = (
 				superscript: "writing-superscript",
 			},
 		},
-		register: registerVerseLines,
+		register: (editor) =>
+			mergeRegister(
+				registerVerseLines(editor),
+				editor.registerCommand(
+					KEY_TAB_COMMAND,
+					(event) => {
+						const selection = $getSelection();
+						if (!$isRangeSelection(selection)) return false;
+						const inList = [selection.anchor, selection.focus].some((point) =>
+							$findMatchingParent(point.getNode(), $isListItemNode),
+						);
+						if (!inList) return false;
+						event.preventDefault();
+						editor.dispatchCommand(
+							event.shiftKey ? OUTDENT_CONTENT_COMMAND : INDENT_CONTENT_COMMAND,
+							undefined,
+						);
+						return true;
+					},
+					COMMAND_PRIORITY_LOW,
+				),
+			),
 		// Links in saved text are references to read, so open them on a click.
 		// Lexical's default keeps the click in the editor for editing instead.
 		dependencies: [configExtension(ClickableLinkExtension, { newTab: true })],
@@ -98,12 +134,14 @@ export const WritingEditorPlugins = ({
 	autoFocus,
 	onChange,
 	paged,
+	wiki,
 }: {
 	/** Puts the cursor in the editor as soon as it mounts. */
 	autoFocus: boolean;
 	onChange: (content: string, wordCount: number) => void;
 	/** Paged editors offer page breaks; endless notes don't. */
 	paged: boolean;
+	wiki: WikiLinkContext;
 }) => (
 	<>
 		{autoFocus ? <AutoFocusPlugin /> : null}
@@ -113,6 +151,7 @@ export const WritingEditorPlugins = ({
 		<MarkdownShortcutPlugin transformers={markdownShortcuts} />
 		<WritingSlashMenu paged={paged} />
 		<WritingImagePlugin />
+		<WritingWikiLinks {...wiki} />
 		<LibraryQuotePicker />
 		<OnChangePlugin
 			ignoreSelectionChange

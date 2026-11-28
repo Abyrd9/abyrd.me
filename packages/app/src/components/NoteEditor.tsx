@@ -4,6 +4,7 @@ import { LexicalExtensionComposer } from "@lexical/react/LexicalExtensionCompose
 import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
 import { type ReactNode, useState } from "react";
 import { FootnotesList } from "#/components/WritingFootnotes";
+import type { WikiLinkContext } from "#/components/WritingWikiLinks";
 import {
 	createWritingExtension,
 	WritingEditorPlugins,
@@ -16,6 +17,7 @@ export const NoteEditor = ({
 	autoFocus,
 	header,
 	height,
+	wiki,
 }: {
 	/** Serialized Lexical state. Read once when the editor mounts. */
 	initialContent: string | null;
@@ -28,6 +30,7 @@ export const NoteEditor = ({
 	 * Without one, the sheet grows with the note.
 	 */
 	height?: number;
+	wiki: WikiLinkContext;
 }) => {
 	const [extension] = useState(() =>
 		createWritingExtension("NoteWriting", initialContent),
@@ -70,6 +73,7 @@ export const NoteEditor = ({
 				autoFocus={autoFocus}
 				onChange={(content) => onChange(content)}
 				paged={false}
+				wiki={wiki}
 			/>
 		</LexicalExtensionComposer>
 	);

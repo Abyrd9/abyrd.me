@@ -800,6 +800,12 @@ function WritingEditor() {
 								}}
 							>
 								<PagedEditor
+									wiki={{
+										currentWritingId: writing.id,
+										currentChapterId: chapter.id,
+										currentNoteId: null,
+										onOpenNote: openNote,
+									}}
 									initialContent={
 										latestContent.current.get(chapter.id) ?? chapter.content
 									}

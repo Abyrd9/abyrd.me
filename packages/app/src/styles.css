@@ -498,3 +498,21 @@ html.dark .writing-footnote-ref::before {
 	color: #991b1b;
 	background-color: rgb(254 202 202 / 0.9);
 }
+.wiki-link {
+	border-radius: 0.3em;
+	background: #eff6ff;
+	color: #1d4ed8;
+	padding: 0.05em 0.3em;
+	text-decoration: underline;
+	text-underline-offset: 0.15em;
+	cursor: pointer;
+}
+
+.dark .wiki-link {
+	background: #172554;
+	color: #93c5fd;
+}
+
+.wiki-link[data-missing="true"] {
+	opacity: 0.45;
+}

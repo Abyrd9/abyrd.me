@@ -37,6 +37,7 @@ export const PagedEditor = ({
 	onChange,
 	onTyping,
 	children,
+	wiki,
 }: {
 	/** Serialized Lexical state. Read once when the editor mounts. */
 	initialContent: string | null;
@@ -46,6 +47,7 @@ export const PagedEditor = ({
 	onTyping?: () => void;
 	/** Extra editor plugins, like the chapter's suggested edits. */
 	children?: ReactNode;
+	wiki: import("#/components/WritingWikiLinks").WikiLinkContext;
 }) => {
 	const [extension] = useState(() =>
 		createWritingExtension("PagedWriting", initialContent),
@@ -196,6 +198,7 @@ export const PagedEditor = ({
 				autoFocus={!initialContent}
 				onChange={onChange}
 				paged
+				wiki={wiki}
 			/>
 			{children}
 		</LexicalExtensionComposer>
