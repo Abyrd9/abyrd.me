@@ -14,6 +14,7 @@ import {
 import { PagedEditor, PX_PER_INCH } from "#/components/PagedEditor";
 import { ProjectNotes } from "#/components/ProjectNotes";
 import { type SideTab, SideTabs, toSideTab } from "#/components/SideTabs";
+import { ThemeMenuItem } from "#/components/theme-toggle";
 import { WordLookupContext, WordPanel } from "#/components/WordPanel";
 import { WritingGuides } from "#/components/WritingGuides";
 import {
@@ -701,6 +702,8 @@ function WritingEditor() {
 							}}
 							className="absolute right-0 mt-2 grid w-64 gap-1 rounded-xl border border-stone-200 bg-white p-2 shadow-lg dark:border-stone-800"
 						>
+							<ThemeMenuItem />
+							<div className="my-1 border-t border-stone-200 dark:border-stone-700" />
 							<label className="grid gap-1 px-2 py-1 text-stone-600">
 								Page size
 								<select

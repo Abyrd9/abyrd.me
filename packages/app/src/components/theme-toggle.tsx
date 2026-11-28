@@ -65,3 +65,28 @@ function applyTheme(theme: Theme) {
 		// The current choice still works when browser storage is unavailable.
 	}
 }
+
+/** Menu-row version for the writing page's Options popover. */
+export function ThemeMenuItem() {
+	const [theme, setTheme] = useState<Theme>("light");
+
+	useEffect(() => {
+		setTheme(getPreferredTheme());
+	}, []);
+
+	return (
+		<button
+			aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+			className="flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-stone-500 transition hover:bg-stone-200 hover:text-stone-900 dark:hover:bg-stone-800 dark:hover:text-stone-100"
+			onClick={() => {
+				const next = theme === "dark" ? "light" : "dark";
+				applyTheme(next);
+				setTheme(next);
+			}}
+			type="button"
+		>
+			<span aria-hidden="true">{theme === "dark" ? "☀︎" : "☾"}</span>
+			{theme === "dark" ? "Light mode" : "Dark mode"}
+		</button>
+	);
+}
