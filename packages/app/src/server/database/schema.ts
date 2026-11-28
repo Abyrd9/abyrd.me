@@ -211,6 +211,13 @@ export const dictionaryWords = sqliteTable("dictionary_words", {
 	createdAt: integer("created_at").notNull(),
 });
 
+export const vocabularyEntries = sqliteTable("vocabulary_entries", {
+	word: text("word").primaryKey(),
+	definition: text("definition").notNull(),
+	examples: text("examples", { mode: "json" }).$type<string[]>().notNull(),
+	sourceUrl: text("source_url"),
+});
+
 export const writingTrash = sqliteTable(
 	"writing_trash",
 	{

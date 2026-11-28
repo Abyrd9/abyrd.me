@@ -35,6 +35,11 @@ function Home() {
 					to="/bradbury"
 				/>
 				<AppCard
+					description="Save words and learn them through example sentences."
+					label="Dictionary"
+					to="/dictionary"
+				/>
+				<AppCard
 					description="Keep Rook’s linocut avatar, handles, ink palette, bios, and social asset placeholders in one press dossier."
 					label="Media"
 					to="/media"
@@ -58,6 +63,7 @@ function AppCard({
 	readonly label: string;
 	readonly to:
 		| "/bradbury"
+		| "/dictionary"
 		| "/kindle"
 		| "/media"
 		| "/quiz"

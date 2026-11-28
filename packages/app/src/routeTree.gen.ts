@@ -15,6 +15,7 @@ import { Route as HealthRouteImport } from './routes/health'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated.index'
 import { Route as AuthenticatedBradburyRouteImport } from './routes/_authenticated.bradbury'
+import { Route as AuthenticatedDictionaryRouteImport } from './routes/_authenticated.dictionary'
 import { Route as AuthenticatedKindleRouteImport } from './routes/_authenticated.kindle'
 import { Route as AuthenticatedMediaRouteImport } from './routes/_authenticated.media'
 import { Route as AuthenticatedQuizRouteImport } from './routes/_authenticated.quiz'
@@ -56,6 +57,11 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
 const AuthenticatedBradburyRoute = AuthenticatedBradburyRouteImport.update({
   id: '/bradbury',
   path: '/bradbury',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedDictionaryRoute = AuthenticatedDictionaryRouteImport.update({
+  id: '/dictionary',
+  path: '/dictionary',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedKindleRoute = AuthenticatedKindleRouteImport.update({
@@ -139,6 +145,7 @@ export interface FileRoutesByFullPath {
   '/health': typeof HealthRoute
   '/sign-in': typeof SignInRoute
   '/bradbury': typeof AuthenticatedBradburyRoute
+  '/dictionary': typeof AuthenticatedDictionaryRoute
   '/kindle': typeof AuthenticatedKindleRouteWithChildren
   '/media': typeof AuthenticatedMediaRoute
   '/quiz': typeof AuthenticatedQuizRoute
@@ -159,6 +166,7 @@ export interface FileRoutesByTo {
   '/health': typeof HealthRoute
   '/sign-in': typeof SignInRoute
   '/bradbury': typeof AuthenticatedBradburyRoute
+  '/dictionary': typeof AuthenticatedDictionaryRoute
   '/media': typeof AuthenticatedMediaRoute
   '/quiz': typeof AuthenticatedQuizRoute
   '/quotes': typeof AuthenticatedQuotesRoute
@@ -180,6 +188,7 @@ export interface FileRoutesById {
   '/health': typeof HealthRoute
   '/sign-in': typeof SignInRoute
   '/_authenticated/bradbury': typeof AuthenticatedBradburyRoute
+  '/_authenticated/dictionary': typeof AuthenticatedDictionaryRoute
   '/_authenticated/kindle': typeof AuthenticatedKindleRouteWithChildren
   '/_authenticated/media': typeof AuthenticatedMediaRoute
   '/_authenticated/quiz': typeof AuthenticatedQuizRoute
@@ -203,6 +212,7 @@ export interface FileRouteTypes {
     | '/health'
     | '/sign-in'
     | '/bradbury'
+    | '/dictionary'
     | '/kindle'
     | '/media'
     | '/quiz'
@@ -223,6 +233,7 @@ export interface FileRouteTypes {
     | '/health'
     | '/sign-in'
     | '/bradbury'
+    | '/dictionary'
     | '/media'
     | '/quiz'
     | '/quotes'
@@ -243,6 +254,7 @@ export interface FileRouteTypes {
     | '/health'
     | '/sign-in'
     | '/_authenticated/bradbury'
+    | '/_authenticated/dictionary'
     | '/_authenticated/kindle'
     | '/_authenticated/media'
     | '/_authenticated/quiz'
@@ -311,6 +323,13 @@ declare module '@tanstack/react-router' {
       path: '/bradbury'
       fullPath: '/bradbury'
       preLoaderRoute: typeof AuthenticatedBradburyRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/dictionary': {
+      id: '/_authenticated/dictionary'
+      path: '/dictionary'
+      fullPath: '/dictionary'
+      preLoaderRoute: typeof AuthenticatedDictionaryRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/kindle': {
@@ -434,6 +453,7 @@ const AuthenticatedKindleRouteWithChildren =
 
 interface AuthenticatedRouteChildren {
   AuthenticatedBradburyRoute: typeof AuthenticatedBradburyRoute
+  AuthenticatedDictionaryRoute: typeof AuthenticatedDictionaryRoute
   AuthenticatedKindleRoute: typeof AuthenticatedKindleRouteWithChildren
   AuthenticatedMediaRoute: typeof AuthenticatedMediaRoute
   AuthenticatedQuizRoute: typeof AuthenticatedQuizRoute
@@ -445,6 +465,7 @@ interface AuthenticatedRouteChildren {
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedBradburyRoute: AuthenticatedBradburyRoute,
+  AuthenticatedDictionaryRoute: AuthenticatedDictionaryRoute,
   AuthenticatedKindleRoute: AuthenticatedKindleRouteWithChildren,
   AuthenticatedMediaRoute: AuthenticatedMediaRoute,
   AuthenticatedQuizRoute: AuthenticatedQuizRoute,

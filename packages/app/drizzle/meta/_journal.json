@@ -92,6 +92,13 @@
 			"when": 1795646235729,
 			"tag": "0012_projects",
 			"breakpoints": true
+		},
+		{
+			"idx": 13,
+			"version": "6",
+			"when": 1795838126285,
+			"tag": "0013_vocabulary_entries",
+			"breakpoints": true
 		}
 	]
 }
